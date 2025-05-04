@@ -6,8 +6,12 @@ import VoiceChat from './components/VoiceChat';
 
 export default function Home() {
   const [sessionStarted, setSessionStarted] = useState(false);
+  const [difficultyLevel, setDifficultyLevel] = useState(3);
+  const [selectedLanguage, setSelectedLanguage] = useState('english');
 
-  const startSession = () => {
+  const startSession = (level: number, language: string) => {
+    setDifficultyLevel(level);
+    setSelectedLanguage(language);
     setSessionStarted(true);
   };
 
@@ -20,7 +24,11 @@ export default function Home() {
       {!sessionStarted ? (
         <HomeScreen onStartSession={startSession} />
       ) : (
-        <VoiceChat onClose={endSession} />
+        <VoiceChat 
+          onClose={endSession} 
+          difficultyLevel={difficultyLevel}
+          language={selectedLanguage}
+        />
       )}
     </main>
   );

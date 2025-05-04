@@ -6,9 +6,10 @@ import Image from 'next/image';
 interface AnimatedNachoProps {
   isSpeaking: boolean;
   size?: 'sm' | 'md' | 'lg';
+  level?: number;
 }
 
-export default function AnimatedNacho({ isSpeaking, size = 'md' }: AnimatedNachoProps) {
+export default function AnimatedNacho({ isSpeaking, size = 'md', level = 3 }: AnimatedNachoProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   
   // Size mapping
@@ -16,6 +17,24 @@ export default function AnimatedNacho({ isSpeaking, size = 'md' }: AnimatedNacho
     sm: 'w-24 h-24',
     md: 'w-36 h-36',
     lg: 'w-48 h-48'
+  };
+  
+  // Image mapping based on level
+  const getNachoImage = () => {
+    switch (level) {
+      case 1:
+        return "/images/nacho_level1.png";
+      case 2:
+        return "/images/nacho_level2.png";
+      case 3:
+        return "/images/nacho_transparent.png";
+      case 4:
+        return "/images/nacho_level4.png";
+      case 5:
+        return "/images/nacho_level5.png";
+      default:
+        return "/images/nacho_transparent.png";
+    }
   };
   
   // Effect to handle the beating animation when AI is speaking
@@ -75,7 +94,7 @@ export default function AnimatedNacho({ isSpeaking, size = 'md' }: AnimatedNacho
       className={`relative ${sizeClasses[size]} transition-transform duration-100`}
     >
       <Image
-        src="/images/nacho_transparent.png"
+        src={getNachoImage()}
         alt="Nacho the sloth"
         fill
         style={{ objectFit: 'contain' }}
