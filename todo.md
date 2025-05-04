@@ -1,0 +1,3 @@
+- los subtitulos deberían aparecer por cada frase: si ya no hay deltas y se vuelve a recibir un delta, no aparece nada.
+- puedo seleccionar el idioma (todavía no el nivel)
+- el tutor siempre comienza con una pregunta, no al revés.
