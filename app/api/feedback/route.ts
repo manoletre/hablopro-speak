@@ -6,10 +6,134 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const prompts = {
+  english: `You are a language learning assistant. Analyze the following conversation transcript and provide feedback in JSON format. The feedback should include:
+
+1. Grammar corrections (if any) with:
+   - What the user said
+   - A better way to say it
+   - A brief explanation of the grammar rule in english
+
+2. New vocabulary items (if any) with:
+   - The word or phrase
+   - Its part of speech
+   - A clear definition
+   - An example sentence
+
+Format the response as a JSON object with two arrays: "grammar" and "vocabulary". Each array should contain objects with the specified fields and use these exact field names:
+For grammar: {"youSaid", "better", "explanation"}
+For vocabulary: {"word", "type", "meaning", "example"}
+
+Transcript:
+{transcript}`,
+
+  español: `Eres un asistente de aprendizaje de idiomas. Analiza la siguiente transcripción de conversación y proporciona retroalimentación en formato JSON. La retroalimentación debe incluir:
+
+1. Correcciones gramaticales (si las hay) con:
+   - Lo que dijo el usuario
+   - Una mejor manera de decirlo
+   - Una breve explicación de la regla gramatical en español
+
+2. Nuevos elementos de vocabulario (si los hay) con:
+   - La palabra o frase
+   - Su categoría gramatical
+   - Una definición clara
+   - Un ejemplo de oración
+
+Formatea la respuesta como un objeto JSON con dos arrays: "grammar" y "vocabulary". Cada array debe contener objetos con los campos especificados y usa exactamente estos nombres de campo:
+Para gramática: {"youSaid", "better", "explanation"}
+Para vocabulario: {"word", "type", "meaning", "example"}
+
+Transcripción:
+{transcript}`
+};
+
+// JSON schema for structured output
+const feedbackSchema = {
+  name: "feedback",
+  schema: {
+    type: "object",
+    properties: {
+      grammar: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            youSaid: { type: "string" },
+            better: { type: "string" },
+            explanation: { type: "string" }
+          },
+          required: ["youSaid", "better", "explanation"],
+          additionalProperties: false
+        }
+      },
+      vocabulary: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            word: { type: "string" },
+            type: { type: "string" },
+            meaning: { type: "string" },
+            example: { type: "string" }
+          },
+          required: ["word", "type", "meaning", "example"],
+          additionalProperties: false
+        }
+      }
+    },
+    required: ["grammar", "vocabulary"],
+    additionalProperties: false
+  }
+};
+
+interface FeedbackGrammarItem {
+  youSaid: string;
+  better: string;
+  explanation: string;
+  [key: string]: string;
+}
+
+interface FeedbackVocabularyItem {
+  word: string;
+  type: string;
+  meaning: string;
+  example: string;
+  [key: string]: string;
+}
+
+interface FeedbackResponse {
+  grammar: FeedbackGrammarItem[];
+  vocabulary: FeedbackVocabularyItem[];
+  [key: string]: FeedbackGrammarItem[] | FeedbackVocabularyItem[];
+}
+
+// Normalization function to map alternative field names to expected ones
+function normalizeFeedback(feedback: FeedbackResponse): FeedbackResponse {
+  // Normalize grammar corrections
+  if (Array.isArray(feedback.grammar)) {
+    feedback.grammar = feedback.grammar.map((item: FeedbackGrammarItem) => ({
+      youSaid: item.youSaid || item.what_user_said || item['what_user_said'] || '',
+      better: item.better || item.a_better_way_to_say_it || item['better_way_to_say_it'] || item['a_better_way_to_say_it'] || '',
+      explanation: item.explanation || ''
+    }));
+  }
+  // Normalize vocabulary items
+  if (Array.isArray(feedback.vocabulary)) {
+    feedback.vocabulary = feedback.vocabulary.map((item: FeedbackVocabularyItem) => ({
+      word: item.word || '',
+      type: item.type || item.part_of_speech || item['part_of_speech'] || '',
+      meaning: item.meaning || item.definition || item['definition'] || '',
+      example: item.example || item.example_sentence || item['example_sentence'] || ''
+    }));
+  }
+  return feedback;
+}
+
 export async function POST(request: Request) {
   try {
     const { transcript, language } = await request.json();
-
+    
     if (!transcript) {
       return NextResponse.json(
         { error: 'Transcript is required' },
@@ -17,80 +141,39 @@ export async function POST(request: Request) {
       );
     }
 
-    // Prepare the system prompt for generating feedback
-    const systemPrompt = `You are a language tutor assistant.
-
-You will receive a transcript of a language learning session. Your task is to generate feedback to help the learner improve their ${language || 'French'}. Structure your output as JSON.
-
-IMPORTANT: Focus primarily on the language used by the learner (marked with "User:"). 
-Analyze their grammar, vocabulary usage, and pronunciation hints from their written transcription.
-Ignore any mistakes made by the assistant.
-
-Return two sections:
-1. **grammar**: Identify 1–3 grammar mistakes made by the learner (not the assistant). For each mistake, show:
-   - "youSaid": the incorrect phrase they said
-   - "better": the corrected version
-   - "explanation": a simple explanation with an analogy or helpful trick if possible
-
-2. **vocabulary**: Identify 1–3 useful words or phrases that came up in the conversation that would help the learner. For each word, include:
-   - "word": the word or phrase
-   - "type": e.g. "adv.", "noun", "verb"
-   - "meaning": in English
-   - "usage": a short explanation of when to use it
-   - "example": a sample sentence using it
-
-Make the tone friendly, helpful, and encouraging. Prioritize the most impactful improvements.`;
-
-    // Call OpenAI to generate feedback
+    const prompt = prompts[language as keyof typeof prompts] || prompts.english;
+    
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4.1',
+      model: "gpt-4.1",
       messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Transcript:\n"""${transcript}"""\n\nProvide feedback in JSON format.` }
+        {
+          role: "system",
+          content: prompt.replace('{transcript}', transcript)
+        }
       ],
-      response_format: { type: 'json_object' },
-      temperature: 0.7,
+      response_format: {
+        type: "json_schema",
+        json_schema: feedbackSchema
+      }
     });
 
-    const responseContent = completion.choices[0].message.content;
-    
-    // Parse the JSON response
-    let feedbackData;
+    let feedback: FeedbackResponse = { grammar: [], vocabulary: [] };
     try {
-      feedbackData = JSON.parse(responseContent || '{}');
-    } catch (error) {
-      console.error('Error parsing OpenAI response:', error);
-      
-      // Fallback data structure for error cases
-      feedbackData = {
-        grammar: [
-          {
-            youSaid: "J'aime le fromage, mais je n'aime pas viande",
-            better: "J'aime le fromage, mais je n'aime pas la viande",
-            explanation: "After 'pas', you usually need to repeat the article ('la viande'). Think of it like restarting the sentence: you're saying you like one thing and not another — both need their own articles."
-          }
-        ],
-        vocabulary: [
-          {
-            word: "seulement",
-            type: "adv.",
-            meaning: "only",
-            usage: "useful for setting limits or expectations",
-            example: "J'ai seulement dix minutes."
-          }
-        ]
+      const parsedFeedback = JSON.parse(completion.choices[0].message.content || '{}');
+      // Ensure the parsed object has the required properties
+      feedback = {
+        grammar: Array.isArray(parsedFeedback.grammar) ? parsedFeedback.grammar : [],
+        vocabulary: Array.isArray(parsedFeedback.vocabulary) ? parsedFeedback.vocabulary : []
       };
+    } catch {
+      // Keep the default empty feedback object initialized above
     }
-
-    // Ensure we have at least empty arrays
-    feedbackData.grammar = feedbackData.grammar || [];
-    feedbackData.vocabulary = feedbackData.vocabulary || [];
-
-    return NextResponse.json(feedbackData);
+    feedback = normalizeFeedback(feedback);
+    return NextResponse.json(feedback);
   } catch (error) {
-    console.error('Error generating feedback:', error);
+    console.error('Error processing feedback:', error);
     return NextResponse.json(
-      { error: 'Failed to generate feedback' },
+      { error: 'Failed to process feedback' },
       { status: 500 }
     );
   }

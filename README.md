@@ -34,3 +34,24 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Firebase Authentication Setup
+
+This application uses Firebase Authentication for Google Sign-In. Follow these steps to set it up:
+
+1. Create a Firebase project at [https://console.firebase.google.com/](https://console.firebase.google.com/)
+2. Enable Authentication and set up Google as a sign-in provider
+3. Create a web app in your Firebase project to get your configuration values
+4. Copy the `.env.local.example` file to `.env.local` and update with your Firebase configuration:
+
+```bash
+# Firebase Authentication Configuration
+NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
+NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+```
+
+5. Restart your development server for the changes to take effect

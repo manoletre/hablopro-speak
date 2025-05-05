@@ -21,13 +21,12 @@ export default function TypingAnimation({ text, typingSpeed = 10 }: TypingAnimat
       setCurrentIndex(0);
     } else if (text !== previousTextRef.current) {
       // Calculate where we need to start typing from
-      const newTextPortion = text.slice(previousTextRef.current.length);
       setCurrentIndex(displayText.length);
       previousTextRef.current = text;
     }
     
     previousTextRef.current = text;
-  }, [text]);
+  }, [text, displayText.length]);
   
   // Typing animation effect
   useEffect(() => {
@@ -39,7 +38,7 @@ export default function TypingAnimation({ text, typingSpeed = 10 }: TypingAnimat
     }, typingSpeed);
     
     return () => clearTimeout(timer);
-  }, [currentIndex, text, typingSpeed]);
+  }, [currentIndex, text, typingSpeed, displayText.length]);
   
   return (
     <span className="whitespace-pre-wrap">

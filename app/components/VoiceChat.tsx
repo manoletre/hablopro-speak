@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import AnimatedNacho from './AnimatedNacho';
 import TypingAnimation from './TypingAnimation';
 import SessionResults from './SessionResults';
+import AuthDialog from './AuthDialog';
+import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 // Enhanced interface to handle different event types
 interface RealtimeEvent {
@@ -16,6 +19,10 @@ interface RealtimeEvent {
   response_id?: string;
   event_id?: string;
   session?: { id: string };
+  transcript?: string;
+  output_index?: number;
+  content_index?: number;
+  item_id?: string;
   // Other fields depending on event type
 }
 
@@ -33,20 +40,21 @@ interface VoiceChatProps {
 }
 
 export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceChatProps) {
+  const { user, loading } = useAuth();
+  const { t } = useLanguage();
   const [isListening, setIsListening] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const [userTranscript, setUserTranscript] = useState<string>('');
   const [aiTranscript, setAiTranscript] = useState<string>('');
   const [subtitleBuffer, setSubtitleBuffer] = useState<string>('');
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [active, setActive] = useState(true); // Set to true since we're starting directly in the session
-  const [audioInitialized, setAudioInitialized] = useState(false);
   const [aiSpeaking, setAiSpeaking] = useState(false);
   
   // Session timer state
-  const [timeRemaining, setTimeRemaining] = useState(5 * 60); // 5 minutes in seconds
+  const [timeRemaining, setTimeRemaining] = useState(0.5 * 60); // 5 minutes in seconds
   const [isWrappingUp, setIsWrappingUp] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  
+  // Update the conversation history initialization to avoid hardcoded messages
   const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([]);
 
   // Keep references separate to avoid interference
@@ -60,26 +68,24 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
   // Timer interval ref
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Start the session timer when connected
+  // Start timer when connected, handle when time is up
   useEffect(() => {
     if (isConnected && !isWrappingUp && !showResults) {
       timerIntervalRef.current = setInterval(() => {
         setTimeRemaining(prev => {
-          if (prev <= 1) {
-            // Time's up - start wrapping up
-            setIsWrappingUp(true);
+          const newTime = prev - 1;
+          if (newTime <= 0) {
+            console.log('Timer reached zero, wrapping up conversation');
+            // Clear interval and trigger wrap-up
             clearInterval(timerIntervalRef.current!);
-            
-            // Trigger wrapping up message from AI
-            sendWrappingUpMessage();
-            
+            setIsWrappingUp(true);
             return 0;
           }
-          return prev - 1;
+          return newTime;
         });
       }, 1000);
     }
-
+    
     return () => {
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current);
@@ -93,19 +99,6 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
     const seconds = timeRemaining % 60;
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
-
-  // Check for system dark mode preference
-  useEffect(() => {
-    const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    setIsDarkMode(darkModeQuery.matches);
-    
-    const handleChange = (e: MediaQueryListEvent) => {
-      setIsDarkMode(e.matches);
-    };
-    
-    darkModeQuery.addEventListener('change', handleChange);
-    return () => darkModeQuery.removeEventListener('change', handleChange);
-  }, []);
 
   // Initialize audio elements once on component mount
   useEffect(() => {
@@ -151,6 +144,13 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
           dataChannelRef.current = null;
         }
         
+        // Stop all tracks on the peer connection
+        peerConnectionRef.current.getSenders().forEach(sender => {
+          if (sender.track) {
+            sender.track.stop();
+          }
+        });
+        
         peerConnectionRef.current.close();
         peerConnectionRef.current = null;
       } catch (error) {
@@ -180,7 +180,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
     }
   };
 
-  // Modified handleDataChannelEvent to save conversation history using specific events
+  // Modified handleDataChannelEvent to properly track conversation messages in sequence
   const handleDataChannelEvent = (event: MessageEvent) => {
     try {
       console.log('Received event:', event.data);
@@ -191,18 +191,58 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
         console.log(`Active session ID: ${data.session.id}`);
       }
       
+      // Log more details about the first events to help debug conversation start
+      if (data.type === 'session.created') {
+        console.log('Session created event received');
+      }
+      
+      if (data.type === 'response.created') {
+        console.log('Response created event received');
+      }
+      
       // Handle AI response audio transcript deltas
       if (data.type === 'response.audio_transcript.delta' && data.delta) {
+        // Log first AI delta to help debug conversation start
+        if (!aiTranscript && !subtitleBuffer) {
+          console.log('First AI response delta received:', data.delta);
+        }
+        
         // For delta events, append to subtitle buffer and temporary AI transcript
         setSubtitleBuffer(prev => prev + data.delta);
         setAiTranscript(prev => prev + data.delta);
       }
       
-      // Handle user transcription deltas - important for capturing real-time user speech
-      if (data.type === 'conversation.item.input_audio_transcription.delta' && data.delta) {
-        console.log('User transcription delta received:', data.delta);
-        // Update the user transcript as it comes in
-        setUserTranscript(prev => prev + data.delta);
+      // Handle AI response audio transcript complete - this contains the full transcript for each response
+      if (data.type === 'response.audio_transcript.done' && data.transcript) {
+        console.log('Complete AI transcript received:', data.transcript);
+        
+        // Use the complete transcript instead of the accumulated deltas for accuracy
+        const completeTranscript = data.transcript;
+        
+        if (completeTranscript && completeTranscript.trim()) {
+          console.log('Saving complete AI transcript to history:', completeTranscript);
+          
+          // Add this as a discrete message in the conversation
+          setConversationHistory(prev => {
+            const isDuplicate = prev.some(msg => 
+              msg.role === 'assistant' && msg.text === completeTranscript.trim()
+            );
+            if (!isDuplicate) {
+              return [...prev, {
+                role: 'assistant',
+                text: completeTranscript.trim(),
+                timestamp: Date.now()
+              }];
+            }
+            return prev;
+          });
+          
+          // Update subtitle buffer with the complete transcript
+          setSubtitleBuffer(completeTranscript);
+          
+          // Clear the accumulated transcript for next response
+          setAiTranscript('');
+        }
       }
       
       // Handle end of AI response (response.done)
@@ -210,26 +250,9 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
         console.log('Response completed, adding new line for next response');
         setSubtitleBuffer(prev => prev + '\n');
         
-        // Save completed assistant message to conversation history if it's not empty
-        if (aiTranscript.trim()) {
-          console.log('Saving AI message to history:', aiTranscript);
-          setConversationHistory(prev => {
-            const isDuplicate = prev.some(msg => 
-              msg.role === 'assistant' && msg.text === aiTranscript.trim()
-            );
-            if (!isDuplicate) {
-              return [...prev, {
-                role: 'assistant',
-                text: aiTranscript.trim(),
-                timestamp: Date.now()
-              }];
-            }
-            return prev;
-          });
-          
-          // Reset temporary AI transcript buffer
-          setAiTranscript('');
-        }
+        // We now rely on response.audio_transcript.done for saving AI messages,
+        // so this is mainly for clearing the temporary buffer
+        setAiTranscript('');
         
         // Check if we should end the conversation after AI response
         if (isWrappingUp) {
@@ -241,32 +264,54 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
       }
       
       // Handle completed user transcription
-      if (data.type === 'conversation.item.input_audio_transcription.completed' && data.text) {
-        setUserTranscript(data.text); // Update live user transcript view with final version
-        console.log('Final user transcription received:', data.text);
+      if (data.type === 'conversation.item.input_audio_transcription.completed') {
+        // Check both "text" and "transcript" fields since the API might use either
+        const userText = data.text || data.transcript || '';
         
-        // Save user message to conversation history
-        if (data.text.trim()) {
-          console.log('Saving user message to history:', data.text);
+        if (userText.trim()) {
+          console.log('Final user transcription received:', userText);
+          
+          // Save user message to conversation history
+          console.log('Saving user message to history:', userText);
           setConversationHistory(prev => {
             const isDuplicate = prev.some(msg => 
-              msg.role === 'user' && msg.text === data.text?.trim()
+              msg.role === 'user' && msg.text === userText.trim()
             );
             if (!isDuplicate) {
               return [...prev, {
                 role: 'user',
-                text: data.text || '',
+                text: userText.trim(),
                 timestamp: Date.now() // Use current time when event is received
               }];
             }
             return prev;
           });
         }
+      }
+      
+      // Also handle this alternative event type for user transcription
+      if (data.type === 'conversation.item.transcript' && data.content) {
+        console.log('Received conversation.item.transcript event:', data.content);
+        // Make sure this is actually user content (should have a way to verify this)
+        // For now, we'll assume anything in this format that's not from the assistant is from the user
+        const transcriptText = data.content;
         
-        // Reset the userTranscript for the next utterance after saving it to history
-        setTimeout(() => {
-          setUserTranscript('');
-        }, 500);
+        if (transcriptText && typeof transcriptText === 'string' && transcriptText.trim()) {
+          console.log('Additional user transcript content found:', transcriptText);
+          setConversationHistory(prev => {
+            const isDuplicate = prev.some(msg => 
+              msg.role === 'user' && msg.text === transcriptText.trim()
+            );
+            if (!isDuplicate) {
+              return [...prev, {
+                role: 'user',
+                text: transcriptText.trim(),
+                timestamp: Date.now()
+              }];
+            }
+            return prev;
+          });
+        }
       }
       
     } catch (error) {
@@ -362,6 +407,11 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
         // Wait a short moment for the connection to stabilize before triggering AI
         setTimeout(() => {
           console.log('Will now trigger AI to start conversation');
+          // Reset conversation history if this is a new connection
+          setConversationHistory([]);
+          // Clear any previous AI transcript
+          setAiTranscript('');
+          setSubtitleBuffer('');
           triggerAIToStartConversation();
         }, 1000);
       };
@@ -393,7 +443,6 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
       
       console.log('WebRTC connection established successfully');
       setIsConnected(true);
-      setAudioInitialized(true);
     } catch (error) {
       console.error('Error initializing WebRTC:', error);
       // Clean up any partial resources that might have been created
@@ -402,51 +451,36 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
     }
   };
 
-  const startConversation = async () => {
+  // Wrap the startConversation function with useCallback (at line ~458)
+  const startConversation = useCallback(async () => {
     // This function is triggered by a user gesture, 
     // which allows us to properly initialize audio
-    setAudioInitialized(true);
     setActive(true);
     
     // Start WebRTC connection
     initWebRTC();
     setIsListening(true);
-  };
+  }, []);
 
+  // Function to stop the conversation
   const stopConversation = () => {
-    console.log('Stopping conversation and cleaning up');
-    
-    // If we're in the middle of a session, show results instead of closing
-    if (isConnected && !showResults) {
+    if (isConnected) {
+      // If we're already connected, end the current session
+      console.log('Stopping active conversation and showing results');
       finishSession();
-      return;
+    } else {
+      // Just close without showing results if never connected
+      console.log('Closing chat without results (never connected)');
+      cleanupAudioResources();
+      
+      // Ensure timers are cleared
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+      
+      if (onClose) onClose();
     }
-    
-    // Reset all state
-    setIsListening(false);
-    setActive(false);
-    
-    // Clear all transcript buffers
-    setUserTranscript('');
-    setAiTranscript('');
-    setSubtitleBuffer('');
-    setAiSpeaking(false);
-    
-    // Clean up all audio resources
-    cleanupAudioResources();
-    
-    // Reset everything else
-    setIsConnected(false);
-    
-    // Call onClose if provided
-    if (onClose) {
-      onClose();
-    }
-  };
-
-  // Calculate background color based on dark mode
-  const getBgColor = () => {
-    return isDarkMode ? '#3a0178' : '#3e02a6';
   };
 
   // Always scroll to bottom when subtitles change
@@ -468,91 +502,82 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
     // Clean up all resources when component unmounts
     return () => {
       console.log('==== VoiceChat component unmounting ====');
+      // Force cleanup of all connections
       cleanupAudioResources();
+      
+      // Ensure timers are cleared
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+      
+      // Explicitly clear event listeners from dataChannel if it exists
+      if (dataChannelRef.current) {
+        dataChannelRef.current.onmessage = null;
+        dataChannelRef.current.onopen = null;
+        dataChannelRef.current.onclose = null;
+        dataChannelRef.current.onerror = null;
+      }
     };
   }, []);
 
-  // Start conversation once when component is ready
+  // Only start conversation automatically if the user is authenticated
   useEffect(() => {
     // Small delay to ensure component is fully mounted
     const timer = setTimeout(() => {
-      if (active && !isConnected && !peerConnectionRef.current) {
+      if (active && !isConnected && !peerConnectionRef.current && user) {
         console.log('Starting conversation from delayed useEffect');
         startConversation();
       }
     }, 100);
     
     return () => clearTimeout(timer);
-  }, []);
+  }, [active, isConnected, user, startConversation]);
 
-  // Function to finish the session and show results
-  const finishSession = () => {
+  // Wrap the finishSession function with useCallback (at line ~541)
+  const finishSession = useCallback(() => {
     console.log('Finishing session, conversation history:', conversationHistory);
     
-    // If no conversation recorded yet but we have text in the buffers, save them
-    if (conversationHistory.length === 0) {
-      const newHistory: ConversationMessage[] = [];
-      
-      if (userTranscript.trim()) {
-        newHistory.push({
-          role: 'user',
-          text: userTranscript.trim(),
-          timestamp: Date.now() - 1000 // Slightly earlier timestamp
-        });
-      }
-      
-      if (subtitleBuffer.trim()) {
-        newHistory.push({
-          role: 'assistant',
-          text: subtitleBuffer.trim(),
-          timestamp: Date.now()
-        });
-      }
-      
-      if (newHistory.length > 0) {
-        setConversationHistory(newHistory);
-      }
+    // Create a local copy of the conversation history that we'll use for the results
+    const finalConversationHistory = [...conversationHistory];
+    
+    // If we have an ongoing AI transcript that hasn't been saved yet, add it
+    if (aiTranscript.trim() && !finalConversationHistory.some(msg => msg.text === aiTranscript.trim())) {
+      console.log('Adding final AI transcript to history:', aiTranscript.trim());
+      finalConversationHistory.push({
+        role: 'assistant',
+        text: aiTranscript.trim(),
+        timestamp: Date.now()
+      });
     }
+    
+    // Ensure the conversation history is in correct chronological order
+    finalConversationHistory.sort((a, b) => a.timestamp - b.timestamp);
+    
+    // Debug log the final conversation history
+    console.log('Final conversation history:', finalConversationHistory);
     
     // Clean up WebRTC and audio resources
     cleanupAudioResources();
     
-    // Wait a moment to ensure state is updated
+    // Ensure timers are cleared to prevent ongoing connections
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    
+    // Stop active polling/connections
+    setActive(false);
+    
+    // Show results screen with the finalized conversation history
     setTimeout(() => {
-      // Show results screen
+      setConversationHistory(finalConversationHistory);
       setShowResults(true);
     }, 500);
-  };
-
-  // Detect when AI stops speaking during wrap-up to finish the session
-  useEffect(() => {
-    if (isWrappingUp) {
-      // If we're wrapping up, set a timer to force finish the session after a delay
-      // This is a fallback in case other detection mechanisms fail
-      const forceFinishTimer = setTimeout(() => {
-        console.log('Force finishing session after wrap-up delay');
-        finishSession();
-      }, 10000); // Force finish after 10 seconds max
-      
-      // If AI is not speaking during wrap-up, finish sooner
-      if (!aiSpeaking) {
-        const quickFinishTimer = setTimeout(() => {
-          console.log('AI stopped speaking during wrap-up, finishing session');
-          finishSession();
-        }, 1500); // Shorter delay when AI stops speaking
-        
-        return () => {
-          clearTimeout(quickFinishTimer);
-          clearTimeout(forceFinishTimer);
-        };
-      }
-      
-      return () => clearTimeout(forceFinishTimer);
-    }
-  }, [isWrappingUp, aiSpeaking]);
+  }, [conversationHistory, aiTranscript, cleanupAudioResources]);
 
   // Function to send a wrapping up message through the data channel
-  const sendWrappingUpMessage = () => {
+  const sendWrappingUpMessage = useCallback(() => {
     if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
       console.log('Sending wrapping up message');
       
@@ -591,16 +616,54 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
         finishSession();
       }, 8000); // Give AI 8 seconds to respond
     }
-  };
+  }, [language, finishSession]);
+
+  // Add sendWrappingUpMessage to the dependencies of the useEffect that detects when AI stops speaking (at line ~607)
+  useEffect(() => {
+    if (isWrappingUp) {
+      // If we're wrapping up, set a timer to force finish the session after a delay
+      // This is a fallback in case other detection mechanisms fail
+      const forceFinishTimer = setTimeout(() => {
+        console.log('Force finishing session after wrap-up delay');
+        finishSession();
+      }, 10000); // Force finish after 10 seconds max
+      
+      // If AI is not speaking during wrap-up, finish sooner
+      if (!aiSpeaking) {
+        const quickFinishTimer = setTimeout(() => {
+          console.log('AI stopped speaking during wrap-up, finishing session');
+          finishSession();
+        }, 1500); // Shorter delay when AI stops speaking
+        
+        return () => {
+          clearTimeout(quickFinishTimer);
+          clearTimeout(forceFinishTimer);
+        };
+      }
+      
+      return () => clearTimeout(forceFinishTimer);
+    }
+  }, [isWrappingUp, aiSpeaking, finishSession, sendWrappingUpMessage]);
 
   // Log whenever conversation history changes
   useEffect(() => {
     console.log('Conversation history updated:', conversationHistory);
   }, [conversationHistory]);
 
+  // Add a new useEffect to trigger the wrap-up message when isWrappingUp changes
+  useEffect(() => {
+    if (isWrappingUp) {
+      console.log('Starting wrap-up process');
+      sendWrappingUpMessage();
+    }
+  }, [isWrappingUp, sendWrappingUpMessage]);
+
   // Final modified return statement with timer and conditional rendering for results
   return (
     <div className="w-full h-screen bg-[#fffaed] font-poppins flex flex-col">
+      {/* Show auth dialog if no user is authenticated and loading is complete */}
+      {!loading && !user && <AuthDialog />}
+      
       {!showResults ? (
         // Active session UI
         <>
@@ -616,13 +679,13 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
               </svg>
             </button>
             <div className="ml-4 flex-1">
-              <h2 className="text-lg font-medium text-[#422006]">Speaking Practice</h2>
+              <h2 className="text-lg font-medium text-[#422006]">{t('voiceChat.title')}</h2>
             </div>
             
             {/* Timer display */}
             <div className={`px-4 py-2 rounded-lg ${isWrappingUp ? 'bg-amber-400' : 'bg-amber-50'} border border-amber-800/20 flex items-center justify-center`}>
               <span className="text-[#422006] font-medium">
-                {isWrappingUp ? 'Wrapping up...' : formatTimeRemaining()}
+                {isWrappingUp ? t('voiceChat.wrappingUp') : formatTimeRemaining()}
               </span>
             </div>
           </div>
@@ -633,23 +696,15 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
             <div className="w-full text-center mb-4">
               <p className="text-[#422006] opacity-60">
                 {isConnected ? 
-                  (aiSpeaking ? 'Nacho is speaking...' : (isListening ? 'Listening...' : 'Connected and ready')) : 
-                  'Connecting...'}
+                  (aiSpeaking ? t('voiceChat.nachoSpeaking') : (isListening ? t('voiceChat.listening') : t('voiceChat.connected'))) : 
+                  t('voiceChat.connecting')}
               </p>
             </div>
             
             {/* Animated Nacho */}
             <div className="flex-1 flex items-center justify-center">
               <AnimatedNacho isSpeaking={aiSpeaking} size="lg" level={difficultyLevel} />
-            </div>
-            
-            {/* User's transcript */}
-            {userTranscript && (
-              <div className="w-full max-w-xl bg-amber-50 rounded-lg p-4 mb-4 shadow-sm">
-                <p className="text-[#422006] text-sm mb-1 opacity-60">You said:</p>
-                <p className="text-[#422006]">{userTranscript}</p>
-              </div>
-            )}
+            </div> 
             
             {/* AI response transcript with fixed height and scrolling */}
             {subtitleBuffer && (
@@ -675,7 +730,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
           </div>
         </>
       ) : (
-        // Use our new session results component
+        // Use our SessionResults component with fixed conversation history
         <SessionResults 
           conversationHistory={conversationHistory}
           onClose={onClose}

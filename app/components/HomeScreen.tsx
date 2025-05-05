@@ -1,30 +1,45 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
+import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import LocationDisplay from './LocationDisplay';
 
 interface HomeScreenProps {
   onStartSession: (level: number, language: string) => void;
 }
 
 export default function HomeScreen({ onStartSession }: HomeScreenProps) {
+  const { user, signOut } = useAuth();
+  const { language: uiLanguage, setLanguage: setUiLanguage, t } = useLanguage();
+  const [showSidebar, setShowSidebar] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('french');
   const [difficultyLevel, setDifficultyLevel] = useState(1); // Default level is 1
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
 
-  // No functionality for sidebar and config buttons for now
+  // Toggle sidebar visibility
   const handleSidebarClick = () => {
-    // Will be implemented later
+    setShowSidebar(!showSidebar);
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    setShowSidebar(false);
   };
 
   const toggleLanguageMenu = () => {
     setShowLanguageMenu(!showLanguageMenu);
   };
 
-  const selectLanguage = (language: string) => {
-    setSelectedLanguage(language);
+  const selectUiLanguage = (language: 'english' | 'español') => {
+    setUiLanguage(language);
     setShowLanguageMenu(false);
+  };
+
+  const selectConversationLanguage = (language: string) => {
+    setSelectedLanguage(language);
     setShowLanguageDropdown(false);
   };
 
@@ -52,19 +67,129 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
 
   return (
     <div className="w-full h-screen bg-[#fffaed] font-poppins flex flex-col" suppressHydrationWarning>
+      {/* Sidebar */}
+      {showSidebar && (
+        <>
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0 bg-black/30 z-40"
+            onClick={() => setShowSidebar(false)}
+          />
+          
+          {/* Sidebar */}
+          <div className="fixed top-0 left-0 h-full w-64 bg-white shadow-lg z-50 flex flex-col">
+            {/* Top section with close button */}
+            <div className="p-4 flex justify-end">
+              <button
+                onClick={() => setShowSidebar(false)}
+                className="w-8 h-8 rounded-lg border border-amber-200 flex items-center justify-center bg-amber-50/80 hover:bg-amber-100 transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18" stroke="#422006" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M6 6L18 18" stroke="#422006" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+            
+            {/* Navigation links */}
+            <div className="p-4">
+              <a 
+                href="/bookmarks" 
+                className="flex items-center p-3 rounded-md hover:bg-amber-50 text-[#422006] transition-colors"
+              >
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  width="20" 
+                  height="20" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  className="mr-3"
+                >
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                </svg>
+                {t('home.myBookmarks')}
+              </a>
+            </div>
+            
+            {/* Empty top area */}
+            <div className="flex-grow"></div>
+            
+            {/* User info and logout at bottom */}
+            <div className="p-4 border-t border-amber-100">
+              {user && (
+                <div className="mb-4">
+                  <div className="flex items-center mb-2">
+                    {user.photoURL ? (
+                      <div className="w-10 h-10 rounded-full bg-amber-100 overflow-hidden mr-3 flex-shrink-0">
+                        <Image 
+                          src={user.photoURL} 
+                          alt="Profile" 
+                          width={40} 
+                          height={40}
+                          className="object-cover w-full h-full"
+                          onError={(e) => {
+                            // Fallback to initials on image load error
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.parentElement?.classList.add('flex', 'items-center', 'justify-center');
+                            const initialsEl = document.createElement('span');
+                            initialsEl.className = 'text-[#422006] font-medium';
+                            initialsEl.textContent = user.displayName?.charAt(0) || user.email?.charAt(0) || '?';
+                            e.currentTarget.parentElement?.appendChild(initialsEl);
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center mr-3 flex-shrink-0">
+                        <span className="text-[#422006] font-medium">
+                          {user.displayName?.charAt(0) || user.email?.charAt(0) || '?'}
+                        </span>
+                      </div>
+                    )}
+                    <div className="overflow-hidden">
+                      <p className="font-medium text-[#422006] truncate">{user.displayName || 'User'}</p>
+                      <p className="text-sm text-[#422006]/60 truncate">{user.email}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <button
+                onClick={handleLogout}
+                className="w-full py-2 border border-amber-200 text-[#422006] rounded-lg flex items-center justify-center hover:bg-amber-50 transition-colors"
+              >
+                <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9" stroke="#422006" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M16 17L21 12L16 7" stroke="#422006" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M21 12H9" stroke="#422006" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                {t('home.logout')}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Top Bar */}
       <div className="w-full p-4 flex justify-between items-center">
-        {/* Sidebar Button (Left) */}
-        <button 
-          onClick={handleSidebarClick}
-          className="w-10 h-10 rounded-lg border border-amber-800/20 flex items-center justify-center bg-amber-50"
-        >
-          <svg suppressHydrationWarning width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect suppressHydrationWarning x="4" y="6" width="16" height="2" rx="1" fill="#422006" />
-            <rect suppressHydrationWarning x="4" y="11" width="16" height="2" rx="1" fill="#422006" />
-            <rect suppressHydrationWarning x="4" y="16" width="16" height="2" rx="1" fill="#422006" />
-          </svg>
-        </button>
+        {/* Sidebar Button (Left) - only show if user is signed in */}
+        {user ? (
+          <button 
+            onClick={handleSidebarClick}
+            className="w-10 h-10 rounded-lg border border-amber-800/20 flex items-center justify-center bg-amber-50"
+          >
+            <svg suppressHydrationWarning width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect suppressHydrationWarning x="4" y="6" width="16" height="2" rx="1" fill="#422006" />
+              <rect suppressHydrationWarning x="4" y="11" width="16" height="2" rx="1" fill="#422006" />
+              <rect suppressHydrationWarning x="4" y="16" width="16" height="2" rx="1" fill="#422006" />
+            </svg>
+          </button>
+        ) : (
+          <div className="w-10 h-10"></div> /* Empty div to preserve layout spacing */
+        )}
 
         {/* Language Selection (Right) */}
         <div className="relative">
@@ -83,25 +208,18 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
           {showLanguageMenu && (
             <div className="absolute right-0 mt-2 w-32 rounded-lg shadow-lg bg-white border border-amber-800/10 p-2 z-10">
               <div 
-                className={`flex items-center p-2 rounded-md cursor-pointer ${selectedLanguage === 'english' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                onClick={() => selectLanguage('english')}
+                className={`flex items-center p-2 rounded-md cursor-pointer ${uiLanguage === 'english' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
+                onClick={() => selectUiLanguage('english')}
               >
                 <span className="mr-2">🇬🇧</span>
-                <span>english</span>
+                <span>{t('home.english')}</span>
               </div>
               <div 
-                className={`flex items-center p-2 rounded-md cursor-pointer ${selectedLanguage === 'español' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                onClick={() => selectLanguage('español')}
+                className={`flex items-center p-2 rounded-md cursor-pointer ${uiLanguage === 'español' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
+                onClick={() => selectUiLanguage('español')}
               >
                 <span className="mr-2">🇪🇸</span>
-                <span>español</span>
-              </div>
-              <div 
-                className={`flex items-center p-2 rounded-md cursor-pointer ${selectedLanguage === 'french' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                onClick={() => selectLanguage('french')}
-              >
-                <span className="mr-2">🇫🇷</span>
-                <span>french</span>
+                <span>{t('home.spanish')}</span>
               </div>
             </div>
           )}
@@ -111,7 +229,7 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-4">
         <h1 className="text-[#422006] text-3xl md:text-4xl font-medium text-center mb-6">
-          the best time to learn is now.
+          {t('home.title')}
         </h1>
         
         <div className="w-64 h-64 relative mb-8" suppressHydrationWarning>
@@ -133,7 +251,7 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
           <div className="mb-4">
             <div className="flex items-center justify-between mb-1">
               <h2 className="text-[#422006] text-lg font-light">
-                edit proficiency:
+                {t('home.editProficiency')}
               </h2> 
             </div>
             
@@ -165,9 +283,9 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
           </div>
 
           {/* Language Section */}
-          <div className="mb-4">
+          <div className="mb-6">
             <h2 className="text-[#422006] text-lg font-light mb-1">
-              edit language:
+              {t('home.editLanguage')}
             </h2>
             
             <div className="relative w-full">
@@ -197,70 +315,70 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
                 <div className="absolute left-0 right-0 mt-2 rounded-lg shadow-lg bg-white border border-amber-800/10 p-2 z-20">
                   <div 
                     className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'english' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                    onClick={() => selectLanguage('english')}
+                    onClick={() => selectConversationLanguage('english')}
                   >
                     <span className="mr-2 text-xl">🇬🇧</span>
                     <span>english</span>
                   </div>
                   <div 
                     className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'español' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                    onClick={() => selectLanguage('español')}
+                    onClick={() => selectConversationLanguage('español')}
                   >
                     <span className="mr-2 text-xl">🇪🇸</span>
-                    <span>español</span>
+                    <span>spanish</span>
                   </div>
                   <div 
                     className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'french' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                    onClick={() => selectLanguage('french')}
+                    onClick={() => selectConversationLanguage('french')}
                   >
                     <span className="mr-2 text-xl">🇫🇷</span>
                     <span>french</span>
                   </div>
                   <div 
                     className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'portuguese' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                    onClick={() => selectLanguage('portuguese')}
+                    onClick={() => selectConversationLanguage('portuguese')}
                   >
                     <span className="mr-2 text-xl">🇵🇹</span>
                     <span>portuguese</span>
                   </div>
                   <div 
                     className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'italian' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                    onClick={() => selectLanguage('italian')}
+                    onClick={() => selectConversationLanguage('italian')}
                   >
                     <span className="mr-2 text-xl">🇮🇹</span>
                     <span>italian</span>
                   </div>
                   <div 
                     className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'german' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                    onClick={() => selectLanguage('german')}
+                    onClick={() => selectConversationLanguage('german')}
                   >
                     <span className="mr-2 text-xl">🇩🇪</span>
                     <span>german</span>
                   </div>
                   <div 
                     className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'dutch' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                    onClick={() => selectLanguage('dutch')}
+                    onClick={() => selectConversationLanguage('dutch')}
                   >
                     <span className="mr-2 text-xl">🇳🇱</span>
                     <span>dutch</span>
                   </div>
                   <div 
                     className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'chinese' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                    onClick={() => selectLanguage('chinese')}
+                    onClick={() => selectConversationLanguage('chinese')}
                   >
                     <span className="mr-2 text-xl">🇨🇳</span>
                     <span>chinese</span>
                   </div>
                   <div 
                     className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'japanese' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                    onClick={() => selectLanguage('japanese')}
+                    onClick={() => selectConversationLanguage('japanese')}
                   >
                     <span className="mr-2 text-xl">🇯🇵</span>
                     <span>japanese</span>
                   </div>
                   <div 
                     className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'korean' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                    onClick={() => selectLanguage('korean')}
+                    onClick={() => selectConversationLanguage('korean')}
                   >
                     <span className="mr-2 text-xl">🇰🇷</span>
                     <span>korean</span>
@@ -270,12 +388,17 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
             </div>
           </div>
 
+          {/* Location Display */}
+          <div className="mb-6">
+            <LocationDisplay />
+          </div>
+
           {/* Begin Session Button */}
           <button
             onClick={() => onStartSession(difficultyLevel, selectedLanguage)}
-            className="w-full h-12 bg-[#422006] text-white rounded-xl text-lg font-medium"
+            className="w-full py-3 bg-[#422006] text-white rounded-lg flex items-center justify-center hover:bg-[#5a3108] transition-colors text-lg"
           >
-            begin session
+            {t('home.beginSession')}
           </button>
         </div>
       </div>

@@ -48,6 +48,20 @@ Choose a random question that is similar in language proficiency difficulty to:
 Ask only ONE question at a time. Wait for their complete response before asking any follow-up question. Encourage depth and clarity, and don't shy away from debate. Offer vocabulary or phrasing suggestions only when requested.`
 };
 
+// Language code mapping
+const languageCodes: Record<string, string> = {
+  'english': 'en',
+  'español': 'es',
+  'french': 'fr',
+  'german': 'de',
+  'italian': 'it',
+  'portuguese': 'pt',
+  'dutch': 'nl',
+  'chinese': 'zh',
+  'japanese': 'ja',
+  'korean': 'ko'
+};
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -56,11 +70,16 @@ export async function POST(request: Request) {
     let prompt = promptTemplates[difficultyLevel as keyof typeof promptTemplates] || promptTemplates[3];
     prompt = prompt.replace('[target language]', language);
 
+    const languageCode = languageCodes[language.toLowerCase()] || 'en';
+
     const response = await openai.beta.realtime.sessions.create({
       model: 'gpt-4o-mini-realtime-preview',
       voice: 'alloy',
       instructions: prompt,
-      input_audio_transcription: { model: 'whisper-1', language: language === 'english' ? 'en' : language === 'spanish' ? 'es' : language === 'french' ? 'fr' : language === 'german' ? 'de' : language === 'italian' ? 'it' : language === 'portuguese' ? 'pt' : language === 'dutch' ? 'nl' : language === 'russian' ? 'ru' : language === 'japanese' ? 'ja' : language === 'korean' ? 'ko' : language === 'chinese' ? 'zh' : language },
+      input_audio_transcription: {
+        language: languageCode,
+        model: 'whisper-1',
+      },
       turn_detection: { type: 'server_vad', silence_duration_ms: 1500 },
     });
 

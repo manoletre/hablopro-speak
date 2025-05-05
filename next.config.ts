@@ -5,6 +5,13 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   images: {
     dangerouslyAllowSVG: true,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        pathname: '/**',
+      },
+    ],
   },
   // This setting helps suppress hydration warnings due to extensions like Dark Reader
   experimental: {

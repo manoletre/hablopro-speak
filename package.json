@@ -9,6 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "cookies-next": "^5.1.0",
+    "critters": "^0.0.23",
+    "firebase": "^11.6.1",
     "next": "15.3.1",
     "openai": "^4.97.0",
     "react": "^19.0.0",
