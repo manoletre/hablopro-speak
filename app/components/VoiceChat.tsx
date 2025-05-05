@@ -50,7 +50,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
   const [aiSpeaking, setAiSpeaking] = useState(false);
   
   // Session timer state
-  const [timeRemaining, setTimeRemaining] = useState(0.5 * 60); // 5 minutes in seconds
+  const [timeRemaining, setTimeRemaining] = useState(5 * 60); // 5 minutes in seconds
   const [isWrappingUp, setIsWrappingUp] = useState(false);
   const [showResults, setShowResults] = useState(false);
   
