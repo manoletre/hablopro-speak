@@ -10,8 +10,8 @@ interface GrammarCardProps {
 }
 
 export default function GrammarCard({ id, userSaid, better, explanation }: GrammarCardProps) {
-  // Create a unique ID if not provided
-  const grammarId = id || `grammar-${Date.now()}`;
+  // Create a unique ID with proper grammar prefix if not provided or ensure it has the grammar prefix
+  const grammarId = id ? (id.startsWith('grammar-') ? id : `grammar-${id}`) : `grammar-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
   
   const content = {
     userSaid,

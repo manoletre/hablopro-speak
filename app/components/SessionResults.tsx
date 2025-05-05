@@ -38,13 +38,14 @@ interface FeedbackData {
   vocabulary: VocabularyItem[];
 }
 
-export default function SessionResults({ conversationHistory, onClose, language }: SessionResultsProps) {
-  const { t } = useLanguage();
+export default function SessionResults({ conversationHistory, onClose }: SessionResultsProps) {
+  const { t, getLanguageCode } = useLanguage();
   const [grammarCorrections, setGrammarCorrections] = useState<GrammarCorrection[]>([]);
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [apiCalled, setApiCalled] = useState<boolean>(false);
+  const [uniqueSessionId] = useState<string>(() => Date.now().toString());
   
   // Add immediate console log to debug received props
   console.log('SessionResults received conversation history:', conversationHistory);
@@ -83,6 +84,7 @@ export default function SessionResults({ conversationHistory, onClose, language 
         }
         
         console.log('Sending transcript to API:', transcript);
+        console.log('Using UI language code for feedback:', getLanguageCode());
         setApiCalled(true); // Set here, after all early returns
         
         // Call the feedback API once
@@ -93,7 +95,7 @@ export default function SessionResults({ conversationHistory, onClose, language 
           },
           body: JSON.stringify({
             transcript,
-            language,
+            language: getLanguageCode(),
           }),
         });
         
@@ -129,7 +131,7 @@ export default function SessionResults({ conversationHistory, onClose, language 
     return () => {
       console.log('SessionResults unmounting');
     };
-  }, [language, conversationHistory, apiCalled]);
+  }, [conversationHistory, apiCalled, getLanguageCode]);
   
   return (
     <div className="w-full h-screen bg-[#fffaed] font-poppins flex flex-col overflow-y-auto">
@@ -167,7 +169,7 @@ export default function SessionResults({ conversationHistory, onClose, language 
               {grammarCorrections.map((correction, index) => (
                 <GrammarCard
                   key={index}
-                  id={`gram${index}`}
+                  id={`grammar-${index}-${uniqueSessionId}`}
                   userSaid={correction.youSaid}
                   better={correction.better}
                   explanation={correction.explanation}
@@ -197,7 +199,7 @@ export default function SessionResults({ conversationHistory, onClose, language 
               {vocabulary.map((word, index) => (
                 <VocabularyCard
                   key={index}
-                  id={`voc${index}`}
+                  id={`vocab-${index}-${uniqueSessionId}`}
                   term={word.word}
                   wordType={word.type}
                   definition={word.meaning}

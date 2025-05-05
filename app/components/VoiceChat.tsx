@@ -68,6 +68,72 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
   // Timer interval ref
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Add a flag to track if wrap-up message has been sent
+  const [wrapUpMessageSent, setWrapUpMessageSent] = useState(false);
+
+  // Create placeholder for finishSession to prevent circular dependency
+  // This will be properly defined later
+  const finishSessionRef = useRef<() => void>(() => {
+    console.log('finishSession placeholder called');
+  });
+
+  // Clean up function to properly release all audio resources
+  const cleanupAudioResources = useCallback(() => {
+    console.log('Cleaning up all audio resources');
+    
+    // Set states to indicate disconnection
+    setIsListening(false);
+    setIsConnected(false);
+    setAiSpeaking(false);
+    setIsWrappingUp(false);
+    setWrapUpMessageSent(false);
+    
+    // Clean up WebRTC peer connection
+    if (peerConnectionRef.current) {
+      try {
+        console.log('Closing WebRTC peer connection');
+        // Close data channel first
+        if (dataChannelRef.current) {
+          dataChannelRef.current.close();
+          dataChannelRef.current = null;
+        }
+        
+        // Stop all tracks on the peer connection
+        peerConnectionRef.current.getSenders().forEach(sender => {
+          if (sender.track) {
+            sender.track.stop();
+          }
+        });
+        
+        peerConnectionRef.current.close();
+        peerConnectionRef.current = null;
+      } catch (error) {
+        console.error('Error closing peer connection:', error);
+      }
+    }
+    
+    // Clean up audio element
+    if (audioRef.current) {
+      try {
+        console.log('Cleaning up audio element');
+        audioRef.current.pause();
+        
+        if (audioRef.current.srcObject instanceof MediaStream) {
+          const mediaStream = audioRef.current.srcObject as MediaStream;
+          mediaStream.getTracks().forEach(track => {
+            console.log('Stopping audio track');
+            track.stop();
+          });
+        }
+        
+        audioRef.current.srcObject = null;
+        audioRef.current = null;
+      } catch (error) {
+        console.error('Error cleaning up audio element:', error);
+      }
+    }
+  }, []);
+
   // Start timer when connected, handle when time is up
   useEffect(() => {
     if (isConnected && !isWrappingUp && !showResults) {
@@ -123,65 +189,10 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
     return () => {
       cleanupAudioResources();
     };
-  }, []);
-
-  // Clean up function to properly release all audio resources
-  const cleanupAudioResources = () => {
-    console.log('Cleaning up all audio resources');
-    
-    // Set states to indicate disconnection
-    setIsListening(false);
-    setIsConnected(false);
-    setAiSpeaking(false);
-    
-    // Clean up WebRTC peer connection
-    if (peerConnectionRef.current) {
-      try {
-        console.log('Closing WebRTC peer connection');
-        // Close data channel first
-        if (dataChannelRef.current) {
-          dataChannelRef.current.close();
-          dataChannelRef.current = null;
-        }
-        
-        // Stop all tracks on the peer connection
-        peerConnectionRef.current.getSenders().forEach(sender => {
-          if (sender.track) {
-            sender.track.stop();
-          }
-        });
-        
-        peerConnectionRef.current.close();
-        peerConnectionRef.current = null;
-      } catch (error) {
-        console.error('Error closing peer connection:', error);
-      }
-    }
-    
-    // Clean up audio element
-    if (audioRef.current) {
-      try {
-        console.log('Cleaning up audio element');
-        audioRef.current.pause();
-        
-        if (audioRef.current.srcObject instanceof MediaStream) {
-          const mediaStream = audioRef.current.srcObject as MediaStream;
-          mediaStream.getTracks().forEach(track => {
-            console.log('Stopping audio track');
-            track.stop();
-          });
-        }
-        
-        audioRef.current.srcObject = null;
-        audioRef.current = null;
-      } catch (error) {
-        console.error('Error cleaning up audio element:', error);
-      }
-    }
-  };
+  }, [cleanupAudioResources]);
 
   // Modified handleDataChannelEvent to properly track conversation messages in sequence
-  const handleDataChannelEvent = (event: MessageEvent) => {
+  const handleDataChannelEvent = useCallback((event: MessageEvent) => {
     try {
       console.log('Received event:', event.data);
       const data: RealtimeEvent = JSON.parse(event.data);
@@ -189,6 +200,9 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
       // Log session ID to help with debugging
       if (data.type === 'session.created' && data.session?.id) {
         console.log(`Active session ID: ${data.session.id}`);
+        // Reset wrap-up state when a new session is created
+        setWrapUpMessageSent(false);
+        setIsWrappingUp(false);
       }
       
       // Log more details about the first events to help debug conversation start
@@ -196,18 +210,16 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
         console.log('Session created event received');
       }
       
+      // Reset buffers when a new AI response is being created
       if (data.type === 'response.created') {
-        console.log('Response created event received');
+        console.log('Response created event received - clearing buffers');
+        setSubtitleBuffer(''); // Clear subtitle buffer for new response
+        setAiTranscript(''); // Clear transcript buffer for new response
       }
       
       // Handle AI response audio transcript deltas
       if (data.type === 'response.audio_transcript.delta' && data.delta) {
-        // Log first AI delta to help debug conversation start
-        if (!aiTranscript && !subtitleBuffer) {
-          console.log('First AI response delta received:', data.delta);
-        }
-        
-        // For delta events, append to subtitle buffer and temporary AI transcript
+        // For all delta events, append to subtitle buffer and AI transcript
         setSubtitleBuffer(prev => prev + data.delta);
         setAiTranscript(prev => prev + data.delta);
       }
@@ -255,15 +267,17 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
         setAiTranscript('');
         
         // Check if we should end the conversation after AI response
-        if (isWrappingUp) {
-          console.log('AI finished response during wrap-up, ending session very soon');
-          setTimeout(() => finishSession(), 1000);
+        // Only finish if we're wrapping up AND this is a response to our wrap-up message
+        if (isWrappingUp && wrapUpMessageSent) {
+          console.log('AI finished response during wrap-up, ending session in 2 seconds');
+          // Give a little time for the audio to complete playing
+          setTimeout(() => finishSessionRef.current(), 2000);
         }
         
         return; // Stop processing this event here
       }
       
-      // Handle completed user transcription
+      // Handle completed user transcription - clear subtitle buffer for clean slate
       if (data.type === 'conversation.item.input_audio_transcription.completed') {
         // Check both "text" and "transcript" fields since the API might use either
         const userText = data.text || data.transcript || '';
@@ -317,32 +331,10 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
     } catch (error) {
       console.error('Error parsing event:', error);
     }
-  };
-
-  // Add this function to trigger the AI to start the conversation without overriding server-side prompts
-  const triggerAIToStartConversation = () => {
-    if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
-      console.log('Triggering AI to start the conversation');
-      
-      // Simply trigger the AI to respond based on the session instructions already provided
-      // This avoids sending new instructions that would conflict with the server-side templates
-      const responseCreate = {
-        type: 'response.create',
-        response: {
-          modalities: ['text', 'audio']
-          // No additional instructions - use the ones from session creation
-        }
-      };
-      
-      dataChannelRef.current.send(JSON.stringify(responseCreate));
-      console.log('Sent response.create to trigger AI initial response');
-    } else {
-      console.error('Data channel not ready to trigger AI response');
-    }
-  };
+  }, [setWrapUpMessageSent, setIsWrappingUp, setSubtitleBuffer, setAiTranscript, setConversationHistory, isWrappingUp, wrapUpMessageSent]);
 
   // Modify the initWebRTC function to add the data channel onopen event handler
-  const initWebRTC = async () => {
+  const initWebRTC = useCallback(async () => {
     // Prevent multiple connections with extensive logging
     if (peerConnectionRef.current) {
       console.log('WebRTC connection already exists (peerConnectionRef), skipping initialization');
@@ -355,6 +347,28 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
     }
     
     console.log('Initializing new WebRTC connection');
+    
+    // Function to trigger the AI to start the conversation without overriding server-side prompts
+    const triggerAIToStartConversation = () => {
+      if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
+        console.log('Triggering AI to start the conversation');
+        
+        // Simply trigger the AI to respond based on the session instructions already provided
+        // This avoids sending new instructions that would conflict with the server-side templates
+        const responseCreate = {
+          type: 'response.create',
+          response: {
+            modalities: ['text', 'audio']
+            // No additional instructions - use the ones from session creation
+          }
+        };
+        
+        dataChannelRef.current.send(JSON.stringify(responseCreate));
+        console.log('Sent response.create to trigger AI initial response');
+      } else {
+        console.error('Data channel not ready to trigger AI response');
+      }
+    };
     
     try {
       // Get ephemeral token
@@ -449,7 +463,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
       cleanupAudioResources();
       setIsConnected(false);
     }
-  };
+  }, [cleanupAudioResources, difficultyLevel, language, isConnected, peerConnectionRef, audioRef, dataChannelRef, handleDataChannelEvent, setConversationHistory, setAiTranscript, setSubtitleBuffer, setIsConnected]);
 
   // Wrap the startConversation function with useCallback (at line ~458)
   const startConversation = useCallback(async () => {
@@ -460,14 +474,14 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
     // Start WebRTC connection
     initWebRTC();
     setIsListening(true);
-  }, []);
+  }, [initWebRTC]);
 
   // Function to stop the conversation
   const stopConversation = () => {
     if (isConnected) {
       // If we're already connected, end the current session
       console.log('Stopping active conversation and showing results');
-      finishSession();
+      finishSessionRef.current();
     } else {
       // Just close without showing results if never connected
       console.log('Closing chat without results (never connected)');
@@ -519,7 +533,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
         dataChannelRef.current.onerror = null;
       }
     };
-  }, []);
+  }, [cleanupAudioResources]);
 
   // Only start conversation automatically if the user is authenticated
   useEffect(() => {
@@ -534,9 +548,13 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
     return () => clearTimeout(timer);
   }, [active, isConnected, user, startConversation]);
 
-  // Wrap the finishSession function with useCallback (at line ~541)
+  // Wrap the finishSession function with useCallback
   const finishSession = useCallback(() => {
     console.log('Finishing session, conversation history:', conversationHistory);
+    
+    // Reset wrap-up state
+    setIsWrappingUp(false);
+    setWrapUpMessageSent(false);
     
     // Create a local copy of the conversation history that we'll use for the results
     const finalConversationHistory = [...conversationHistory];
@@ -576,10 +594,18 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
     }, 500);
   }, [conversationHistory, aiTranscript, cleanupAudioResources]);
 
+  // Update the reference after definition
+  useEffect(() => {
+    finishSessionRef.current = finishSession;
+  }, [finishSession]);
+
   // Function to send a wrapping up message through the data channel
   const sendWrappingUpMessage = useCallback(() => {
-    if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
+    if (dataChannelRef.current && dataChannelRef.current.readyState === 'open' && !wrapUpMessageSent) {
       console.log('Sending wrapping up message');
+      
+      // Mark that we've sent the wrap-up message to prevent duplicates
+      setWrapUpMessageSent(true);
       
       // Create a message to notify the user that time is up
       const wrappingUpMessage = {
@@ -610,53 +636,47 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
       
       dataChannelRef.current.send(JSON.stringify(responseCreate));
       
-      // Set a timer to finish the session regardless of AI response
+      // Set a timer to finish the session regardless of AI response, but make it longer
+      // to give the AI time to generate and say the goodbye message
       setTimeout(() => {
-        console.log('Finishing session after wrap-up message sent');
-        finishSession();
-      }, 8000); // Give AI 8 seconds to respond
+        console.log('Finishing session after wrap-up message sent (timeout)');
+        finishSessionRef.current();
+      }, 4000); // Give AI 10 seconds to respond
+    } else if (wrapUpMessageSent) {
+      console.log('Wrap-up message already sent, skipping duplicate');
     }
-  }, [language, finishSession]);
+  }, [language, wrapUpMessageSent, dataChannelRef]);
 
-  // Add sendWrappingUpMessage to the dependencies of the useEffect that detects when AI stops speaking (at line ~607)
+  // Simplify the timing logic for detecting when AI stops speaking
   useEffect(() => {
-    if (isWrappingUp) {
-      // If we're wrapping up, set a timer to force finish the session after a delay
-      // This is a fallback in case other detection mechanisms fail
-      const forceFinishTimer = setTimeout(() => {
-        console.log('Force finishing session after wrap-up delay');
-        finishSession();
-      }, 10000); // Force finish after 10 seconds max
-      
-      // If AI is not speaking during wrap-up, finish sooner
+    // Only run this effect if we're wrapping up and the wrap-up message has been sent
+    if (isWrappingUp && wrapUpMessageSent) {
+      // If AI has stopped speaking after the wrap-up message was sent,
+      // we can finish the session more quickly
       if (!aiSpeaking) {
+        // Give a short delay to make sure AI is really done (not just a pause)
         const quickFinishTimer = setTimeout(() => {
           console.log('AI stopped speaking during wrap-up, finishing session');
-          finishSession();
-        }, 1500); // Shorter delay when AI stops speaking
+          finishSessionRef.current();
+        }, 2000); // Slightly longer delay to ensure AI is really done
         
-        return () => {
-          clearTimeout(quickFinishTimer);
-          clearTimeout(forceFinishTimer);
-        };
+        return () => clearTimeout(quickFinishTimer);
       }
-      
-      return () => clearTimeout(forceFinishTimer);
     }
-  }, [isWrappingUp, aiSpeaking, finishSession, sendWrappingUpMessage]);
+  }, [isWrappingUp, aiSpeaking, wrapUpMessageSent]);
+
+  // Simplified useEffect to trigger the wrap-up message when isWrappingUp changes
+  useEffect(() => {
+    if (isWrappingUp && !wrapUpMessageSent) {
+      console.log('Starting wrap-up process');
+      sendWrappingUpMessage();
+    }
+  }, [isWrappingUp, sendWrappingUpMessage, wrapUpMessageSent]);
 
   // Log whenever conversation history changes
   useEffect(() => {
     console.log('Conversation history updated:', conversationHistory);
   }, [conversationHistory]);
-
-  // Add a new useEffect to trigger the wrap-up message when isWrappingUp changes
-  useEffect(() => {
-    if (isWrappingUp) {
-      console.log('Starting wrap-up process');
-      sendWrappingUpMessage();
-    }
-  }, [isWrappingUp, sendWrappingUpMessage]);
 
   // Final modified return statement with timer and conditional rendering for results
   return (

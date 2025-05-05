@@ -7,7 +7,7 @@ const openai = new OpenAI({
 });
 
 const prompts = {
-  english: `You are a language learning assistant. Analyze the following conversation transcript and provide feedback in JSON format. The feedback should include:
+  en: `You are a language learning assistant. Analyze the following conversation transcript and provide feedback in JSON format. The feedback should include:
 
 1. Grammar corrections (if any) with:
    - What the user said
@@ -17,7 +17,7 @@ const prompts = {
 2. New vocabulary items (if any) with:
    - The word or phrase
    - Its part of speech
-   - A clear definition
+   - A clear definition in english
    - An example sentence
 
 Format the response as a JSON object with two arrays: "grammar" and "vocabulary". Each array should contain objects with the specified fields and use these exact field names:
@@ -27,7 +27,7 @@ For vocabulary: {"word", "type", "meaning", "example"}
 Transcript:
 {transcript}`,
 
-  español: `Eres un asistente de aprendizaje de idiomas. Analiza la siguiente transcripción de conversación y proporciona retroalimentación en formato JSON. La retroalimentación debe incluir:
+  es: `Eres un asistente de aprendizaje de idiomas. Analiza la siguiente transcripción de conversación y proporciona retroalimentación en formato JSON. La retroalimentación debe incluir:
 
 1. Correcciones gramaticales (si las hay) con:
    - Lo que dijo el usuario
@@ -37,7 +37,7 @@ Transcript:
 2. Nuevos elementos de vocabulario (si los hay) con:
    - La palabra o frase
    - Su categoría gramatical
-   - Una definición clara
+   - Una definición clara en español
    - Un ejemplo de oración
 
 Formatea la respuesta como un objeto JSON con dos arrays: "grammar" y "vocabulary". Cada array debe contener objetos con los campos especificados y usa exactamente estos nombres de campo:
@@ -133,6 +133,8 @@ function normalizeFeedback(feedback: FeedbackResponse): FeedbackResponse {
 export async function POST(request: Request) {
   try {
     const { transcript, language } = await request.json();
+
+    console.log('feedback language:', language);
     
     if (!transcript) {
       return NextResponse.json(
@@ -141,7 +143,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const prompt = prompts[language as keyof typeof prompts] || prompts.english;
+    const prompt = prompts[language as keyof typeof prompts] || prompts.en;
     
     const completion = await openai.chat.completions.create({
       model: "gpt-4.1",

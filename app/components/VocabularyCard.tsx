@@ -11,8 +11,8 @@ interface VocabularyCardProps {
 }
 
 export default function VocabularyCard({ id, term, wordType, definition, example }: VocabularyCardProps) {
-  // Create a unique ID if not provided
-  const vocabId = id || `vocab-${Date.now()}`;
+  // Create a unique ID with proper vocabulary prefix if not provided or ensure it has the vocabulary prefix
+  const vocabId = id ? (id.startsWith('vocab-') ? id : `vocab-${id}`) : `vocab-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
   
   const content = {
     term,

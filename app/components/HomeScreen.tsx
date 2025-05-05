@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import LocationDisplay from './LocationDisplay';
 
 interface HomeScreenProps {
   onStartSession: (level: number, language: string) => void;
@@ -386,11 +385,6 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Location Display */}
-          <div className="mb-6">
-            <LocationDisplay />
           </div>
 
           {/* Begin Session Button */}

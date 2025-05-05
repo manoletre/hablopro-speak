@@ -1,7 +1,6 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { useLocation } from './LocationContext';
 
 type Language = 'english' | 'español';
 
@@ -134,40 +133,19 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-// Country to language mapping
-const countryToLanguage: Record<string, Language> = {
-  'ES': 'español',
-  'MX': 'español',
-  'AR': 'español',
-  'CO': 'español',
-  'PE': 'español',
-  'CL': 'español',
-  'VE': 'español',
-  'EC': 'español',
-  'GT': 'español',
-  'CU': 'español',
-  'DO': 'español',
-  'HN': 'español',
-  'PY': 'español',
-  'SV': 'español',
-  'NI': 'español',
-  'CR': 'español',
-  'PA': 'español',
-  'PR': 'español',
-  'UY': 'español',
-  'BO': 'español',
-  // Add more Spanish-speaking countries as needed
-};
-
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>('english');
-  const { country } = useLocation();
 
   useEffect(() => {
-    // Use the country from LocationContext to set the default language
-    const defaultLanguage = countryToLanguage[country] || 'english';
-    setLanguage(defaultLanguage);
-  }, [country]);
+    // Detect browser language
+    if (typeof window !== 'undefined') {
+      const browserLang = navigator.language.toLowerCase();
+      
+      // Set Spanish if browser language starts with 'es', otherwise default to English
+      const defaultLanguage = browserLang.startsWith('es') ? 'español' : 'english';
+      setLanguage(defaultLanguage);
+    }
+  }, []);
 
   const t = (key: TranslationKey) => {
     return translations[language][key];
