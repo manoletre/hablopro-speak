@@ -1,9 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import StreakDisplay from './StreakDisplay';
 
 interface HomeScreenProps {
   onStartSession: (level: number, language: string) => void;
@@ -17,6 +20,28 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
   const [selectedLanguage, setSelectedLanguage] = useState('french');
   const [difficultyLevel, setDifficultyLevel] = useState(1); // Default level is 1
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  const [showStreakDisplay, setShowStreakDisplay] = useState(false);
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [longestStreak, setLongestStreak] = useState(0);
+
+  useEffect(() => {
+    const fetchStreakData = async () => {
+      if (!user) return;
+
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setCurrentStreak(data.currentStreak || 0);
+          setLongestStreak(data.longestStreak || 0);
+        }
+      } catch (error) {
+        console.error('Error fetching streak data:', error);
+      }
+    };
+
+    fetchStreakData();
+  }, [user]);
 
   // Toggle sidebar visibility
   const handleSidebarClick = () => {
@@ -394,8 +419,29 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
           >
             {t('home.beginSession')}
           </button>
+
+          {/* Streak Display */}
+          {user && (
+            <button
+              onClick={() => setShowStreakDisplay(true)}
+              className="mt-4 w-full py-2 border border-amber-200 text-[#422006] rounded-lg flex items-center justify-center hover:bg-amber-50 transition-colors"
+            >
+              <span className="mr-2">🔥</span>
+              {t('home.streak', { days: currentStreak })}
+              {longestStreak > 0 && (
+                <span className="ml-2 text-[#422006]/60">
+                  {t('home.longestStreak', { days: longestStreak })}
+                </span>
+              )}
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Streak Display Modal */}
+      {showStreakDisplay && (
+        <StreakDisplay onClose={() => setShowStreakDisplay(false)} />
+      )}
     </div>
   );
 } 

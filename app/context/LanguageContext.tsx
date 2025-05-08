@@ -19,6 +19,20 @@ type TranslationKey =
   | 'home.logout'
   | 'home.english'
   | 'home.spanish'
+  | 'home.streak'
+  | 'home.longestStreak'
+  | 'home.longestStreakTitle'
+  | 'home.learningHistory'
+  | 'home.loadingHistory'
+  | 'home.noSessions'
+  | 'home.sessions'
+  | 'home.currentStreak'
+  | 'home.days'
+  | 'home.nextMilestone'
+  | 'home.totalSessions'
+  | 'home.less'
+  | 'home.more'
+  | 'home.session'
   | 'auth.signInRequired'
   | 'auth.signInWithGoogle'
   | 'auth.termsAndPrivacy'
@@ -50,7 +64,7 @@ type TranslationKey =
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: TranslationKey) => string;
+  t: (key: TranslationKey, params?: Record<string, string | number>) => string;
   getLanguageCode: () => string;
 }
 
@@ -64,6 +78,20 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'home.logout': 'Logout',
     'home.english': 'english',
     'home.spanish': 'spanish',
+    'home.streak': '{days} day(s)',
+    'home.longestStreak': '(Longest: {days})',
+    'home.longestStreakTitle': 'Longest streak',
+    'home.learningHistory': 'Learning History',
+    'home.loadingHistory': 'Loading history...',
+    'home.noSessions': 'No sessions recorded yet',
+    'home.sessions': '{count} session{plural}',
+    'home.currentStreak': 'Current Streak',
+    'home.days': 'days',
+    'home.nextMilestone': 'Next Milestone',
+    'home.totalSessions': 'total sessions',
+    'home.less': 'Less',
+    'home.more': 'More',
+    'home.session': 'session',
     'auth.signInRequired': 'Sign In Required',
     'auth.signInWithGoogle': 'Sign in with Google',
     'auth.termsAndPrivacy': 'By signing in, you agree to our Terms of Service and Privacy Policy.',
@@ -101,6 +129,20 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'home.logout': 'Cerrar Sesión',
     'home.english': 'inglés',
     'home.spanish': 'español',
+    'home.streak': '{days} día(s)',
+    'home.longestStreak': '(Más largo: {days})',
+    'home.longestStreakTitle': 'Racha más larga',
+    'home.learningHistory': 'Historial de Aprendizaje',
+    'home.loadingHistory': 'Cargando historial...',
+    'home.noSessions': 'Aún no hay sesiones registradas',
+    'home.sessions': '{count} sesión{plural}',
+    'home.currentStreak': 'Racha Actual',
+    'home.days': 'días',
+    'home.nextMilestone': 'Próximo Hito',
+    'home.totalSessions': 'sesiones totales',
+    'home.less': 'Menos',
+    'home.more': 'Más',
+    'home.session': 'sesión',
     'auth.signInRequired': 'Inicio de Sesión Requerido',
     'auth.signInWithGoogle': 'Iniciar sesión con Google',
     'auth.termsAndPrivacy': 'Al iniciar sesión, aceptas nuestros Términos de Servicio y Política de Privacidad.',
@@ -147,8 +189,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const t = (key: TranslationKey) => {
-    return translations[language][key];
+  const t = (key: TranslationKey, params?: Record<string, string | number>) => {
+    let text = translations[language][key];
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        text = text.replace(`{${key}}`, String(value));
+      });
+    }
+    return text;
   };
 
   const getLanguageCode = () => {

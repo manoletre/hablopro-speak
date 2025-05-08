@@ -7,6 +7,8 @@ import SessionResults from './SessionResults';
 import AuthDialog from './AuthDialog';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 // Enhanced interface to handle different event types
 interface RealtimeEvent {
@@ -549,7 +551,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
   }, [active, isConnected, user, startConversation]);
 
   // Wrap the finishSession function with useCallback
-  const finishSession = useCallback(() => {
+  const finishSession = useCallback(async () => {
     console.log('Finishing session, conversation history:', conversationHistory);
     
     // Reset wrap-up state
@@ -574,6 +576,21 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
     
     // Debug log the final conversation history
     console.log('Final conversation history:', finalConversationHistory);
+
+    // Save session to Firestore if user is logged in
+    if (user) {
+      try {
+        const sessionsRef = collection(db, `users/${user.uid}/sessions`);
+        await addDoc(sessionsRef, {
+          startedAt: serverTimestamp(),
+          transcript: finalConversationHistory.map(msg => `${msg.role}: ${msg.text}`).join('\n'),
+          language,
+          difficultyLevel
+        });
+      } catch (error) {
+        console.error('Error saving session:', error);
+      }
+    }
     
     // Clean up WebRTC and audio resources
     cleanupAudioResources();
@@ -592,7 +609,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
       setConversationHistory(finalConversationHistory);
       setShowResults(true);
     }, 500);
-  }, [conversationHistory, aiTranscript, cleanupAudioResources]);
+  }, [conversationHistory, aiTranscript, cleanupAudioResources, user, language, difficultyLevel]);
 
   // Update the reference after definition
   useEffect(() => {
