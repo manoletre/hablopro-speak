@@ -9,6 +9,8 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { usePostHog } from 'posthog-js/react';
+import { trackSessionCompleted, trackSessionStarted } from '../lib/analytics';
 
 // Enhanced interface to handle different event types
 interface RealtimeEvent {
@@ -44,6 +46,7 @@ interface VoiceChatProps {
 export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceChatProps) {
   const { user, loading } = useAuth();
   const { t } = useLanguage();
+  const posthog = usePostHog();
   const [isListening, setIsListening] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [aiTranscript, setAiTranscript] = useState<string>('');
@@ -550,9 +553,21 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
     return () => clearTimeout(timer);
   }, [active, isConnected, user, startConversation]);
 
-  // Wrap the finishSession function with useCallback
+  // Effect to track session start
+  useEffect(() => {
+    // Track session start when the component mounts
+    trackSessionStarted(
+      user?.uid || null, 
+      { 
+        language, 
+        difficulty_level: difficultyLevel
+      }
+    );
+  }, [user, language, difficultyLevel]);
+
+  // Function to finish session and show results
   const finishSession = useCallback(async () => {
-    console.log('Finishing session, conversation history:', conversationHistory);
+    console.log('Finishing session - cleaning up and preparing results');
     
     // Reset wrap-up state
     setIsWrappingUp(false);
@@ -587,9 +602,35 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
           language,
           difficultyLevel
         });
+        
+        // Track session completion with analytics utility
+        trackSessionCompleted(
+          user.uid,
+          {
+            language,
+            difficulty_level: difficultyLevel,
+            conversation_length: finalConversationHistory.length,
+            duration_minutes: 5 - Math.floor(timeRemaining / 60)
+          },
+          {
+            email: user.email || undefined,
+            name: user.displayName || undefined
+          }
+        );
       } catch (error) {
         console.error('Error saving session:', error);
       }
+    } else {
+      // Even for anonymous users, track session completion
+      trackSessionCompleted(
+        null,
+        {
+          language,
+          difficulty_level: difficultyLevel,
+          conversation_length: finalConversationHistory.length,
+          duration_minutes: 5 - Math.floor(timeRemaining / 60)
+        }
+      );
     }
     
     // Clean up WebRTC and audio resources
@@ -609,7 +650,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
       setConversationHistory(finalConversationHistory);
       setShowResults(true);
     }, 500);
-  }, [conversationHistory, aiTranscript, cleanupAudioResources, user, language, difficultyLevel]);
+  }, [conversationHistory, aiTranscript, cleanupAudioResources, user, language, difficultyLevel, timeRemaining]);
 
   // Update the reference after definition
   useEffect(() => {

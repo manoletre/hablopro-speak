@@ -8,6 +8,8 @@ import {
   signInWithPopup
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import { identifyUser } from '../lib/analytics';
+import posthog from 'posthog-js';
 
 type AuthContextType = {
   user: User | null;
@@ -26,6 +28,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
+      
+      // Identify the user to PostHog when auth state changes
+      if (user) {
+        identifyUser(user.uid, {
+          email: user.email || undefined,
+          name: user.displayName || undefined
+        });
+      }
     });
 
     return () => unsubscribe();
@@ -42,6 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
+      // Reset PostHog identity before signing out
+      posthog.reset();
       await auth.signOut();
     } catch (error) {
       console.error('Error signing out:', error);

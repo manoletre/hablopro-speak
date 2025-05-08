@@ -7,6 +7,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import StreakDisplay from './StreakDisplay';
+import { trackSessionStarted } from '../lib/analytics';
+import { usePostHog } from 'posthog-js/react';
 
 interface HomeScreenProps {
   onStartSession: (level: number, language: string) => void;
@@ -15,6 +17,7 @@ interface HomeScreenProps {
 export default function HomeScreen({ onStartSession }: HomeScreenProps) {
   const { user, signOut } = useAuth();
   const { language: uiLanguage, setLanguage: setUiLanguage, t } = useLanguage();
+  const posthog = usePostHog();
   const [showSidebar, setShowSidebar] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('french');
@@ -89,6 +92,21 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
     }
   };
 
+  // Wrap the onStartSession callback to include analytics
+  const handleStartSession = (level: number, language: string) => {
+    // Track session start
+    trackSessionStarted(
+      user?.uid || null,
+      {
+        language,
+        difficulty_level: level
+      }
+    );
+    
+    // Call the original onStartSession prop
+    onStartSession(level, language);
+  };
+
   return (
     <div className="w-full h-screen bg-[#fffaed] font-poppins flex flex-col" suppressHydrationWarning>
       {/* Sidebar */}
@@ -137,6 +155,31 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
                 </svg>
                 {t('home.myBookmarks')}
               </a>
+              
+              {/* Admin link - only visible to admin user */}
+              {user && user.uid === 'IlLapv9gGqY7gKlDozNtDztbdkz1' && (
+                <a 
+                  href="/admin" 
+                  className="flex items-center p-3 mt-2 rounded-md hover:bg-amber-50 text-[#422006] transition-colors"
+                >
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="20" 
+                    height="20" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    className="mr-3"
+                  >
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                  </svg>
+                  Admin Dashboard
+                </a>
+              )}
             </div>
             
             {/* Empty top area */}
@@ -414,7 +457,7 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
 
           {/* Begin Session Button */}
           <button
-            onClick={() => onStartSession(difficultyLevel, selectedLanguage)}
+            onClick={() => handleStartSession(difficultyLevel, selectedLanguage)}
             className="w-full py-3 bg-[#422006] text-white rounded-lg flex items-center justify-center hover:bg-[#5a3108] transition-colors text-lg"
           >
             {t('home.beginSession')}
