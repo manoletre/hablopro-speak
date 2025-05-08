@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { collection, query, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -10,13 +10,6 @@ interface StreakDisplayProps {
 
 // Define types for calendar
 type Level = 0 | 1 | 2 | 3 | 4;
-
-// Define interface for day data
-interface DayData {
-  date: string; // 'YYYY-MM-DD' format
-  count: number; // Number of sessions
-  level: Level; // Activity level (0-4)
-}
 
 // Define interface for tooltip data
 interface TooltipData {
