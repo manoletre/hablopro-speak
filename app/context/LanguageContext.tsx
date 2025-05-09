@@ -71,7 +71,7 @@ interface LanguageContextType {
 
 const translations: Record<Language, Record<TranslationKey, string>> = {
   english: {
-    'home.title': 'the best time to learn is now.',
+    'home.title': "don't put off until tomorrow what you can learn today.",
     'home.editProficiency': 'edit proficiency:',
     'home.editLanguage': 'edit language:',
     'home.beginSession': 'begin session',
@@ -123,7 +123,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'voiceChat.wrappingUp': 'Wrapping up...',
   },
   español: {
-    'home.title': 'el mejor momento para aprender es ahora.',
+    'home.title': 'no dejes para mañana lo que puedes aprender hoy.',
     'home.editProficiency': 'editar nivel:',
     'home.editLanguage': 'editar idioma:',
     'home.beginSession': 'comenzar sesión',
@@ -182,11 +182,15 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>('english');
 
   useEffect(() => {
-    // Detect browser language
     if (typeof window !== 'undefined') {
+      // Check localStorage for explicit user choice
+      const storedLang = localStorage.getItem('uiLanguage');
+      if (storedLang === 'english' || storedLang === 'español') {
+        setLanguage(storedLang);
+        return;
+      }
+      // Detect browser language if not set
       const browserLang = navigator.language.toLowerCase();
-      
-      // Set Spanish if browser language starts with 'es', otherwise default to English
       const defaultLanguage = browserLang.startsWith('es') ? 'español' : 'english';
       setLanguage(defaultLanguage);
     }

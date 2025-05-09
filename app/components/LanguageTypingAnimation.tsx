@@ -8,8 +8,8 @@ interface Language {
   code: string; // For fallback images
 }
 
-// Cross-platform compatible language data
-const languages: Language[] = [
+// Default language data (English)
+const defaultLanguages: Language[] = [
   { name: 'spanish', emoji: '🇪🇸', code: 'es' },
   { name: 'french', emoji: '🇫🇷', code: 'fr' },
   { name: 'italian', emoji: '🇮🇹', code: 'it' },
@@ -22,7 +22,11 @@ const languages: Language[] = [
   { name: 'dutch', emoji: '🇳🇱', code: 'nl' },
 ];
 
-export default function LanguageTypingAnimation() {
+interface LanguageTypingAnimationProps {
+  languages?: Language[];
+}
+
+export default function LanguageTypingAnimation({ languages = defaultLanguages }: LanguageTypingAnimationProps) {
   const [displayText, setDisplayText] = useState('');
   const [showEmoji, setShowEmoji] = useState(false);
   const [currentLanguageIndex, setCurrentLanguageIndex] = useState(0);
@@ -69,7 +73,7 @@ export default function LanguageTypingAnimation() {
     }, typingSpeed);
     
     return () => clearTimeout(timer);
-  }, [displayText, isDeleting, currentLanguageIndex, typingSpeed]);
+  }, [displayText, isDeleting, currentLanguageIndex, typingSpeed, languages]);
   
   const currentLanguage = languages[currentLanguageIndex];
   
