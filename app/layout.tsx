@@ -33,6 +33,7 @@ const indieFlower = Indie_Flower({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   title: "HabloPro Speak - Learn Languages by Speaking with AI",
   description: "Practice speaking with Nacho, your AI language partner. Improve your fluency, pronunciation, and confidence in any language. Start learning for free today!",
   keywords: "language learning, AI language partner, speaking practice, pronunciation, fluency, language tutor, Nacho AI",

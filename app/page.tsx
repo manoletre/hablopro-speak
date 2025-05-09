@@ -61,10 +61,13 @@ export default function LandingPage() {
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 opacity-60 rounded-full blur-2xl w-[200px] h-[200px] md:w-[400px] md:h-[400px]"></div>
                 <Image
                   src="/images/nacho_intro.png"
-                  alt="Nacho the language learning sloth"
-                  fill
+                  alt="Nacho (the AI language learning sloth) is ready to help you learn a new language"
+                  width={500}
+                  height={500}
+                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
                   style={{ objectFit: 'contain' }}
                   priority
+                  loading="eager"
                 />
               </div>
             </div>
@@ -81,7 +84,14 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="bg-white p-8 rounded-xl shadow-sm">
                 <div className="w-32 h-32 bg-amber-200 rounded-full flex items-center justify-center mb-6 overflow-hidden">
-                  <Image src="/images/nacho_speaking.png" alt="Nacho speaking" width={110} height={110} style={{objectFit: 'contain'}} />
+                  <Image 
+                    src="/images/nacho_speaking.png" 
+                    alt="Nacho (the AI language learning sloth) speaking to a microphone" 
+                    width={110} 
+                    height={110} 
+                    style={{objectFit: 'contain'}}
+                    loading="eager"
+                  />
                 </div>
                 <h3 className="text-xl font-semibold text-amber-900 mb-3">Practice Speaking</h3>
                 <p className="text-amber-800">
@@ -91,7 +101,14 @@ export default function LandingPage() {
               
               <div className="bg-white p-8 rounded-xl shadow-sm">
                 <div className="w-32 h-32 bg-amber-200 rounded-full flex items-center justify-center mb-6 overflow-hidden">
-                  <Image src="/images/nacho_multiple_langs.png" alt="Nacho with multiple languages" width={110} height={110} style={{objectFit: 'contain'}} />
+                  <Image 
+                    src="/images/nacho_multiple_langs.png" 
+                    alt="Nacho (the AI language learning sloth) can speak multiple languages" 
+                    width={110} 
+                    height={110} 
+                    style={{objectFit: 'contain'}}
+                    loading="eager"
+                  />
                 </div>
                 <h3 className="text-xl font-semibold text-amber-900 mb-3">Multiple Languages</h3>
                 <p className="text-amber-800">
@@ -101,7 +118,14 @@ export default function LandingPage() {
               
               <div className="bg-white p-8 rounded-xl shadow-sm">
                 <div className="w-32 h-32 bg-amber-200 rounded-full flex items-center justify-center mb-6 overflow-hidden">
-                  <Image src="/images/nacho_taking_notes.png" alt="Nacho taking notes" width={110} height={110} style={{objectFit: 'contain'}} />
+                  <Image 
+                    src="/images/nacho_taking_notes.png" 
+                    alt="Nacho (the AI language learning sloth) taking notes" 
+                    width={110} 
+                    height={110} 
+                    style={{objectFit: 'contain'}}
+                    loading="eager"
+                  />
                 </div>
                 <h3 className="text-xl font-semibold text-amber-900 mb-3">Personalized Feedback</h3>
                 <p className="text-amber-800">
@@ -113,7 +137,7 @@ export default function LandingPage() {
         </section>
 
         {/* CTA Section */}
-        <section className="w-full py-16 px-4 bg-amber-200">
+        <section className="w-full py-16 px-4 bg-amber-50">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-amber-900 mb-6">
               Ready to Start Speaking a New Language?
