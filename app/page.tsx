@@ -5,15 +5,17 @@ import Link from 'next/link';
 import { useAuth } from './context/AuthContext';
 import LanguageTypingAnimation from './components/LanguageTypingAnimation';
 import { useLanguage } from './context/LanguageContext';
+import Head from 'next/head';
 
 // Add structured data for rich results
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
-  name: 'HabloPro Speak',
-  description: 'Practice speaking with Nacho, your AI language partner. Improve your fluency, pronunciation, and confidence in any language.',
+  name: 'HabloPro Speak - AI Language Tutor',
+  description: 'Practice speaking with Nacho, your personal AI language tutor. Improve your Spanish, French, German, Chinese, Japanese and more with natural conversations and personalized feedback.',
   applicationCategory: 'EducationalApplication',
   operatingSystem: 'Web',
+  keywords: 'AI language tutor, AI Spanish tutor, AI French tutor, AI German tutor, AI Chinese tutor, AI Japanese tutor, language learning app, speaking practice',
   offers: {
     '@type': 'Offer',
     price: '0',
@@ -30,8 +32,18 @@ export default function LandingPage() {
   const { user } = useAuth();
   const { setLanguage } = useLanguage();
 
+  const supportedLanguages = [
+    'Spanish', 'French', 'German', 'Chinese', 'Japanese', 
+    'Italian', 'Portuguese', 'Russian', 'Korean', 'Arabic'
+  ];
+
   return (
     <>
+      <Head>
+        <title>HabloPro Speak | AI Language Tutor for Spanish, French, German & More</title>
+        <meta name="description" content="Practice speaking with Nacho, your personal AI language tutor. Learn Spanish, French, German, Chinese, Japanese and more through natural conversations with instant feedback." />
+        <meta name="keywords" content="AI language tutor, AI Spanish tutor, AI French tutor, AI German tutor, AI Chinese tutor, AI Japanese tutor, language learning app, speaking practice" />
+      </Head>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -51,12 +63,12 @@ export default function LandingPage() {
           <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center">
             <div className="md:w-1/2 mb-12 md:mb-0">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-amber-900 mb-6 flex flex-col items-start">
-                <span>Learn</span>
+                <span>Speak</span>
                 <LanguageTypingAnimation />
-                <span>by speaking.</span>
+                <span>with your AI tutor.</span>
               </h1>
               <p className="text-lg md:text-xl text-amber-800 mb-8">
-                Practice speaking with Nacho, your AI language partner. Improve your <span className="notebook-underline font-bold">fluency</span>, <span className="notebook-underline font-bold">pronunciation</span>, and <span className="notebook-underline font-bold">confidence</span> in <i>any</i> language.
+                Practice speaking with Nacho, your personal AI language tutor. Improve your <span className="notebook-underline font-bold">fluency</span>, <span className="notebook-underline font-bold">vocabulary</span>, and <span className="notebook-underline font-bold">confidence</span> in Spanish, French, German, and many more languages.
               </p>
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
                 <Link
@@ -76,7 +88,7 @@ export default function LandingPage() {
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 opacity-60 rounded-full blur-2xl w-[200px] h-[200px] md:w-[400px] md:h-[400px]"></div>
                 <Image
                   src="/images/nacho_intro.png"
-                  alt="Nacho (the AI language learning sloth) is ready to help you learn a new language"
+                  alt="Nacho, your AI language tutor for Spanish, French and other languages"
                   width={500}
                   height={500}
                   className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
@@ -93,7 +105,7 @@ export default function LandingPage() {
         <section className="w-full py-16 px-4 bg-amber-100 mt-0 md:mt-[-95px]">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold text-center text-amber-900 mb-16">
-              Learn Any Language, Naturally
+              Your Personal AI Tutor for Any Language
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -101,7 +113,7 @@ export default function LandingPage() {
                 <div className="w-32 h-32 bg-amber-200 rounded-full flex items-center justify-center mb-6 overflow-hidden">
                   <Image 
                     src="/images/nacho_speaking.png" 
-                    alt="Nacho (the AI language learning sloth) speaking to a microphone" 
+                    alt="AI tutor for language speaking practice" 
                     width={110} 
                     height={110} 
                     style={{objectFit: 'contain'}}
@@ -110,7 +122,7 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-xl font-semibold text-amber-900 mb-3">Practice Speaking</h3>
                 <p className="text-amber-800">
-                  Practice real conversations with Nacho in your target language. Get immediate feedback on your pronunciation and fluency.
+                  Have <span className="font-semibold">real conversations</span> with your AI tutor in Spanish, French, German or any target language.  <span className="font-semibold">Read, listen and speak</span> in natural conversations.
                 </p>
               </div>
               
@@ -118,7 +130,7 @@ export default function LandingPage() {
                 <div className="w-32 h-32 bg-amber-200 rounded-full flex items-center justify-center mb-6 overflow-hidden">
                   <Image 
                     src="/images/nacho_multiple_langs.png" 
-                    alt="Nacho (the AI language learning sloth) can speak multiple languages" 
+                    alt="AI tutor for multiple languages including Spanish, French, German and more" 
                     width={110} 
                     height={110} 
                     style={{objectFit: 'contain'}}
@@ -127,7 +139,7 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-xl font-semibold text-amber-900 mb-3">Multiple Languages</h3>
                 <p className="text-amber-800">
-                  Choose from 10+ languages including Spanish, French, German, Chinese, Japanese and more. Switch between languages anytime.
+                  Learn with your personal AI tutor in <span className="font-semibold">10+ languages</span> including Spanish, French, German, Chinese, Japanese and more. <span className="font-semibold">Switch between languages</span> anytime.
                 </p>
               </div>
               
@@ -135,7 +147,7 @@ export default function LandingPage() {
                 <div className="w-32 h-32 bg-amber-200 rounded-full flex items-center justify-center mb-6 overflow-hidden">
                   <Image 
                     src="/images/nacho_taking_notes.png" 
-                    alt="Nacho (the AI language learning sloth) taking notes" 
+                    alt="AI language tutor providing personalized feedback" 
                     width={110} 
                     height={110} 
                     style={{objectFit: 'contain'}}
@@ -144,7 +156,7 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-xl font-semibold text-amber-900 mb-3">Personalized Feedback</h3>
                 <p className="text-amber-800">
-                  Receive detailed feedback on your grammar, vocabulary, and pronunciation after each conversation session.
+                  Receive <span className="font-semibold">detailed feedback</span> from your AI tutor on your <span className="font-semibold">grammar</span> and <span className="font-semibold">vocabulary</span> after each conversation session.
                 </p>
               </div>
             </div>
@@ -155,10 +167,10 @@ export default function LandingPage() {
         <section className="w-full py-16 px-4 bg-amber-50">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-amber-900 mb-6">
-              Ready to Start Speaking a New Language?
+              Ready to Start Speaking with Your AI Language Tutor?
             </h2>
             <p className="text-lg md:text-xl text-amber-800 mb-8 max-w-2xl mx-auto">
-              Join thousands of learners who are improving their language skills every day with Nacho.
+              Join thousands of learners who are improving their Spanish, French, German and other language skills every day with their personal AI tutor.
             </p>
             <Link
               href="/learn"
