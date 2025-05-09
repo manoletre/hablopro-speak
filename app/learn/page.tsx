@@ -20,16 +20,18 @@ export default function LearnPage() {
   };
 
   return (
-    <main className="min-h-screen">
-      {!sessionStarted ? (
-        <HomeScreen onStartSession={startSession} />
-      ) : (
-        <VoiceChat 
-          onClose={endSession} 
-          difficultyLevel={difficultyLevel}
-          language={selectedLanguage}
-        />
-      )}
-    </main>
+    <div className="absolute inset-0 w-full h-full bg-[#fffaed] overflow-auto">
+      <main className="w-full min-h-screen">
+        {!sessionStarted ? (
+          <HomeScreen onStartSession={startSession} />
+        ) : (
+          <VoiceChat 
+            onClose={endSession} 
+            difficultyLevel={difficultyLevel}
+            language={selectedLanguage}
+          />
+        )}
+      </main>
+    </div>
   );
 } 
