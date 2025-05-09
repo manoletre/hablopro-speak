@@ -16,6 +16,7 @@ type TranslationKey =
   | 'home.editLanguage'
   | 'home.beginSession'
   | 'home.myBookmarks'
+  | 'home.dashboard'
   | 'home.logout'
   | 'home.english'
   | 'home.spanish'
@@ -75,6 +76,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'home.editLanguage': 'edit language:',
     'home.beginSession': 'begin session',
     'home.myBookmarks': 'My Bookmarks',
+    'home.dashboard': 'Learning Dashboard',
     'home.logout': 'Logout',
     'home.english': 'english',
     'home.spanish': 'spanish',
@@ -126,6 +128,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'home.editLanguage': 'editar idioma:',
     'home.beginSession': 'comenzar sesión',
     'home.myBookmarks': 'Mis Marcadores',
+    'home.dashboard': 'Panel de Aprendizaje',
     'home.logout': 'Cerrar Sesión',
     'home.english': 'inglés',
     'home.spanish': 'español',

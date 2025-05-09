@@ -9,15 +9,17 @@ import { db } from '../lib/firebase';
 import StreakDisplay from './StreakDisplay';
 import { trackSessionStarted } from '../lib/analytics';
 import { usePostHog } from 'posthog-js/react';
+import Link from 'next/link';
 
 interface HomeScreenProps {
   onStartSession: (level: number, language: string) => void;
 }
 
 export default function HomeScreen({ onStartSession }: HomeScreenProps) {
+  usePostHog();
+
   const { user, signOut } = useAuth();
   const { language: uiLanguage, setLanguage: setUiLanguage, t } = useLanguage();
-  const posthog = usePostHog();
   const [showSidebar, setShowSidebar] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('french');
@@ -155,31 +157,6 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
                 </svg>
                 {t('home.myBookmarks')}
               </a>
-              
-              {/* Admin link - only visible to admin user */}
-              {user && user.uid === 'IlLapv9gGqY7gKlDozNtDztbdkz1' && (
-                <a 
-                  href="/admin" 
-                  className="flex items-center p-3 mt-2 rounded-md hover:bg-amber-50 text-[#422006] transition-colors"
-                >
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    width="20" 
-                    height="20" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    className="mr-3"
-                  >
-                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-                  </svg>
-                  Admin Dashboard
-                </a>
-              )}
             </div>
             
             {/* Empty top area */}
@@ -255,7 +232,12 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
             </svg>
           </button>
         ) : (
-          <div className="w-10 h-10"></div> /* Empty div to preserve layout spacing */
+          <Link href="/" className="w-10 h-10 rounded-lg border border-amber-800/20 flex items-center justify-center bg-amber-50">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M19 12H5" stroke="#422006" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M12 19L5 12L12 5" stroke="#422006" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </Link>
         )}
 
         {/* Language Selection (Right) */}

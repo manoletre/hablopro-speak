@@ -44,9 +44,10 @@ interface VoiceChatProps {
 }
 
 export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceChatProps) {
+  usePostHog();
+
   const { user, loading } = useAuth();
   const { t } = useLanguage();
-  const posthog = usePostHog();
   const [isListening, setIsListening] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [aiTranscript, setAiTranscript] = useState<string>('');

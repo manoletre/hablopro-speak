@@ -33,8 +33,44 @@ const indieFlower = Indie_Flower({
 });
 
 export const metadata: Metadata = {
-  title: "HabloPro Speak",
-  description: "Learn languages by speaking with AI",
+  title: "HabloPro Speak - Learn Languages by Speaking with AI",
+  description: "Practice speaking with Nacho, your AI language partner. Improve your fluency, pronunciation, and confidence in any language. Start learning for free today!",
+  keywords: "language learning, AI language partner, speaking practice, pronunciation, fluency, language tutor, Nacho AI",
+  openGraph: {
+    title: "HabloPro Speak - Learn Languages by Speaking with AI",
+    description: "Practice speaking with Nacho, your AI language partner. Improve your fluency, pronunciation, and confidence in any language.",
+    images: [
+      {
+        url: "/images/landing_screenshot_en.png",
+        width: 1200,
+        height: 630,
+        alt: "HabloPro Speak - AI Language Learning Platform",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "HabloPro Speak - Learn Languages by Speaking with AI",
+    description: "Practice speaking with Nacho, your AI language partner. Improve your fluency, pronunciation, and confidence in any language.",
+    images: ["/images/landing_screenshot_en.png"],
+    creator: "@hablopro",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  alternates: {
+    canonical: "https://hablo.pro",
+  },
   icons: {
     icon: [
       { url: '/favicon.ico' },
@@ -59,7 +95,9 @@ export default function RootLayout({
       <body suppressHydrationWarning>
         <PostHogProvider>
           <LanguageProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
           </LanguageProvider>
         </PostHogProvider>
       </body>
