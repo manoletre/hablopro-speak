@@ -32,11 +32,6 @@ export default function LandingPage() {
   const { user } = useAuth();
   const { setLanguage } = useLanguage();
 
-  const supportedLanguages = [
-    'Spanish', 'French', 'German', 'Chinese', 'Japanese', 
-    'Italian', 'Portuguese', 'Russian', 'Korean', 'Arabic'
-  ];
-
   return (
     <>
       <Head>

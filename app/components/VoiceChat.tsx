@@ -485,9 +485,26 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
   // Function to stop the conversation
   const stopConversation = () => {
     if (isConnected) {
-      // If we're already connected, end the current session
-      console.log('Stopping active conversation and showing results');
-      finishSessionRef.current();
+      // If we're already connected, check session duration
+      console.log('Stopping active conversation');
+      
+      // If session was longer than 1 minute, show results
+      if (5 * 60 - timeRemaining > 60) {
+        console.log('Session longer than 1 minute, showing results');
+        finishSessionRef.current();
+      } else {
+        // Just close without showing results if session was shorter than 1 minute
+        console.log('Session shorter than 1 minute, closing without results');
+        cleanupAudioResources();
+        
+        // Ensure timers are cleared
+        if (timerIntervalRef.current) {
+          clearInterval(timerIntervalRef.current);
+          timerIntervalRef.current = null;
+        }
+        
+        if (onClose) onClose();
+      }
     } else {
       // Just close without showing results if never connected
       console.log('Closing chat without results (never connected)');
@@ -787,21 +804,27 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
             
             {/* AI response transcript with fixed height and scrolling */}
             {subtitleBuffer && (
-              <div 
-                className="w-full max-w-xl bg-amber-100 rounded-lg p-4 shadow-sm"
-              >
-                <p className="text-[#422006] text-sm mb-1 opacity-60">Nacho says:</p>
-                <div 
-                  ref={subtitleContainerRef}
-                  className="max-h-36 overflow-y-auto"
-                  style={{
-                    scrollBehavior: 'smooth',
-                    maskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 1) 20%, rgba(0, 0, 0, 1) 100%)',
-                    WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 1) 20%, rgba(0, 0, 0, 1) 100%)'
-                  }}
+              <div className="w-full max-w-xl relative">
+                {/* Stop session button - repositioned to the red area */}
+                <button
+                  onClick={stopConversation}
+                  className="absolute -top-10 right-0 px-3 py-1 text-xs rounded-md border border-amber-800/30 bg-amber-50 text-[#422006] hover:bg-amber-100"
                 >
-                  <div className="text-[#422006]">
-                    <TypingAnimation text={subtitleBuffer} typingSpeed={5} />
+                  Stop session
+                </button>
+                
+                <div className="bg-amber-100 rounded-lg p-4 shadow-sm">
+                  <p className="text-[#422006] text-sm mb-1 opacity-60">Nacho says:</p>
+                  <div 
+                    ref={subtitleContainerRef}
+                    className="max-h-36 overflow-y-auto"
+                    style={{
+                      scrollBehavior: 'smooth'
+                    }}
+                  >
+                    <div className="text-[#422006]">
+                      <TypingAnimation text={subtitleBuffer} typingSpeed={5} />
+                    </div>
                   </div>
                 </div>
               </div>
