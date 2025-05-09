@@ -5,17 +5,16 @@ import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 import LanguageTypingAnimation from '../components/LanguageTypingAnimation';
 import { useLanguage } from '../context/LanguageContext';
-import Head from 'next/head';
 
 // Add structured data for rich results
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
-  name: 'HabloPro Speak - Tutor de Idiomas con IA',
-  description: 'Practica hablando con Nacho, tu tutor personal de idiomas con IA. Mejora tu español, inglés, francés, alemán, chino, japonés y más con conversaciones naturales y retroalimentación personalizada.',
+  name: 'Hablo - Tutor de Idiomas de IA',
+  description: 'Practica hablando con Nacho, tu tutor personal de idiomas de IA. Mejora tu español, inglés, francés y más con conversaciones naturales y retroalimentación personalizada.',
   applicationCategory: 'EducationalApplication',
   operatingSystem: 'Web',
-  keywords: 'tutor de idiomas con IA, tutor de español con IA, tutor de inglés con IA, tutor de francés con IA, tutor de alemán con IA, tutor de chino con IA, tutor de japonés con IA, app para aprender idiomas, práctica de conversación',
+  keywords: 'Tutor de Idiomas de IA, tutor de español con IA, tutor de inglés con IA, tutor de francés con IA, tutor de alemán con IA, tutor de chino con IA, tutor de japonés con IA, app para aprender idiomas, práctica de conversación',
   offers: {
     '@type': 'Offer',
     price: '0',
@@ -48,20 +47,6 @@ export default function LandingPage() {
 
   return (
     <>
-      <Head>
-        <title>HabloPro Speak | Tutor de Idiomas con IA para Español, Inglés, Francés y Más</title>
-        <meta name="description" content="Practica hablando con Nacho, tu tutor personal de idiomas con IA. Aprende español, inglés, francés, alemán, chino, japonés y más con conversaciones naturales y retroalimentación inmediata." />
-        <meta name="keywords" content="tutor de idiomas con IA, tutor de español con IA, tutor de inglés con IA, tutor de francés con IA, tutor de alemán con IA, tutor de chino con IA, app para aprender idiomas, práctica de conversación" />
-        <meta property="og:title" content="HabloPro Speak - Tutor de Idiomas con IA para Español, Inglés y Más" />
-        <meta property="og:description" content="Practica hablando con Nacho, tu tutor personal de idiomas con IA. Mejora tu fluidez, vocabulario y confianza en cualquier idioma." />
-        <meta property="og:image" content="https://hablo.pro/images/landing_screenshot_es.png" />
-        <meta property="og:url" content="https://hablo.pro/es" />
-        <meta property="og:type" content="website" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="HabloPro Speak - Tutor de Idiomas con IA para Español, Inglés y Más" />
-        <meta name="twitter:description" content="Practica hablando con Nacho, tu tutor personal de idiomas con IA. Mejora tu fluidez, vocabulario y confianza en cualquier idioma." />
-        <meta name="twitter:image" content="https://hablo.pro/images/landing_screenshot_es.png" />
-      </Head>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -106,7 +91,7 @@ export default function LandingPage() {
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 opacity-60 rounded-full blur-2xl w-[200px] h-[200px] md:w-[400px] md:h-[400px]"></div>
                 <Image
                   src="/images/nacho_intro.png"
-                  alt="Nacho, tu tutor de idiomas con IA para español, inglés y otros idiomas"
+                  alt="Nacho, tu Tutor de Idiomas de IA para español, inglés y otros idiomas"
                   width={500}
                   height={500}
                   className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
@@ -165,7 +150,7 @@ export default function LandingPage() {
                 <div className="w-32 h-32 bg-amber-200 rounded-full flex items-center justify-center mb-6 overflow-hidden">
                   <Image 
                     src="/images/nacho_taking_notes.png" 
-                    alt="Tutor de idiomas con IA proporcionando retroalimentación personalizada" 
+                    alt="Tutor de Idiomas de IA proporcionando retroalimentación personalizada" 
                     width={110} 
                     height={110} 
                     style={{objectFit: 'contain'}}
@@ -185,7 +170,7 @@ export default function LandingPage() {
         <section className="w-full py-16 px-4 bg-amber-50">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-amber-900 mb-6">
-              ¿Listo para empezar a hablar con tu tutor de idiomas con IA?
+              ¿Listo para empezar a hablar con tu Tutor de Idiomas de IA?
             </h2>
             <p className="text-lg md:text-xl text-amber-800 mb-8 max-w-2xl mx-auto">
               Únete a otros estudiantes que están mejorando sus habilidades en español, inglés, francés y otros idiomas cada día con su tutor personal de IA.

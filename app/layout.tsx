@@ -34,18 +34,18 @@ const indieFlower = Indie_Flower({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
-  title: "HabloPro Speak - Learn Languages by Speaking with AI",
-  description: "Practice speaking with Nacho, your AI language partner. Improve your fluency, pronunciation, and confidence in any language. Start learning for free today!",
-  keywords: "language learning, AI language partner, speaking practice, pronunciation, fluency, language tutor, Nacho AI",
+  title: "Hablo.pro - Speak with your AI language tutor",
+  description: "Practice speaking with Nacho, your AI language tutor. Improve your fluency, vocabulary, and confidence in any language. Start learning for free today!",
+  keywords: "language learning, AI language tutor, speaking practice, pronunciation, fluency, language tutor, Nacho AI",
   openGraph: {
-    title: "HabloPro Speak - Learn Languages by Speaking with AI",
-    description: "Practice speaking with Nacho, your AI language partner. Improve your fluency, pronunciation, and confidence in any language.",
+    title: "Hablo.pro - Speak with your AI language tutor",
+    description: "Practice speaking with Nacho, your AI language tutor. Improve your fluency, vocabulary, and confidence in any language.",
     images: [
       {
         url: "/images/landing_screenshot_en.png",
         width: 1200,
         height: 630,
-        alt: "HabloPro Speak - AI Language Learning Platform",
+        alt: "Hablo.pro - Speak with your AI language tutor",
       },
     ],
     locale: "en_US",
@@ -53,8 +53,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "HabloPro Speak - Learn Languages by Speaking with AI",
-    description: "Practice speaking with Nacho, your AI language partner. Improve your fluency, pronunciation, and confidence in any language.",
+    title: "Hablo.pro - Speak with your AI language tutor",
+    description: "Practice speaking with Nacho, your AI language tutor. Improve your fluency, vocabulary, and confidence in any language.",
     images: ["/images/landing_screenshot_en.png"],
     creator: "@hablopro",
   },
@@ -71,6 +71,10 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: "https://hablo.pro",
+    languages: {
+      "en": "https://hablo.pro",
+      "es": "https://hablo.pro/es",
+    },
   },
   icons: {
     icon: [

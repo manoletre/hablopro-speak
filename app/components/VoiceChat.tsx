@@ -614,11 +614,16 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
     if (user) {
       try {
         const sessionsRef = collection(db, `users/${user.uid}/sessions`);
+        
+        // Get the user's timezone offset in minutes
+        const timezoneOffsetMinutes = new Date().getTimezoneOffset();
+        
         await addDoc(sessionsRef, {
           startedAt: serverTimestamp(),
           transcript: finalConversationHistory.map(msg => `${msg.role}: ${msg.text}`).join('\n'),
           language,
-          difficultyLevel
+          difficultyLevel,
+          timezoneOffsetMinutes
         });
         
         // Track session completion with analytics utility
