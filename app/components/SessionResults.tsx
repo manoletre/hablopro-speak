@@ -135,54 +135,25 @@ export default function SessionResults({ conversationHistory, onClose }: Session
   
   return (
     <div className="w-full h-screen bg-[#fffaed] font-poppins flex flex-col overflow-y-auto">
-      {/* Header */}
-      <div className="w-full p-4 flex items-center justify-between">
+      {/* Fixed New Session Button */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-[#fffaed]/80 backdrop-blur-sm p-4">
         <button
           onClick={onClose}
-          className="w-10 h-10 rounded-lg border border-amber-800/20 flex items-center justify-center bg-amber-50"
+          className="w-full py-3 rounded-lg bg-[#422006] text-white font-medium hover:bg-[#422006]/90 transition-colors"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M19 12H5" stroke="#422006" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M12 19L5 12L12 5" stroke="#422006" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+          {t('sessionResults.newSession')}
         </button>
-        <div className="ml-4 flex-1">
+      </div>
+
+      {/* Header */}
+      <div className="w-full p-4 mt-16">
+        <div className="flex-1">
           <h2 className="text-lg font-medium text-[#422006]">{t('sessionResults.title')}</h2>
         </div>
       </div>
       
       {/* Content */}
       <div className="flex-1 px-4 pb-8"> 
-        {/* Grammar Corrections */}
-        <div className="mb-6">
-          <h3 className="text-lg font-medium text-[#422006] mb-2">{t('sessionResults.grammarCorrections')}</h3>
-          {loading ? (
-            <p className="text-[#422006]/60 text-center p-4 bg-white/70 rounded-lg border border-amber-100">
-              {t('sessionResults.analyzingGrammar')}
-            </p>
-          ) : error ? (
-            <p className="text-red-500 text-center p-4 bg-white/70 rounded-lg border border-amber-100">
-              {t('sessionResults.failedToAnalyze')}
-            </p>
-          ) : grammarCorrections.length > 0 ? (
-            <div className="space-y-4">
-              {grammarCorrections.map((correction, index) => (
-                <GrammarCard
-                  key={index}
-                  id={`grammar-${index}-${uniqueSessionId}`}
-                  userSaid={correction.youSaid}
-                  better={correction.better}
-                  explanation={correction.explanation}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="text-[#422006]/60 text-center p-4 bg-white/70 rounded-lg border border-amber-100">
-              {t('sessionResults.noGrammarCorrections')}
-            </p>
-          )}
-        </div>
-        
         {/* Vocabulary */}
         <div className="mb-6">
           <h3 className="text-lg font-medium text-[#422006] mb-2">{t('sessionResults.vocabulary')}</h3>
@@ -210,6 +181,36 @@ export default function SessionResults({ conversationHistory, onClose }: Session
           ) : (
             <p className="text-[#422006]/60 text-center p-4 bg-white/70 rounded-lg border border-amber-100">
               {t('sessionResults.noVocabularyItems')}
+            </p>
+          )}
+        </div>
+
+        {/* Grammar Corrections */}
+        <div className="mb-6">
+          <h3 className="text-lg font-medium text-[#422006] mb-2">{t('sessionResults.grammarAndStyle')}</h3>
+          {loading ? (
+            <p className="text-[#422006]/60 text-center p-4 bg-white/70 rounded-lg border border-amber-100">
+              {t('sessionResults.analyzingGrammar')}
+            </p>
+          ) : error ? (
+            <p className="text-red-500 text-center p-4 bg-white/70 rounded-lg border border-amber-100">
+              {t('sessionResults.failedToAnalyze')}
+            </p>
+          ) : grammarCorrections.length > 0 ? (
+            <div className="space-y-4">
+              {grammarCorrections.map((correction, index) => (
+                <GrammarCard
+                  key={index}
+                  id={`grammar-${index}-${uniqueSessionId}`}
+                  userSaid={correction.youSaid}
+                  better={correction.better}
+                  explanation={correction.explanation}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-[#422006]/60 text-center p-4 bg-white/70 rounded-lg border border-amber-100">
+              {t('sessionResults.noGrammarCorrections')}
             </p>
           )}
         </div>

@@ -55,6 +55,8 @@ type TranslationKey =
   | 'sessionResults.noVocabularyItems'
   | 'sessionResults.noConversation'
   | 'sessionResults.failedToAnalyze'
+  | 'sessionResults.newSession'
+  | 'sessionResults.grammarAndStyle'
   | 'voiceChat.title'
   | 'voiceChat.listening'
   | 'voiceChat.connected'
@@ -115,6 +117,8 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'sessionResults.noVocabularyItems': 'No vocabulary items for this session',
     'sessionResults.noConversation': 'No conversation recorded',
     'sessionResults.failedToAnalyze': 'Failed to analyze conversation. Please try again.',
+    'sessionResults.newSession': 'New Session',
+    'sessionResults.grammarAndStyle': 'Grammar and Style',
     'voiceChat.title': 'Speaking Practice',
     'voiceChat.listening': 'Listening...',
     'voiceChat.connected': 'Connected and ready',
@@ -167,6 +171,8 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'sessionResults.noVocabularyItems': 'No hay vocabulario en esta sesión',
     'sessionResults.noConversation': 'No hay conversación grabada',
     'sessionResults.failedToAnalyze': 'Error al analizar la conversación. Por favor, inténtalo de nuevo.',
+    'sessionResults.newSession': 'Nueva Sesión',
+    'sessionResults.grammarAndStyle': 'Gramática y Estilo',
     'voiceChat.title': 'Práctica de Habla',
     'voiceChat.listening': 'Escuchando...',
     'voiceChat.connected': 'Conectado y listo',
