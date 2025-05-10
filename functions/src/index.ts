@@ -15,9 +15,11 @@ const db = admin.firestore();
 function getUserLocalDateString(date: Date, timezoneOffsetMinutes: number = 0): string {
   // Create a new date by adjusting for the user's timezone
   // Note: getTimezoneOffset() returns minutes WEST of UTC, 
-  // so we ADD the offset to get the correct local time
-  // For example: UTC+8 has offset of -480, so we add 480 minutes to UTC time
-  const localDate = new Date(date.getTime() + (timezoneOffsetMinutes * 60 * 1000));
+  // so we SUBTRACT the offset to get the correct local time
+  // For example: 
+  // - UTC+8 (Japan) has offset of -480, so we subtract -480 = add 480 minutes to UTC time
+  // - UTC-5 (Colombia) has offset of +300, so we subtract 300 minutes from UTC time
+  const localDate = new Date(date.getTime() - (timezoneOffsetMinutes * 60 * 1000));
   return localDate.toISOString().substring(0, 10); // Returns YYYY-MM-DD
 }
 
