@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import GrammarCard from './GrammarCard';
 import VocabularyCard from './VocabularyCard';
+import { getAuth } from 'firebase/auth';
+import { doc, getDoc, getFirestore } from 'firebase/firestore';
 
 // Define the conversation message structure
 interface ConversationMessage {
@@ -46,10 +48,70 @@ export default function SessionResults({ conversationHistory, onClose }: Session
   const [error, setError] = useState<string | null>(null);
   const [apiCalled, setApiCalled] = useState<boolean>(false);
   const [uniqueSessionId] = useState<string>(() => Date.now().toString());
+  const [showStreakDialog, setShowStreakDialog] = useState<boolean>(false);
+  const [streakCount, setStreakCount] = useState<number>(0);
+  const [randomStreakImage, setRandomStreakImage] = useState<string>('');
   
   // Add immediate console log to debug received props
   console.log('SessionResults received conversation history:', conversationHistory);
   
+  // Function to get a random streak image
+  const getRandomStreakImage = () => {
+    const totalImages = 15; // Based on the number of streak images in the folder
+    const randomIndex = Math.floor(Math.random() * totalImages) + 1;
+    return `/images/streaks/streak${randomIndex}.png`;
+  };
+
+  // Check if this is the first session of the day to show streak dialog
+  useEffect(() => {
+    const checkUserStreak = async () => {
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        
+        if (!user) return;
+        
+        const db = getFirestore();
+        
+        // Get today's date in YYYY-MM-DD format
+        const today = new Date();
+        const todayString = today.toISOString().substring(0, 10); // YYYY-MM-DD format
+        
+        // Check if today's date exists in the user's days collection
+        const dayRef = doc(db, `users/${user.uid}/days/${todayString}`);
+        const daySnap = await getDoc(dayRef);
+        
+        // Get user data to show the current streak
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+        
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          const currentStreak = userData?.currentStreak || 0;
+          
+          // Show dialog if this is the first session of the day (count === 1)
+          if (daySnap.exists() && daySnap.data()?.count === 1) {
+            console.log('First session of the day detected, showing streak dialog');
+            setStreakCount(currentStreak);
+            setRandomStreakImage(getRandomStreakImage());
+            setShowStreakDialog(true);
+          } else {
+            console.log('Not the first session of the day or day document not found');
+            if (daySnap.exists()) {
+              console.log(`Day count: ${daySnap.data()?.count}`);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error checking user streak:', err);
+      }
+    };
+    
+    if (!loading && !error) {
+      checkUserStreak();
+    }
+  }, [loading, error]);
+
   useEffect(() => {
     const fetchFeedback = async () => {
       // Only call the API once
@@ -246,6 +308,40 @@ export default function SessionResults({ conversationHistory, onClose }: Session
           </div>
         </div>
       </div>
+
+      {/* Streak Dialog */}
+      {showStreakDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full overflow-hidden shadow-xl transform transition-all">
+            <div className="p-6">
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-[#422006] mb-2">
+                  {t('sessionResults.streakCongrats')}
+                </h3>
+                <div className="my-4">
+                  <img 
+                    src={randomStreakImage} 
+                    alt={t('sessionResults.streakImage')} 
+                    className="w-full h-auto rounded-lg"
+                  />
+                </div>
+                <p className="text-xl font-medium text-[#422006] mb-4">
+                  {t('sessionResults.dayStreak', { count: streakCount })}
+                </p>
+                <p className="text-sm text-[#422006]/70 mb-6">
+                  {t('sessionResults.keepPracticing')}
+                </p>
+                <button
+                  onClick={() => setShowStreakDialog(false)}
+                  className="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 transition-colors"
+                >
+                  {t('sessionResults.awesome')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

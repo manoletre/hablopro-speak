@@ -57,6 +57,11 @@ type TranslationKey =
   | 'sessionResults.failedToAnalyze'
   | 'sessionResults.newSession'
   | 'sessionResults.grammarAndStyle'
+  | 'sessionResults.streakCongrats'
+  | 'sessionResults.streakImage'
+  | 'sessionResults.dayStreak'
+  | 'sessionResults.keepPracticing'
+  | 'sessionResults.awesome'
   | 'voiceChat.title'
   | 'voiceChat.listening'
   | 'voiceChat.connected'
@@ -112,6 +117,11 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'sessionResults.vocabulary': 'Vocabulary',
     'sessionResults.conversationSummary': 'Conversation Summary',
     'sessionResults.analyzingGrammar': 'Analyzing grammar...',
+    'sessionResults.streakCongrats': 'Congratulations!',
+    'sessionResults.streakImage': 'Streak celebration image',
+    'sessionResults.dayStreak': '{count} Day Streak!',
+    'sessionResults.keepPracticing': 'Keep practicing to maintain your streak!',
+    'sessionResults.awesome': 'Awesome!',
     'sessionResults.analyzingVocabulary': 'Analyzing vocabulary...',
     'sessionResults.noGrammarCorrections': 'No grammar corrections for this session',
     'sessionResults.noVocabularyItems': 'No vocabulary items for this session',
@@ -173,6 +183,11 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'sessionResults.failedToAnalyze': 'Error al analizar la conversación. Por favor, inténtalo de nuevo.',
     'sessionResults.newSession': 'Nueva Sesión',
     'sessionResults.grammarAndStyle': 'Gramática y Estilo',
+    'sessionResults.streakCongrats': '¡Felicitaciones!',
+    'sessionResults.streakImage': 'Imagen de celebración de racha',
+    'sessionResults.dayStreak': '¡Racha de {count} días!',
+    'sessionResults.keepPracticing': '¡Sigue practicando para mantener tu racha!',
+    'sessionResults.awesome': '¡Genial!',
     'voiceChat.title': 'Práctica de Habla',
     'voiceChat.listening': 'Escuchando...',
     'voiceChat.connected': 'Conectado y listo',
