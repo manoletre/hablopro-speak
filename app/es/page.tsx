@@ -33,7 +33,6 @@ export default function LandingPage() {
 
   // Spanish language list for animation
   const spanishLanguages = [
-    { name: 'español', emoji: '🇪🇸', code: 'es' },
     { name: 'inglés', emoji: '🇬🇧', code: 'gb' },
     { name: 'francés', emoji: '🇫🇷', code: 'fr' },
     { name: 'italiano', emoji: '🇮🇹', code: 'it' },

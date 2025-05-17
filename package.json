@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "emulators": "npm run watch:functions & firebase emulators:start --only auth,firestore,functions",
+    "watch:functions": "npm run watch --prefix functions"
   },
   "dependencies": {
     "cookies-next": "^5.1.0",

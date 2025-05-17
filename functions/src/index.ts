@@ -1,10 +1,12 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { DocumentSnapshot } from 'firebase-admin/firestore';
+import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 
 admin.initializeApp();
 
 const db = admin.firestore();
+const sesClient = new SESClient({ region: 'us-east-2' });
 
 /**
  * Convert a date to the user's local date string (YYYY-MM-DD) based on timezone offset
@@ -98,4 +100,75 @@ export const onSessionCreate = functions
         lastActive: snap.data()?.startedAt
       }, { merge: true });
     });
+  });
+
+// Send a welcome email via Amazon SES when a new user profile is created
+export const onUserCreate = functions
+  .runWith({
+    serviceAccount: 'cloud-functions1@hablopro-speak.iam.gserviceaccount.com'
+  })
+  .firestore
+  .document('users/{userId}')
+  .onCreate(async (snap: DocumentSnapshot, ctx: functions.EventContext) => {
+    const data = snap.data();
+    const email = data?.email;
+    const uiLanguage = data?.uiLanguage || 'en';
+    if (!email) {
+      console.warn(`No email found for user ${ctx.params.userId}`);
+      return;
+    }
+    const isSpanish = uiLanguage === 'es';
+    const subject = isSpanish
+      ? '¡Bienvenido a hablo.pro!'
+      : 'Welcome to hablo.pro!';
+    const body = isSpanish
+      ? `¡Hola Grass!
+
+Soy Manu, y quería darte personalmente la bienvenida a hablo.pro.
+
+Creé a Nacho (tu tutor de idiomas con IA) para ayudarte a practicar conversaciones reales sin la presión o ansiedad que suele acompañar al aprendizaje de un nuevo idioma. Puedes cometer errores, intentarlo de nuevo y ganar confianza a tu propio ritmo.
+
+Para comenzar, simplemente ve a hablo.pro y estarás hablando en minutos.
+
+Si tienes alguna pregunta o comentario, responde directamente a este correo. Leo cada mensaje.
+
+¡Espero poder ayudarte en tu viaje de aprendizaje!
+
+Manu
+
+P.D. Hecho con ❤️ desde Colombia 🇨🇴`
+      : `Hey Raccoon!
+
+I'm Manu, and I just wanted to personally welcome you to hablo.pro.
+
+I created Nacho (your AI language tutor) to help you practice real conversations without the pressure or anxiety that often comes with learning a new language. You can make mistakes, try again, and build confidence at your own pace.
+
+To get started, just visit hablo.pro and you'll be speaking in minutes.
+
+If you have any questions or feedback, just reply directly to this email. I read every message personally.
+
+Looking forward to helping you on your language journey!
+
+Manu
+
+P.S. Made with ❤️ from Colombia 🇨🇴`;
+
+    const params = {
+      Destination: { ToAddresses: [email] },
+      Message: {
+        Body: {
+          Text: { Data: body },
+        },
+        Subject: { Data: subject },
+      },
+      Source: isSpanish ? 'Manu de hablo.pro <hello@notify.hablo.pro>' : 'Manu from hablo.pro <hello@notify.hablo.pro>',
+      ReplyToAddresses: ['manuel@hablo.pro'],
+    };
+
+    try {
+      await sesClient.send(new SendEmailCommand(params));
+      console.log(`Sent welcome email to ${email}`);
+    } catch (error) {
+      console.error('Error sending welcome email to', email, error);
+    }
   }); 

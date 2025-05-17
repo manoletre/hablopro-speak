@@ -7,7 +7,9 @@ import {
   GoogleAuthProvider, 
   signInWithPopup
 } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { useLanguage } from './LanguageContext';
 import { identifyUser } from '../lib/analytics';
 import posthog from 'posthog-js';
 
@@ -23,6 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const { getLanguageCode } = useLanguage();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -40,6 +43,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => unsubscribe();
   }, []);
+
+  // Create user profile document on first sign-in
+  useEffect(() => {
+    if (!user) return;
+    const initUserProfile = async () => {
+
+      const lang = getLanguageCode();
+      console.log('lang', lang);
+
+      const userRef = doc(db, 'users', user.uid);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) {
+        await setDoc(userRef, {
+          uiLanguage: lang,
+          createdAt: serverTimestamp(),
+          email: user.email,
+          name: user.displayName,
+          photoURL: user.photoURL,
+          uid: user.uid
+        });
+      }
+    };
+    initUserProfile().catch((error) => {
+      console.error('Error creating user profile:', error);
+    });
+  }, [user, getLanguageCode]);
 
   const signInWithGoogle = async () => {
     try {

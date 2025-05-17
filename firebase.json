@@ -19,5 +19,24 @@
         "npm --prefix \"$RESOURCE_DIR\" run build"
       ]
     }
-  ]
+  ],
+  "emulators": {
+    "auth": {
+      "port": 9099,
+      "host": "localhost",
+      "dataDir": "./emulator/auth"
+    },
+    "firestore": {
+      "port": 8080,
+      "host": "localhost",
+      "dataDir": "./emulator/firestore"
+    },
+    "functions": {
+      "port": 5001
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000
+    }
+  }
 }

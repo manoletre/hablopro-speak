@@ -1,7 +1,9 @@
 // Firebase configuration
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
+import { connectAuthEmulator } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { connectFirestoreEmulator } from 'firebase/firestore';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -17,5 +19,11 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// connect to Firebase emulators when running locally in development
+if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+  connectAuthEmulator(auth, 'http://localhost:9099');
+  connectFirestoreEmulator(db, 'localhost', 8080);
+}
 
 export { app, auth, db }; 
