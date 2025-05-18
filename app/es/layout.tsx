@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     description: "Practica hablando con Nacho, tu tutor personal de idiomas con IA. Mejora tu fluidez, vocabulario y confianza en cualquier idioma.",
     images: [
       {
-        url: "/images/landing_screenshot_es.png",
+        url: "/images/hablo_logo_long.png",
         width: 1200,
         height: 630,
         alt: "Hablo.pro - Tutor de Idiomas de IA para Español, Inglés y Más",
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Hablo.pro - Tutor de Idiomas de IA para Español, Inglés y Más",
     description: "Practica hablando con Nacho, tu tutor personal de idiomas con IA. Mejora tu fluidez, vocabulario y confianza en cualquier idioma.",
-    images: ["/images/landing_screenshot_es.png"],
+    images: ["/images/hablo_logo_long.png"],
     creator: "@hablopro",
   },
   robots: {

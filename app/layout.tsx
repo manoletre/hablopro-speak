@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     description: "Practice speaking with Nacho, your AI language tutor. Improve your fluency, vocabulary, and confidence in any language.",
     images: [
       {
-        url: "/images/landing_screenshot_en.png",
+        url: "/images/hablo_logo_long.png",
         width: 1200,
         height: 630,
         alt: "Hablo.pro - Speak with your AI language tutor",
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Hablo.pro - Speak with your AI language tutor",
     description: "Practice speaking with Nacho, your AI language tutor. Improve your fluency, vocabulary, and confidence in any language.",
-    images: ["/images/landing_screenshot_en.png"],
+    images: ["/images/hablo_logo_long.png"],
     creator: "@hablopro",
   },
   robots: {
