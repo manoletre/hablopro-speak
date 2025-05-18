@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import StreakDisplay from './StreakDisplay';
 import { trackSessionStarted } from '../lib/analytics';
@@ -28,17 +28,34 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
   const [showStreakDisplay, setShowStreakDisplay] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [longestStreak, setLongestStreak] = useState(0);
+  const [showLostStreakDialog, setShowLostStreakDialog] = useState(false);
 
   useEffect(() => {
     const fetchStreakData = async () => {
       if (!user) return;
 
       try {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
           const data = userDoc.data();
-          setCurrentStreak(data.currentStreak || 0);
-          setLongestStreak(data.longestStreak || 0);
+          let current = data.currentStreak || 0;
+          const longest = data.longestStreak || 0;
+          const lastActiveTimestamp = data.lastActive;
+          if (lastActiveTimestamp) {
+            const lastActiveDate = lastActiveTimestamp.toDate();
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const yesterdayStart = new Date(todayStart);
+            yesterdayStart.setDate(todayStart.getDate() - 1);
+            if (lastActiveDate < yesterdayStart) {
+              setShowLostStreakDialog(true);
+              await updateDoc(userDocRef, { currentStreak: 0 });
+              current = 0;
+            }
+          }
+          setCurrentStreak(current);
+          setLongestStreak(longest);
         }
       } catch (error) {
         console.error('Error fetching streak data:', error);
@@ -466,6 +483,18 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
       {/* Streak Display Modal */}
       {showStreakDisplay && (
         <StreakDisplay onClose={() => setShowStreakDisplay(false)} />
+      )}
+      {showLostStreakDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 relative max-w-sm w-full">
+            <button onClick={() => setShowLostStreakDialog(false)} className="absolute top-2 right-2 text-gray-500 hover:text-gray-700">&times;</button>
+            <h2 className="text-xl font-medium text-center mb-4">{t('home.lostStreak')}</h2>
+            <div className="w-full h-48 relative mb-4">
+              <Image src="/images/lost_streak.png" alt="Lost Streak" fill style={{ objectFit: 'contain' }} />
+            </div>
+            <button onClick={() => { setShowLostStreakDialog(false); handleStartSession(difficultyLevel, selectedLanguage); }} className="mt-2 w-full py-2 bg-[#422006] text-white rounded-lg hover:bg-[#5a3108] transition-colors">{t('home.doSessionNow')}</button>
+          </div>
+        </div>
       )}
     </div>
   );

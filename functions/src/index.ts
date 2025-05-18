@@ -2,11 +2,16 @@ import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { DocumentSnapshot } from 'firebase-admin/firestore';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
+import { CloudTasksClient, protos } from '@google-cloud/tasks';
 
 admin.initializeApp();
 
 const db = admin.firestore();
 const sesClient = new SESClient({ region: 'us-east-2' });
+const tasksClient = new CloudTasksClient();
+const projectId = JSON.parse(process.env.FIREBASE_CONFIG!).projectId;
+const location = 'us-central1';
+const queue = 'daily-reminders';
 
 /**
  * Convert a date to the user's local date string (YYYY-MM-DD) based on timezone offset
@@ -23,6 +28,34 @@ function getUserLocalDateString(date: Date, timezoneOffsetMinutes: number = 0): 
   // - UTC-5 (Colombia) has offset of +300, so we subtract 300 minutes from UTC time
   const localDate = new Date(date.getTime() - (timezoneOffsetMinutes * 60 * 1000));
   return localDate.toISOString().substring(0, 10); // Returns YYYY-MM-DD
+}
+
+// Helper to schedule a Cloud Task for a user's reminder
+async function scheduleUserReminder(uid: string, reminderDate: Date): Promise<string> {
+  const parent = tasksClient.queuePath(projectId, location, queue);
+  const url = `https://${location}-${projectId}.cloudfunctions.net/sendDailyReminder`;
+  const payload = { uid };
+  const task: protos.google.cloud.tasks.v2.ITask = {
+    httpRequest: {
+      httpMethod: protos.google.cloud.tasks.v2.HttpMethod.POST,
+      url,
+      headers: { 'Content-Type': 'application/json' },
+      body: Buffer.from(JSON.stringify(payload)).toString('base64'),
+    },
+    scheduleTime: { seconds: Math.floor(reminderDate.getTime() / 1000) },
+  };
+  const [response] = await tasksClient.createTask({ parent, task });
+  return response.name!;
+}
+
+// Helper to compute the next reminder time in UTC based on user's timezone and target local time
+function computeNextReminderTime(timezoneOffsetMinutes: number, targetHour: number, targetMinute: number): Date {
+  const nowUtc = new Date();
+  const localNow = new Date(nowUtc.getTime() - timezoneOffsetMinutes * 60 * 1000);
+  const localSchedule = new Date(localNow);
+  localSchedule.setHours(targetHour, targetMinute, 0, 0);
+  if (localSchedule <= localNow) localSchedule.setDate(localSchedule.getDate() + 1);
+  return new Date(localSchedule.getTime() + timezoneOffsetMinutes * 60 * 1000);
 }
 
 export const onSessionCreate = functions
@@ -111,6 +144,8 @@ export const onUserCreate = functions
   .document('users/{userId}')
   .onCreate(async (snap: DocumentSnapshot, ctx: functions.EventContext) => {
     const data = snap.data();
+    // Use current time as signup timestamp and get user document reference
+    const userRef = db.doc(`users/${ctx.params.userId}`);
     const email = data?.email;
     const uiLanguage = data?.uiLanguage || 'en';
     if (!email) {
@@ -170,5 +205,94 @@ P.S. Made with ❤️ from Colombia 🇨🇴`;
       console.log(`Sent welcome email to ${email}`);
     } catch (error) {
       console.error('Error sending welcome email to', email, error);
+    }
+
+    // Schedule first reminder 24h after signup
+    // const firstReminderDate = new Date(signupDate.getTime() + 24 * 60 * 60 * 1000);
+    const firstReminderDate = new Date(Date.now() + 60 * 1000);
+    try {
+      const taskName = await scheduleUserReminder(ctx.params.userId, firstReminderDate);
+      await userRef.set({ reminderEnabled: true, reminderTaskName: taskName }, { merge: true });
+    } catch (error) {
+      console.error('Error scheduling first reminder for user', ctx.params.userId, error);
+    }
+  });
+
+export const sendDailyReminder = functions
+  .runWith({
+    serviceAccount: 'cloud-functions1@hablopro-speak.iam.gserviceaccount.com'
+  })
+  .https
+  .onRequest(async (req, res) => {
+    const { uid } = req.body || {};
+    if (!uid) {
+      res.status(400).send('Missing uid'); return;
+    }
+    try {
+      const userRef = db.doc(`users/${uid}`);
+      const userSnap = await userRef.get();
+      const userData = userSnap.data() || {};
+      const { email, uiLanguage = 'en', reminderEnabled, currentStreak = 0 } = userData;
+      if (!email || reminderEnabled !== true) {
+        res.status(200).send('No reminder sent'); return;
+      }
+      const isSpanish = uiLanguage === 'es';
+      const subject = isSpanish
+        ? `¡No pierdas tu racha de ${currentStreak} días!`
+        : `Don't lose your ${currentStreak}-day streak!`;
+      const unsubscribeUrl = `https://hablo.pro/settings?uid=${uid}`;
+      const body = isSpanish
+        ? `¡Hola!\n\nNo pierdas tu racha de ${currentStreak} días. Sigue practicando hoy para mantener tu racha.\n\nSi quieres darte de baja de los recordatorios diarios, haz clic aquí: ${unsubscribeUrl}`
+        : `Hey!\n\nDon't lose your ${currentStreak}-day streak. Keep practicing today to maintain your streak.\n\nIf you no longer wish to receive daily reminders, click here: ${unsubscribeUrl}`;
+      const params = {
+        Destination: { ToAddresses: [email] },
+        Message: {
+          Body: { Text: { Data: body } },
+          Subject: { Data: subject },
+        },
+        Source: isSpanish ? 'Manu de hablo.pro <hello@notify.hablo.pro>' : 'Manu from hablo.pro <hello@notify.hablo.pro>',
+        ReplyToAddresses: ['manuel@hablo.pro'],
+      };
+      await sesClient.send(new SendEmailCommand(params));
+      console.log(`Sent daily reminder to ${email}`);
+      // Schedule next reminder 24h later
+      const nextReminderDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const nextTaskName = await scheduleUserReminder(uid, nextReminderDate);
+      await userRef.set({ reminderTaskName: nextTaskName }, { merge: true });
+      res.status(200).send('Reminder sent');
+    } catch (error) {
+      console.error('Error in sendDailyReminder', error);
+      res.status(500).send('Error sending reminder');
+    }
+  });
+
+export const onUserUpdateReminderSettings = functions
+  .runWith({
+    serviceAccount: 'cloud-functions1@hablopro-speak.iam.gserviceaccount.com'
+  })
+  .firestore
+  .document('users/{uid}')
+  .onUpdate(async (change, ctx) => {
+    const before = change.before.data() || {};
+    const after = change.after.data() || {};
+    const userRef = db.doc(`users/${ctx.params.uid}`);
+    const prevTaskName = before.reminderTaskName;
+    const prevEnabled = before.reminderEnabled;
+    const afterEnabled = after.reminderEnabled;
+    const { reminderHour, reminderMinute, timezoneOffsetMinutes = 0 } = after;
+
+    // Cancel reminders if disabled
+    if (prevTaskName && prevEnabled && !afterEnabled) {
+      await tasksClient.deleteTask({ name: prevTaskName });
+      await userRef.set({ reminderTaskName: admin.firestore.FieldValue.delete() }, { merge: true });
+      return;
+    }
+
+    // Reschedule if enabled or time changed
+    if (afterEnabled && (!prevEnabled || reminderHour !== before.reminderHour || reminderMinute !== before.reminderMinute)) {
+      if (prevTaskName) await tasksClient.deleteTask({ name: prevTaskName });
+      const nextDate = computeNextReminderTime(timezoneOffsetMinutes, reminderHour, reminderMinute);
+      const nextTask = await scheduleUserReminder(ctx.params.uid, nextDate);
+      await userRef.set({ reminderTaskName: nextTask }, { merge: true });
     }
   }); 
