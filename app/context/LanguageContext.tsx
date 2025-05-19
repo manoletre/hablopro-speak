@@ -15,6 +15,7 @@ type TranslationKey =
   | 'home.editProficiency'
   | 'home.editLanguage'
   | 'home.beginSession'
+  | 'home.doSessionNow'
   | 'home.myBookmarks'
   | 'home.dashboard'
   | 'home.logout'
@@ -67,7 +68,8 @@ type TranslationKey =
   | 'voiceChat.connected'
   | 'voiceChat.connecting'
   | 'voiceChat.nachoSpeaking'
-  | 'voiceChat.wrappingUp';
+  | 'voiceChat.wrappingUp'
+  | 'home.lostStreak';
 
 interface LanguageContextType {
   language: Language;
@@ -82,6 +84,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'home.editProficiency': 'edit proficiency:',
     'home.editLanguage': 'edit language:',
     'home.beginSession': 'begin session',
+    'home.doSessionNow': 'do a session now',
     'home.myBookmarks': 'My Bookmarks',
     'home.dashboard': 'Learning Dashboard',
     'home.logout': 'Logout',
@@ -135,12 +138,14 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'voiceChat.connecting': 'Connecting...',
     'voiceChat.nachoSpeaking': 'Nacho is speaking...',
     'voiceChat.wrappingUp': 'Wrapping up...',
+    'home.lostStreak': 'you lost your streak',
   },
   español: {
     'home.title': 'no dejes para mañana lo que puedes aprender hoy.',
     'home.editProficiency': 'editar nivel:',
     'home.editLanguage': 'editar idioma:',
     'home.beginSession': 'comenzar sesión',
+    'home.doSessionNow': 'comenzar sesión ahora',
     'home.myBookmarks': 'Mis Marcadores',
     'home.dashboard': 'Panel de Aprendizaje',
     'home.logout': 'Cerrar Sesión',
@@ -194,6 +199,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'voiceChat.connecting': 'Conectando...',
     'voiceChat.nachoSpeaking': 'Nacho está hablando...',
     'voiceChat.wrappingUp': 'Terminando...',
+    'home.lostStreak': 'perdiste tu racha',
   },
 };
 

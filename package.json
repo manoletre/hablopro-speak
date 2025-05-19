@@ -11,6 +11,7 @@
     "watch:functions": "npm run watch --prefix functions"
   },
   "dependencies": {
+    "@google-cloud/tasks": "^6.1.0",
     "cookies-next": "^5.1.0",
     "critters": "^0.0.23",
     "firebase": "^11.6.1",
