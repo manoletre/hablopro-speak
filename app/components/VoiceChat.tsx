@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect, useCallback, MouseEvent } from 'react';
 import AnimatedNacho from './AnimatedNacho';
-import TypingAnimation from './TypingAnimation';
 import SessionResults from './SessionResults';
 import AuthDialog from './AuthDialog';
 import { useAuth } from '../context/AuthContext';
@@ -47,7 +46,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
   usePostHog();
 
   const { user, loading } = useAuth();
-  const { t, language: uiLanguage, getLanguageCode } = useLanguage();
+  const { t, language: uiLanguage } = useLanguage();
   const [isListening, setIsListening] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [aiTranscript, setAiTranscript] = useState<string>('');

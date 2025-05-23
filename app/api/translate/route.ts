@@ -5,11 +5,13 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string; };
+
 export async function POST(request: Request) {
   try {
     const { word, sourceLanguage, targetLanguage, context } = await request.json();
 
-    const messages = [
+    const messages: ChatMessage[] = [
       {
         role: 'system',
         content: 'You are a helpful translator. Translate single words from the source language into the target language using the provided context to determine the correct meaning. Respond with only valid JSON: { "translation": "..." }.',
@@ -22,7 +24,7 @@ export async function POST(request: Request) {
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4.1-nano',
-      messages: messages as any,
+      messages: messages,
       temperature: 0,
     });
 
@@ -31,7 +33,7 @@ export async function POST(request: Request) {
     try {
       const data = JSON.parse(reply);
       translation = data.translation;
-    } catch (err) {
+    } catch {
       console.error('Failed to parse translation response:', reply);
       translation = reply.trim();
     }

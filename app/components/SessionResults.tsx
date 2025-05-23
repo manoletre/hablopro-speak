@@ -6,6 +6,7 @@ import GrammarCard from './GrammarCard';
 import VocabularyCard from './VocabularyCard';
 import { getAuth } from 'firebase/auth';
 import { doc, getDoc, getFirestore } from 'firebase/firestore';
+import Image from 'next/image';
 
 // Define the conversation message structure
 interface ConversationMessage {
@@ -319,9 +320,11 @@ export default function SessionResults({ conversationHistory, onClose }: Session
                   {t('sessionResults.streakCongrats')}
                 </h3>
                 <div className="my-4">
-                  <img 
-                    src={randomStreakImage} 
-                    alt={t('sessionResults.streakImage')} 
+                  <Image 
+                    src={randomStreakImage}
+                    alt={t('sessionResults.streakImage')}
+                    width={400}
+                    height={300}
                     className="w-full h-auto rounded-lg"
                   />
                 </div>
