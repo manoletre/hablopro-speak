@@ -20,10 +20,10 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Hablo.pro - Tutor de Idiomas de IA para Español, Inglés y Más",
+    title: "Hablo.pro - Tutor de Idiomas de IA para Inglés, Francés, Portugués y Más",
     description: "Practica hablando con Nacho, tu tutor personal de idiomas con IA. Mejora tu fluidez, vocabulario y confianza en cualquier idioma.",
     images: ["/images/hablo_logo_long.png"],
-    creator: "@hablopro",
+    creator: "@_manoletre",
   },
   robots: {
     index: true,

@@ -11,10 +11,10 @@ const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
   name: 'Hablo - Tutor de Idiomas de IA',
-  description: 'Practica hablando con Nacho, tu tutor personal de idiomas de IA. Mejora tu español, inglés, francés y más con conversaciones naturales y retroalimentación personalizada.',
+  description: 'Practica hablando con Nacho, tu tutor personal de idiomas de IA. Mejora tu inglés, francés, portugués y más con conversaciones naturales y retroalimentación personalizada.',
   applicationCategory: 'EducationalApplication',
   operatingSystem: 'Web',
-  keywords: 'Tutor de Idiomas de IA, tutor de español con IA, tutor de inglés con IA, tutor de francés con IA, tutor de alemán con IA, tutor de chino con IA, tutor de japonés con IA, app para aprender idiomas, práctica de conversación',
+  keywords: 'Tutor de Idiomas de IA, tutor de inglés con IA, tutor de francés con IA, tutor de portugués con IA, tutor de alemán con IA, tutor de chino con IA, tutor de japonés con IA, app para aprender idiomas, práctica de conversación',
   offers: {
     '@type': 'Offer',
     price: '0',
@@ -70,7 +70,7 @@ export default function LandingPage() {
                 <span>con tu tutor de IA.</span>
               </h1>
               <p className="text-lg md:text-xl text-amber-800 mb-8">
-                Practica hablando con Nacho, tu tutor personal de idiomas de IA. Mejora tu <span className="notebook-underline font-bold">fluidez</span>, <span className="notebook-underline font-bold">vocabulario</span>, y <span className="notebook-underline font-bold">confianza</span> en español, inglés, francés y muchos más idiomas.
+                Practica hablando con Nacho, tu tutor personal de idiomas de IA. Mejora tu <span className="notebook-underline font-bold">fluidez</span>, <span className="notebook-underline font-bold">vocabulario</span>, y <span className="notebook-underline font-bold">confianza</span> en inglés, francés, portugués y muchos más idiomas.
               </p>
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
                 <Link
@@ -90,7 +90,7 @@ export default function LandingPage() {
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 opacity-60 rounded-full blur-2xl w-[200px] h-[200px] md:w-[400px] md:h-[400px]"></div>
                 <Image
                   src="/images/nacho_intro.png"
-                  alt="Nacho, tu Tutor de Idiomas de IA para español, inglés y otros idiomas"
+                  alt="Nacho, tu Tutor de Idiomas de IA para inglés, francés, portugués y otros idiomas"
                   width={500}
                   height={500}
                   className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
@@ -124,7 +124,7 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-xl font-semibold text-amber-900 mb-3">Practica Hablando</h3>
                 <p className="text-amber-800">
-                Mantén <span className="font-semibold">conversaciones reales</span> con tu tutor de IA en español, inglés, francés o cualquier idioma objetivo. <span className="font-semibold">Lee, escucha y habla</span> en conversaciones naturales.
+                Mantén <span className="font-semibold">conversaciones reales</span> con tu tutor de IA en inglés, francés, portugués o cualquier idioma objetivo. <span className="font-semibold">Lee, escucha y habla</span> en conversaciones naturales.
                 </p>
               </div>
               
@@ -132,7 +132,7 @@ export default function LandingPage() {
                 <div className="w-32 h-32 bg-amber-200 rounded-full flex items-center justify-center mb-6 overflow-hidden">
                   <Image 
                     src="/images/nacho_multiple_langs.png" 
-                    alt="Tutor de IA para múltiples idiomas incluyendo español, inglés, francés y más" 
+                    alt="Tutor de IA para múltiples idiomas incluyendo inglés, francés, portugués y más" 
                     width={110} 
                     height={110} 
                     style={{objectFit: 'contain'}}
@@ -141,7 +141,7 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-xl font-semibold text-amber-900 mb-3">Múltiples Idiomas</h3>
                 <p className="text-amber-800">
-                  Aprende con tu tutor personal de IA en <span className="font-semibold">más de 10 idiomas</span> incluyendo español, inglés, francés, alemán, chino, japonés y más. <span className="font-semibold">Cambia entre idiomas</span> en cualquier momento.
+                  Aprende con tu tutor personal de IA en <span className="font-semibold">más de 10 idiomas</span> incluyendo inglés, francés, portugués, alemán, chino, japonés y más. <span className="font-semibold">Cambia entre idiomas</span> en cualquier momento.
                 </p>
               </div>
               
@@ -172,7 +172,7 @@ export default function LandingPage() {
               ¿Listo para empezar a hablar con tu Tutor de Idiomas de IA?
             </h2>
             <p className="text-lg md:text-xl text-amber-800 mb-8 max-w-2xl mx-auto">
-              Únete a otros estudiantes que están mejorando sus habilidades en español, inglés, francés y otros idiomas cada día con su tutor personal de IA.
+              Únete a otros estudiantes que están mejorando sus habilidades en inglés, francés, portugués y otros idiomas cada día con su tutor personal de IA.
             </p>
             <Link
               href="/learn"

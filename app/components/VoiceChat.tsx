@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, MouseEvent } from 'react';
 import AnimatedNacho from './AnimatedNacho';
 import TypingAnimation from './TypingAnimation';
 import SessionResults from './SessionResults';
@@ -47,7 +47,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
   usePostHog();
 
   const { user, loading } = useAuth();
-  const { t } = useLanguage();
+  const { t, language: uiLanguage, getLanguageCode } = useLanguage();
   const [isListening, setIsListening] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [aiTranscript, setAiTranscript] = useState<string>('');
@@ -82,6 +82,71 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
   const finishSessionRef = useRef<() => void>(() => {
     console.log('finishSession placeholder called');
   });
+
+  // State and handlers for word translation
+  const [popupWordIndex, setPopupWordIndex] = useState<number | null>(null);
+  const [translatingWord, setTranslatingWord] = useState<string | null>(null);
+  const [translation, setTranslation] = useState<string | null>(null);
+  const [dotCount, setDotCount] = useState<number>(1);
+  const [tooltipPosition, setTooltipPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  // Animate dots for translating message
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (translatingWord && translation === null) {
+      interval = setInterval(() => {
+        setDotCount(prev => (prev % 3) + 1);
+      }, 500);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [translatingWord, translation]);
+
+  // Clear translation popup when subtitles change
+  useEffect(() => {
+    setPopupWordIndex(null);
+    setTranslatingWord(null);
+    setTranslation(null);
+    setDotCount(1);
+    setTooltipPosition(null);
+  }, [subtitleBuffer]);
+
+  const handleWordClick = useCallback(async (word: string, idx: number, e: MouseEvent<HTMLSpanElement>) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setTooltipPosition({ top: rect.top, left: rect.left, width: rect.width });
+    setPopupWordIndex(idx);
+    setTranslatingWord(word);
+    setTranslation(null);
+    try {
+      const res = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ word, context: subtitleBuffer, sourceLanguage: language, targetLanguage: uiLanguage })
+      });
+      const data = await res.json();
+      setTranslation(data.translation);
+    } catch (error) {
+      console.error('Translation error', error);
+      setTranslation('Error translating');
+    }
+  }, [language, uiLanguage, subtitleBuffer]);
+
+  // Close tooltip when clicking anywhere outside word spans
+  useEffect(() => {
+    const handleDocumentClick = () => {
+      if (tooltipPosition) {
+        setPopupWordIndex(null);
+        setTranslatingWord(null);
+        setTranslation(null);
+        setDotCount(1);
+        setTooltipPosition(null);
+      }
+    };
+    document.addEventListener('click', handleDocumentClick);
+    return () => document.removeEventListener('click', handleDocumentClick);
+  }, [tooltipPosition]);
 
   // Clean up function to properly release all audio resources
   const cleanupAudioResources = useCallback(() => {
@@ -810,27 +875,51 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
             {/* AI response transcript with fixed height and scrolling */}
             {subtitleBuffer && (
               <div className="w-full max-w-xl relative">
-                {/* Stop session button - repositioned to the red area */}
-                <button
-                  onClick={stopConversation}
-                  className="absolute -top-10 right-0 px-3 py-1 text-xs rounded-md border border-amber-800/30 bg-amber-50 text-[#422006] hover:bg-amber-100"
-                >
-                  Stop session
-                </button>
-                
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-xs text-[#422006] opacity-70">{t('voiceChat.pressWord')}</p>
+                  <button
+                    onClick={stopConversation}
+                    className="px-3 py-1 text-xs rounded-md border border-amber-800/30 bg-amber-50 text-[#422006] hover:bg-amber-100"
+                  >
+                    Stop session
+                  </button>
+                </div>
                 <div className="bg-amber-100 rounded-lg p-4 shadow-sm">
                   <p className="text-[#422006] text-sm mb-1 opacity-60">Nacho says:</p>
                   <div 
                     ref={subtitleContainerRef}
-                    className="max-h-36 overflow-y-auto"
-                    style={{
-                      scrollBehavior: 'smooth'
-                    }}
+                    className="max-h-64 overflow-y-auto"
+                    style={{ scrollBehavior: 'smooth' }}
                   >
                     <div className="text-[#422006]">
-                      <TypingAnimation text={subtitleBuffer} typingSpeed={5} />
+                      <div className="flex flex-wrap">
+                        {subtitleBuffer.split(/(\s+)/).map((token, idx) =>
+                          /\s+/.test(token) ? (
+                            <span key={idx}>{token}</span>
+                          ) : (
+                            <span
+                              key={idx}
+                              className={`inline-block px-0.5 cursor-pointer rounded ${popupWordIndex === idx ? 'bg-amber-300' : 'hover:bg-amber-200'}`}
+                              onClick={(e) => handleWordClick(token, idx, e)}
+                            >
+                              {token}
+                            </span>
+                          )
+                        )}
+                      </div>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+            {tooltipPosition && popupWordIndex !== null && (
+              <div style={{ position: 'fixed', top: tooltipPosition.top - 40, left: tooltipPosition.left + tooltipPosition.width / 2, transform: 'translateX(-50%)', zIndex: 1000 }}>
+                <div className="bg-white border border-gray-300 rounded-lg p-2 shadow-md">
+                  {translation !== null ? (
+                    <span className="text-xs text-[#422006]">{translation}</span>
+                  ) : (
+                    <span className="text-xs text-[#422006]">{t('voiceChat.translating')}{'.'.repeat(dotCount)}</span>
+                  )}
                 </div>
               </div>
             )}

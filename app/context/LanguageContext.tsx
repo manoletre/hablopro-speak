@@ -69,6 +69,8 @@ type TranslationKey =
   | 'voiceChat.connecting'
   | 'voiceChat.nachoSpeaking'
   | 'voiceChat.wrappingUp'
+  | 'voiceChat.pressWord'
+  | 'voiceChat.translating'
   | 'home.lostStreak';
 
 interface LanguageContextType {
@@ -81,8 +83,8 @@ interface LanguageContextType {
 const translations: Record<Language, Record<TranslationKey, string>> = {
   english: {
     'home.title': "don't put off until tomorrow what you can learn today.",
-    'home.editProficiency': 'edit proficiency:',
-    'home.editLanguage': 'edit language:',
+    'home.editProficiency': 'choose the difficulty level:',
+    'home.editLanguage': 'choose the language you want to speak:',
     'home.beginSession': 'begin session',
     'home.doSessionNow': 'do a session now',
     'home.myBookmarks': 'My Bookmarks',
@@ -138,12 +140,14 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'voiceChat.connecting': 'Connecting...',
     'voiceChat.nachoSpeaking': 'Nacho is speaking...',
     'voiceChat.wrappingUp': 'Wrapping up...',
+    'voiceChat.pressWord': 'Press a word to view its meaning',
+    'voiceChat.translating': 'Nacho is translating',
     'home.lostStreak': 'you lost your streak',
   },
   español: {
     'home.title': 'no dejes para mañana lo que puedes aprender hoy.',
-    'home.editProficiency': 'editar nivel:',
-    'home.editLanguage': 'editar idioma:',
+    'home.editProficiency': 'elige el nivel de dificultad:',
+    'home.editLanguage': 'elige el idioma que quieres hablar:',
     'home.beginSession': 'comenzar sesión',
     'home.doSessionNow': 'comenzar sesión ahora',
     'home.myBookmarks': 'Mis Marcadores',
@@ -198,7 +202,9 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'voiceChat.connected': 'Conectado y listo',
     'voiceChat.connecting': 'Conectando...',
     'voiceChat.nachoSpeaking': 'Nacho está hablando...',
-    'voiceChat.wrappingUp': 'Terminando...',
+    'voiceChat.wrappingUp': 'Analizando...',
+    'voiceChat.pressWord': 'presiona una palabra para ver su significado',
+    'voiceChat.translating': 'Nacho está traduciendo',
     'home.lostStreak': 'perdiste tu racha',
   },
 };

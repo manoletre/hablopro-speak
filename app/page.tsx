@@ -74,7 +74,7 @@ export default function LandingPage() {
                     setLanguage('english');
                   }}
                 >
-                  {user ? 'Continue Learning' : 'Get Started Free'}
+                  {user ? 'Continue learning' : 'Get started for free'}
                 </Link>
               </div>
             </div>

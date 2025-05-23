@@ -56,7 +56,7 @@ export const metadata: Metadata = {
     title: "Hablo.pro - Speak with your AI language tutor",
     description: "Practice speaking with Nacho, your AI language tutor. Improve your fluency, vocabulary, and confidence in any language.",
     images: ["/images/hablo_logo_long.png"],
-    creator: "@hablopro",
+    creator: "@_manoletre",
   },
   robots: {
     index: true,
