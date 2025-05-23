@@ -378,76 +378,84 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
               </button>
               
               {showLanguageDropdown && (
-                <div className="absolute left-0 right-0 mt-2 rounded-lg shadow-lg bg-white border border-amber-800/10 p-2 z-20">
-                  <div 
-                    className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'english' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                    onClick={() => selectConversationLanguage('english')}
-                  >
-                    <span className="mr-2 text-xl">🇬🇧</span>
-                    <span>english</span>
-                  </div>
-                  <div 
-                    className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'español' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                    onClick={() => selectConversationLanguage('español')}
-                  >
-                    <span className="mr-2 text-xl">🇪🇸</span>
-                    <span>spanish</span>
-                  </div>
-                  <div 
-                    className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'french' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                    onClick={() => selectConversationLanguage('french')}
-                  >
-                    <span className="mr-2 text-xl">🇫🇷</span>
-                    <span>french</span>
-                  </div>
-                  <div 
-                    className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'portuguese' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                    onClick={() => selectConversationLanguage('portuguese')}
-                  >
-                    <span className="mr-2 text-xl">🇵🇹</span>
-                    <span>portuguese</span>
-                  </div>
-                  <div 
-                    className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'italian' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                    onClick={() => selectConversationLanguage('italian')}
-                  >
-                    <span className="mr-2 text-xl">🇮🇹</span>
-                    <span>italian</span>
-                  </div>
-                  <div 
-                    className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'german' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                    onClick={() => selectConversationLanguage('german')}
-                  >
-                    <span className="mr-2 text-xl">🇩🇪</span>
-                    <span>german</span>
-                  </div>
-                  <div 
-                    className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'dutch' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                    onClick={() => selectConversationLanguage('dutch')}
-                  >
-                    <span className="mr-2 text-xl">🇳🇱</span>
-                    <span>dutch</span>
-                  </div>
-                  <div 
-                    className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'chinese' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                    onClick={() => selectConversationLanguage('chinese')}
-                  >
-                    <span className="mr-2 text-xl">🇨🇳</span>
-                    <span>chinese</span>
-                  </div>
-                  <div 
-                    className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'japanese' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                    onClick={() => selectConversationLanguage('japanese')}
-                  >
-                    <span className="mr-2 text-xl">🇯🇵</span>
-                    <span>japanese</span>
-                  </div>
-                  <div 
-                    className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'korean' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
-                    onClick={() => selectConversationLanguage('korean')}
-                  >
-                    <span className="mr-2 text-xl">🇰🇷</span>
-                    <span>korean</span>
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={toggleLanguageDropdown}>
+                  <div className="bg-white rounded-lg p-6 mx-4 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+                    <h2 className="text-[#422006] text-xl font-medium mb-4">{t('home.editLanguage')}</h2>
+                    <div className="flex flex-col space-y-2 max-h-96 overflow-y-auto">
+                      <div 
+                        className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'english' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
+                        onClick={() => selectConversationLanguage('english')}
+                      >
+                        <span className="mr-2 text-xl">🇬🇧</span>
+                        <span className="text-[#422006]">english</span>
+                      </div>
+                      <div 
+                        className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'español' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
+                        onClick={() => selectConversationLanguage('español')}
+                      >
+                        <span className="mr-2 text-xl">🇪🇸</span>
+                        <span className="text-[#422006]">spanish</span>
+                      </div>
+                      <div 
+                        className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'french' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
+                        onClick={() => selectConversationLanguage('french')}
+                      >
+                        <span className="mr-2 text-xl">🇫🇷</span>
+                        <span className="text-[#422006]">french</span>
+                      </div>
+                      <div 
+                        className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'portuguese' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
+                        onClick={() => selectConversationLanguage('portuguese')}
+                      >
+                        <span className="mr-2 text-xl">🇵🇹</span>
+                        <span className="text-[#422006]">portuguese</span>
+                      </div>
+                      <div 
+                        className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'italian' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
+                        onClick={() => selectConversationLanguage('italian')}
+                      >
+                        <span className="mr-2 text-xl">🇮🇹</span>
+                        <span className="text-[#422006]">italian</span>
+                      </div>
+                      <div 
+                        className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'german' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
+                        onClick={() => selectConversationLanguage('german')}
+                      >
+                        <span className="mr-2 text-xl">🇩🇪</span>
+                        <span className="text-[#422006]">german</span>
+                      </div>
+                      <div 
+                        className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'dutch' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
+                        onClick={() => selectConversationLanguage('dutch')}
+                      >
+                        <span className="mr-2 text-xl">🇳🇱</span>
+                        <span className="text-[#422006]">dutch</span>
+                      </div>
+                      <div 
+                        className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'chinese' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
+                        onClick={() => selectConversationLanguage('chinese')}
+                      >
+                        <span className="mr-2 text-xl">🇨🇳</span>
+                        <span className="text-[#422006]">chinese</span>
+                      </div>
+                      <div 
+                        className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'japanese' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
+                        onClick={() => selectConversationLanguage('japanese')}
+                      >
+                        <span className="mr-2 text-xl">🇯🇵</span>
+                        <span className="text-[#422006]">japanese</span>
+                      </div>
+                      <div 
+                        className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'korean' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
+                        onClick={() => selectConversationLanguage('korean')}
+                      >
+                        <span className="mr-2 text-xl">🇰🇷</span>
+                        <span className="text-[#422006]">korean</span>
+                      </div>
+                    </div>
+                    <button onClick={toggleLanguageDropdown} className="mt-4 w-full py-2 bg-[#422006] text-white rounded-lg hover:bg-[#5a3108] transition-colors">
+                      Close
+                    </button>
                   </div>
                 </div>
               )}
