@@ -496,7 +496,7 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 relative max-w-sm w-full">
             <button onClick={() => setShowLostStreakDialog(false)} className="absolute top-2 right-2 text-gray-500 hover:text-gray-700">&times;</button>
-            <h2 className="text-xl font-medium text-center mb-4">{t('home.lostStreak')}</h2>
+            <h2 className="text-xl font-medium text-center mb-4 text-[#422006]">{t('home.lostStreak')}</h2>
             <div className="w-full h-48 relative mb-4">
               <Image src="/images/lost_streak.png" alt="Lost Streak" fill style={{ objectFit: 'contain' }} />
             </div>
