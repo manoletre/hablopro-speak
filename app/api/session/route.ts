@@ -68,7 +68,14 @@ export async function POST(request: Request) {
     const { difficultyLevel = 3, language = 'english' } = body;
     
     let prompt = promptTemplates[difficultyLevel as keyof typeof promptTemplates] || promptTemplates[3];
-    prompt = prompt.replace('[target language]', language);
+    
+    // Handle Brazilian Portuguese specifically
+    let targetLanguage = language;
+    if (language.toLowerCase() === 'portuguese') {
+      targetLanguage = 'Brazilian Portuguese (use Brazilian vocabulary, expressions, and pronunciation - for example: "você" instead of "tu", Brazilian slang, and cultural references from Brazil)';
+    }
+    
+    prompt = prompt.replace('[target language]', targetLanguage);
 
     const languageCode = languageCodes[language.toLowerCase()] || 'en';
 

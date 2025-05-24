@@ -20,8 +20,8 @@ export default function LearnPage() {
   };
 
   return (
-    <div className="absolute inset-0 w-full h-full bg-[#fffaed] overflow-auto">
-      <main className="w-full min-h-screen">
+    <div className="absolute inset-0 w-full h-full max-h-screen bg-[#fffaed] overflow-hidden">
+      <main className="w-full h-full">
         {!sessionStarted ? (
           <HomeScreen onStartSession={startSession} />
         ) : (

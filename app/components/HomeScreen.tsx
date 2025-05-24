@@ -183,7 +183,7 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
   };
 
   return (
-    <div className="w-full h-screen bg-[#fffaed] font-poppins flex flex-col" suppressHydrationWarning>
+    <div className="w-full h-screen max-h-screen bg-[#fffaed] font-poppins flex flex-col overflow-hidden" suppressHydrationWarning>
       {/* Sidebar */}
       {showSidebar && (
         <>
@@ -291,7 +291,7 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
       )}
 
       {/* Top Bar */}
-      <div className="w-full p-4 flex justify-between items-center">
+      <div className="w-full p-4 flex justify-between items-center flex-shrink-0">
         {/* Sidebar Button (Left) - only show if user is signed in */}
         {user ? (
           <button 
@@ -312,6 +312,20 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
             </svg>
           </Link>
         )}
+
+        {/* Current Streak (Center) - only show if user is signed in */}
+        {user && (
+          <button
+            onClick={() => setShowStreakDisplay(true)}
+            className="flex items-center justify-center text-[#422006] hover:bg-amber-50 rounded-lg px-3 py-2 transition-colors"
+          >
+            <span className="mr-2">🔥</span>
+            <span className="font-medium">{currentStreak}</span>
+          </button>
+        )}
+
+        {/* Spacer for when user is not signed in */}
+        {!user && <div className="flex-1"></div>}
 
         {/* Language Selection (Right) */}
         <div className="relative">
@@ -349,7 +363,7 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 min-h-0 overflow-y-auto">
         <h1 className="text-[#422006] text-3xl md:text-4xl font-medium text-center mb-6">
           {t('home.title')}
         </h1>
@@ -543,22 +557,6 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
           >
             {t('home.beginSession')}
           </button>
-
-          {/* Streak Display */}
-          {user && (
-            <button
-              onClick={() => setShowStreakDisplay(true)}
-              className="mt-4 w-full py-2 border border-amber-200 text-[#422006] rounded-lg flex items-center justify-center hover:bg-amber-50 transition-colors"
-            >
-              <span className="mr-2">🔥</span>
-              {t('home.streak', { days: currentStreak })}
-              {longestStreak > 0 && (
-                <span className="ml-2 text-[#422006]/60">
-                  {t('home.longestStreak', { days: longestStreak })}
-                </span>
-              )}
-            </button>
-          )}
         </div>
       </div>
 

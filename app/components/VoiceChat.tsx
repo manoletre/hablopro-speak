@@ -822,7 +822,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
 
   // Final modified return statement with timer and conditional rendering for results
   return (
-    <div className="w-full h-screen bg-[#fffaed] font-poppins flex flex-col">
+    <div className="w-full h-screen max-h-screen bg-[#fffaed] font-poppins flex flex-col overflow-hidden">
       {/* Show auth dialog if no user is authenticated and loading is complete */}
       {!loading && !user && <AuthDialog />}
       
@@ -830,7 +830,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
         // Active session UI
         <>
           {/* Header with back button */}
-          <div className="w-full p-4 flex items-center justify-between">
+          <div className="w-full p-4 flex items-center justify-between flex-shrink-0">
             <button
               onClick={stopConversation}
               className="w-10 h-10 rounded-lg border border-amber-800/20 flex items-center justify-center bg-amber-50"
@@ -853,9 +853,9 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
           </div>
           
           {/* Main Content */}
-          <div className="flex-1 flex flex-col items-center justify-between px-6 pb-10 relative">
+          <div className="flex-1 flex flex-col items-center justify-between px-6 pb-4 relative min-h-0 overflow-hidden">
             {/* Status indicator */}
-            <div className="w-full text-center mb-4">
+            <div className="w-full text-center mb-4 flex-shrink-0">
               <p className="text-[#422006] opacity-60">
                 {isConnected ? 
                   (aiSpeaking ? t('voiceChat.nachoSpeaking') : (isListening ? t('voiceChat.listening') : t('voiceChat.connected'))) : 
@@ -870,26 +870,27 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
 
             {/* AI response transcript - positioned independently of Nacho */}
             {subtitleBuffer && (
-              <div className="absolute bottom-0 left-0 right-0 mx-2 sm:bottom-4 sm:left-4 sm:right-4 sm:mx-0">
-                <div className="w-full mx-auto">
-                  <div className="flex justify-end items-center mb-2">
+              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-[550px] px-4 pb-4">
+                <div className="bg-amber-100/95 backdrop-blur-sm rounded-lg shadow-sm border border-amber-200 relative">
+                  {/* Header with press word message and stop button */}
+                  <div className="flex items-center justify-between p-3 pb-2">
+                    <p className="text-xs text-[#422006] opacity-70 flex-1">
+                      {t('voiceChat.pressWord')}
+                    </p>
                     <button
                       onClick={stopConversation}
-                      className="px-3 py-1 text-xs rounded-md border border-amber-800/30 bg-amber-50 text-[#422006] hover:bg-amber-100"
+                      className="px-2 py-1 text-xs rounded-md border border-amber-800/30 bg-amber-50 text-[#422006] hover:bg-amber-100 ml-2 flex-shrink-0"
                     >
                       Stop session
                     </button>
                   </div>
-                  <div className="relative mb-2">
-                    {/* Gradient background for the "press word" text - positioned below button */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#fffaed]/60 to-[#fffaed] rounded-full blur-sm"></div>
-                    <p className="relative text-xs text-[#422006] opacity-70 bg-[#fffaed]/90 px-2 py-1 rounded-full text-center">{t('voiceChat.pressWord')}</p>
-                  </div>
-                  <div className="bg-amber-100/95 backdrop-blur-sm rounded-lg p-4 shadow-sm border border-amber-200 w-full sm:max-w-[800px] sm:mx-auto">
+                  
+                  {/* Subtitles content */}
+                  <div className="px-3 pb-3">
                     <p className="text-[#422006] text-sm mb-1 opacity-60">Nacho says:</p>
                     <div 
                       ref={subtitleContainerRef}
-                      className="max-h-32 sm:max-h-64 overflow-y-auto"
+                      className="max-h-32 overflow-y-auto mb-2 relative"
                       style={{ scrollBehavior: 'smooth' }}
                     >
                       <div className="text-[#422006]">
@@ -912,6 +913,43 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Translation Popup */}
+            {tooltipPosition && translatingWord && (
+              <div
+                className="fixed z-50 bg-white border border-gray-300 rounded-lg shadow-lg p-3 max-w-xs"
+                style={{
+                  top: tooltipPosition.top - 10,
+                  left: tooltipPosition.left + tooltipPosition.width / 2,
+                  transform: 'translate(-50%, -100%)',
+                  minWidth: '200px'
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="text-center">
+                  <div className="font-medium text-[#422006] mb-2">
+                    "{translatingWord}"
+                  </div>
+                  {translation === null ? (
+                    <div className="flex items-center justify-center space-x-1 text-[#422006] text-sm">
+                      <span>{t('voiceChat.translating')}</span>
+                      <div className="flex space-x-1">
+                        <div className="w-1 h-1 bg-[#422006] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-1 h-1 bg-[#422006] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-1 h-1 bg-[#422006] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-[#422006] text-sm">
+                      {translation}
+                    </div>
+                  )}
+                </div>
+                {/* Arrow pointing down to the word */}
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-white"></div>
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-[-1px] border-4 border-transparent border-t-gray-300"></div>
               </div>
             )}
           </div>

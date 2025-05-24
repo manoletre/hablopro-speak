@@ -423,13 +423,13 @@ export default function SessionResults({ conversationHistory, onClose }: Session
   }, [conversationHistory, language]);
   
   return (
-    <div className="w-full h-screen bg-[#fffaed] font-poppins flex flex-col overflow-y-auto">
+    <div className="w-full h-screen max-h-screen bg-[#fffaed] font-poppins flex flex-col overflow-hidden">
       {/* Loading Animation Overlay */}
       {loading && <LoadingAnimation t={t} />}
       
       {/* Fixed New Session Button - Only show when not loading */}
       {!loading && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-[#fffaed]/80 backdrop-blur-sm p-4">
+        <div className="fixed top-0 left-0 right-0 z-50 bg-[#fffaed]/80 backdrop-blur-sm p-4 flex-shrink-0">
           <button
             onClick={onClose}
             className="w-full py-3 rounded-lg bg-[#422006] text-white font-medium hover:bg-[#422006]/90 transition-colors"
@@ -440,14 +440,14 @@ export default function SessionResults({ conversationHistory, onClose }: Session
       )}
 
       {/* Header */}
-      <div className="w-full p-4 mt-16">
+      <div className="w-full p-4 mt-16 flex-shrink-0">
         <div className="flex-1">
           <h2 className="text-lg font-medium text-[#422006]">{t('sessionResults.title')}</h2>
         </div>
       </div>
       
       {/* Content */}
-      <div className="flex-1 px-4 pb-8"> 
+      <div className="flex-1 px-4 pb-8 overflow-y-auto min-h-0"> 
         {/* Vocabulary */}
         <div className="mb-6">
           <h3 className="text-lg font-medium text-[#422006] mb-2">{t('sessionResults.vocabulary')}</h3>
