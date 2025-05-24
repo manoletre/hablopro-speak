@@ -61,7 +61,7 @@ export default function LandingPage() {
         </div>
 
         {/* Hero Section */}
-        <section className="w-full py-16 md:py-24 px-4">
+        <section className="w-full pt-8 pb-16 md:pt-12 md:pb-24 px-4">
           <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center">
             <div className="md:w-1/2 mb-12 md:mb-0">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-amber-900 mb-6 flex flex-col items-start">

@@ -83,12 +83,12 @@ export default function LanguageTypingAnimation({ languages = defaultLanguages }
     >
       {showFlag && (
         <span 
-          className="inline-block mr-2 rounded border border-gray-300"
+          className="inline-block mr-5 rounded-lg border border-[#422006]"
           role="img" 
           aria-label={`${currentLanguage.name} flag`}
           style={{ 
-            width: '1.2em',
-            height: '0.9em',
+            width: '1.08em',
+            height: '0.81em',
             transform: 'translateY(0.05em)',
             overflow: 'hidden'
           }}
