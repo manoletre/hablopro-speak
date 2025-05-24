@@ -780,3 +780,149 @@ INFO: Detected non-HTTP/2 connection.
 [debug] [2025-05-23T17:04:23.861Z] May 23, 2025 12:04:23 PM com.google.cloud.datastore.emulator.firestore.webchannel.FirestoreV1WebChannelAdapter$FirestoreListenHandler onClose
 INFO: channel closed
  {"metadata":{"emulator":{"name":"firestore"},"message":"May 23, 2025 12:04:23 PM com.google.cloud.datastore.emulator.firestore.webchannel.FirestoreV1WebChannelAdapter$FirestoreListenHandler onClose\nINFO: channel closed\n"}}
+[debug] [2025-05-24T17:13:24.246Z] ----------------------------------------------------------------------
+[debug] [2025-05-24T17:13:24.250Z] Command:       /usr/local/bin/node /usr/local/bin/firebase emulators:start --only auth,firestore,functions
+[debug] [2025-05-24T17:13:24.250Z] CLI Version:   13.29.1
+[debug] [2025-05-24T17:13:24.251Z] Platform:      darwin
+[debug] [2025-05-24T17:13:24.251Z] Node Version:  v20.17.0
+[debug] [2025-05-24T17:13:24.251Z] Time:          Sat May 24 2025 12:13:24 GMT-0500 (Colombia Standard Time)
+[debug] [2025-05-24T17:13:24.251Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-05-24T17:13:24.256Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2025-05-24T17:13:24.431Z] Object ".emulators.auth" in "firebase.json" has unknown property: {"additionalProperty":"dataDir"}
+[debug] [2025-05-24T17:13:24.440Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-05-24T17:13:24.441Z] > authorizing via signed-in user (manoletre@gmail.com)
+[debug] [2025-05-24T17:13:24.656Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2025-05-24T17:13:24.656Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[debug] [2025-05-24T17:13:25.083Z] java version "11.0.17" 2022-10-18 LTS
+[debug] [2025-05-24T17:13:25.083Z] 
+Java(TM) SE Runtime Environment 18.9 (build 11.0.17+10-LTS-269)
+Java HotSpot(TM) 64-Bit Server VM 18.9 (build 11.0.17+10-LTS-269, mixed mode)
+
+[debug] [2025-05-24T17:13:25.089Z] Parsed Java major version: 11
+[info] i  emulators: Starting emulators: auth, functions, firestore {"metadata":{"emulator":{"name":"hub"},"message":"Starting emulators: auth, functions, firestore"}}
+[debug] [2025-05-24T17:13:26.157Z] [logging] Logging Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-05-24T17:13:26.157Z] [auth] Authentication Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-05-24T17:13:26.157Z] [firestore] Firestore Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-05-24T17:13:26.157Z] [firestore.websocket] websocket server for firestore only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-05-24T17:13:26.158Z] assigned listening specs for emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}],"auth":[{"address":"127.0.0.1","family":"IPv4","port":9099}],"firestore":[{"address":"127.0.0.1","family":"IPv4","port":8080}],"firestore.websocket":[{"address":"127.0.0.1","family":"IPv4","port":9150}]},"metadata":{"message":"assigned listening specs for emulators"}}
+[warn] ⚠  emulators: It seems that you are running multiple instances of the emulator suite for project hablopro-speak. This may result in unexpected behavior. 
+[debug] [2025-05-24T17:13:26.164Z] [hub] writing locator at /var/folders/h2/c9m9rv315552x41p5sh892vr0000gn/T/hub-hablopro-speak.json
+[debug] [2025-05-24T17:13:26.801Z] [functions] Functions Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-05-24T17:13:26.802Z] [eventarc] Eventarc Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-05-24T17:13:26.802Z] [tasks] Cloud Tasks Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-05-24T17:13:26.802Z] late-assigned ports for functions and eventarc emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}],"auth":[{"address":"127.0.0.1","family":"IPv4","port":9099}],"firestore":[{"address":"127.0.0.1","family":"IPv4","port":8080}],"firestore.websocket":[{"address":"127.0.0.1","family":"IPv4","port":9150}],"functions":[{"address":"127.0.0.1","family":"IPv4","port":5001}],"eventarc":[{"address":"127.0.0.1","family":"IPv4","port":9299}],"tasks":[{"address":"127.0.0.1","family":"IPv4","port":9499}]},"metadata":{"message":"late-assigned ports for functions and eventarc emulators"}}
+[warn] ⚠  functions: The following emulators are not running, calls to these services from the Functions emulator will affect production: apphosting, database, hosting, pubsub, storage, dataconnect {"metadata":{"emulator":{"name":"functions"},"message":"The following emulators are not running, calls to these services from the Functions emulator will affect production: \u001b[1mapphosting, database, hosting, pubsub, storage, dataconnect\u001b[22m"}}
+[warn] ⚠  functions: Your GOOGLE_APPLICATION_CREDENTIALS environment variable points to /Users/manoletre/Documents/Educo/Educrates/secrets/educrates-44a9de76cce9.json. Non-emulated services will access production using these credentials. Be careful! {"metadata":{"emulator":{"name":"functions"},"message":"Your GOOGLE_APPLICATION_CREDENTIALS environment variable points to /Users/manoletre/Documents/Educo/Educrates/secrets/educrates-44a9de76cce9.json. Non-emulated services will access production using these credentials. Be careful!"}}
+[debug] [2025-05-24T17:13:26.806Z] Checked if tokens are valid: false, expires at: 1748019756051
+[debug] [2025-05-24T17:13:26.806Z] Checked if tokens are valid: false, expires at: 1748019756051
+[debug] [2025-05-24T17:13:26.806Z] > refreshing access token with scopes: []
+[debug] [2025-05-24T17:13:26.807Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-05-24T17:13:26.807Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-05-24T17:13:26.999Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-05-24T17:13:27.000Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-05-24T17:13:27.018Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/hablopro-speak/adminSdkConfig [none]
+[debug] [2025-05-24T17:13:27.598Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/hablopro-speak/adminSdkConfig 200
+[debug] [2025-05-24T17:13:27.599Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/hablopro-speak/adminSdkConfig {"projectId":"hablopro-speak","storageBucket":"hablopro-speak.firebasestorage.app"}
+[debug] [2025-05-24T17:13:27.622Z] Ignoring unsupported arg: auto_download {"metadata":{"emulator":{"name":"firestore"},"message":"Ignoring unsupported arg: auto_download"}}
+[debug] [2025-05-24T17:13:27.623Z] Ignoring unsupported arg: single_project_mode_error {"metadata":{"emulator":{"name":"firestore"},"message":"Ignoring unsupported arg: single_project_mode_error"}}
+[debug] [2025-05-24T17:13:27.623Z] Starting Firestore Emulator with command {"binary":"java","args":["-Dgoogle.cloud_firestore.debug_log_level=FINE","-Duser.language=en","-jar","/Users/manoletre/.cache/firebase/emulators/cloud-firestore-emulator-v1.19.8.jar","--host","127.0.0.1","--port",8080,"--websocket_port",9150,"--project_id","hablopro-speak","--rules","/Users/manoletre/Dev/hablopro-speak/firestore.rules","--single_project_mode",true,"--functions_emulator","127.0.0.1:5001"],"optionalArgs":["port","webchannel_port","host","rules","websocket_port","functions_emulator","seed_from_export","project_id","single_project_mode"],"joinArgs":false,"shell":false,"port":8080} {"metadata":{"emulator":{"name":"firestore"},"message":"Starting Firestore Emulator with command {\"binary\":\"java\",\"args\":[\"-Dgoogle.cloud_firestore.debug_log_level=FINE\",\"-Duser.language=en\",\"-jar\",\"/Users/manoletre/.cache/firebase/emulators/cloud-firestore-emulator-v1.19.8.jar\",\"--host\",\"127.0.0.1\",\"--port\",8080,\"--websocket_port\",9150,\"--project_id\",\"hablopro-speak\",\"--rules\",\"/Users/manoletre/Dev/hablopro-speak/firestore.rules\",\"--single_project_mode\",true,\"--functions_emulator\",\"127.0.0.1:5001\"],\"optionalArgs\":[\"port\",\"webchannel_port\",\"host\",\"rules\",\"websocket_port\",\"functions_emulator\",\"seed_from_export\",\"project_id\",\"single_project_mode\"],\"joinArgs\":false,\"shell\":false,\"port\":8080}"}}
+[info] i  firestore: Firestore Emulator logging to firestore-debug.log {"metadata":{"emulator":{"name":"firestore"},"message":"Firestore Emulator logging to \u001b[1mfirestore-debug.log\u001b[22m"}}
+[debug] [2025-05-24T17:13:31.044Z] May 24, 2025 12:13:30 PM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketServer start
+INFO: Started WebSocket server on ws://127.0.0.1:9150
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 24, 2025 12:13:30 PM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketServer start\nINFO: Started WebSocket server on ws://127.0.0.1:9150\n"}}
+[debug] [2025-05-24T17:13:31.366Z] API endpoint: http://127.0.0.1:8080
+If you are using a library that supports the FIRESTORE_EMULATOR_HOST environment variable, run:
+
+   export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080
+
+If you are running a Firestore in Datastore Mode project, run:
+
+   export DATASTORE_EMULATOR_HOST=127.0.0.1:8080
+
+Note: Support for Datastore Mode is in preview. If you encounter any bugs please file at https://github.com/firebase/firebase-tools/issues.
+Dev App Server is now running.
+
+ {"metadata":{"emulator":{"name":"firestore"},"message":"API endpoint: http://127.0.0.1:8080\nIf you are using a library that supports the FIRESTORE_EMULATOR_HOST environment variable, run:\n\n   export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080\n\nIf you are running a Firestore in Datastore Mode project, run:\n\n   export DATASTORE_EMULATOR_HOST=127.0.0.1:8080\n\nNote: Support for Datastore Mode is in preview. If you encounter any bugs please file at https://github.com/firebase/firebase-tools/issues.\nDev App Server is now running.\n\n"}}
+[info] ✔  firestore: Firestore Emulator UI websocket is running on 9150. {"metadata":{"emulator":{"name":"firestore"},"message":"Firestore Emulator UI websocket is running on 9150."}}
+[info] i  functions: Watching "/Users/manoletre/Dev/hablopro-speak/functions" for Cloud Functions... {"metadata":{"emulator":{"name":"functions"},"message":"Watching \"/Users/manoletre/Dev/hablopro-speak/functions\" for Cloud Functions..."}}
+[debug] [2025-05-24T17:13:36.790Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2025-05-24T17:13:37.583Z] > [functions] package.json contents: {
+  "name": "functions",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log",
+    "lint": "eslint . --ext .ts --ignore-pattern 'lib/**/*'"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "@aws-sdk/client-ses": "^3.812.0",
+    "@google-cloud/tasks": "^6.1.0",
+    "firebase-admin": "^11.8.0",
+    "firebase-functions": "^4.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^4.9.0"
+  },
+  "private": true
+}
+[debug] [2025-05-24T17:13:37.583Z] Building nodejs source
+[debug] [2025-05-24T17:13:37.584Z] Failed to find version of module node: reached end of search path /Users/manoletre/Dev/hablopro-speak/functions/node_modules
+[info] ✔  functions: Using node@20 from host. 
+[info] i  functions: Loaded environment variables from .env. 
+[info] i  functions: You are using a version of firebase-functions SDK (4.9.0) that does not have support for the newest Firebase Extensions features. Please update firebase-functions SDK to >=5.1.0 to use them correctly 
+[debug] [2025-05-24T17:13:37.587Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-05-24T17:13:37.592Z] Found firebase-functions binary at '/Users/manoletre/Dev/hablopro-speak/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8885
+
+[debug] [2025-05-24T17:13:38.196Z] Got response from /__/functions.yaml {"endpoints":{"onSessionCreate":{"platform":"gcfv1","availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":"cloud-functions1@hablopro-speak.iam.gserviceaccount.com","vpc":null,"eventTrigger":{"eventType":"providers/cloud.firestore/eventTypes/document.create","eventFilters":{"resource":"projects/hablopro-speak/databases/(default)/documents/users/{uid}/sessions/{sid}"},"retry":false},"labels":{},"entryPoint":"onSessionCreate"},"onUserCreate":{"platform":"gcfv1","availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":"cloud-functions1@hablopro-speak.iam.gserviceaccount.com","vpc":null,"eventTrigger":{"eventType":"providers/cloud.firestore/eventTypes/document.create","eventFilters":{"resource":"projects/hablopro-speak/databases/(default)/documents/users/{userId}"},"retry":false},"labels":{},"entryPoint":"onUserCreate"}},"specVersion":"v1alpha1","requiredAPIs":[]}
+[info] ✔  functions: Loaded functions definitions from source: onSessionCreate, onUserCreate. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: onSessionCreate, onUserCreate."}}
+[debug] [2025-05-24T17:13:43.223Z] addFirestoreTrigger "{\"eventTrigger\":{\"eventType\":\"providers/cloud.firestore/eventTypes/document.create\",\"resource\":\"projects/hablopro-speak/databases/(default)/documents/users/{uid}/sessions/{sid}\",\"service\":\"firestore.googleapis.com\"}}"
+[debug] [2025-05-24T17:13:43.224Z] >>> [apiv2][query] PUT http://127.0.0.1:8080/emulator/v1/projects/hablopro-speak/triggers/us-central1-onSessionCreate-0 [none]
+[debug] [2025-05-24T17:13:43.224Z] >>> [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/hablopro-speak/triggers/us-central1-onSessionCreate-0 "{\"eventTrigger\":{\"eventType\":\"providers/cloud.firestore/eventTypes/document.create\",\"resource\":\"projects/hablopro-speak/databases/(default)/documents/users/{uid}/sessions/{sid}\",\"service\":\"firestore.googleapis.com\"}}"
+[debug] [2025-05-24T17:13:43.236Z] May 24, 2025 12:13:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 24, 2025 12:13:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-24T17:13:43.400Z] May 24, 2025 12:13:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 24, 2025 12:13:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected HTTP/2 connection.\n"}}
+[debug] [2025-05-24T17:13:43.910Z] <<< [apiv2][status] PUT http://127.0.0.1:8080/emulator/v1/projects/hablopro-speak/triggers/us-central1-onSessionCreate-0 200
+[debug] [2025-05-24T17:13:43.910Z] <<< [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/hablopro-speak/triggers/us-central1-onSessionCreate-0 {}
+[info] ✔  functions[us-central1-onSessionCreate]: firestore function initialized. {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mfirestore\u001b[22m function initialized."}}
+[debug] [2025-05-24T17:13:43.910Z] addFirestoreTrigger "{\"eventTrigger\":{\"eventType\":\"providers/cloud.firestore/eventTypes/document.create\",\"resource\":\"projects/hablopro-speak/databases/(default)/documents/users/{userId}\",\"service\":\"firestore.googleapis.com\"}}"
+[debug] [2025-05-24T17:13:43.911Z] >>> [apiv2][query] PUT http://127.0.0.1:8080/emulator/v1/projects/hablopro-speak/triggers/us-central1-onUserCreate-0 [none]
+[debug] [2025-05-24T17:13:43.911Z] >>> [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/hablopro-speak/triggers/us-central1-onUserCreate-0 "{\"eventTrigger\":{\"eventType\":\"providers/cloud.firestore/eventTypes/document.create\",\"resource\":\"projects/hablopro-speak/databases/(default)/documents/users/{userId}\",\"service\":\"firestore.googleapis.com\"}}"
+[debug] [2025-05-24T17:13:43.918Z] <<< [apiv2][status] PUT http://127.0.0.1:8080/emulator/v1/projects/hablopro-speak/triggers/us-central1-onUserCreate-0 200
+[debug] [2025-05-24T17:13:43.919Z] <<< [apiv2][body] PUT http://127.0.0.1:8080/emulator/v1/projects/hablopro-speak/triggers/us-central1-onUserCreate-0 {}
+[info] ✔  functions[us-central1-onUserCreate]: firestore function initialized. {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mfirestore\u001b[22m function initialized."}}
+[debug] [2025-05-24T17:13:43.921Z] Could not find VSCode notification endpoint: FetchError: request to http://localhost:40001/vscode/notify failed, reason: . If you are not running the Firebase Data Connect VSCode extension, this is expected and not an issue.
+[info] 
+┌─────────────────────────────────────────────────────────────┐
+│ ✔  All emulators ready! It is now safe to connect your app. │
+│ i  View Emulator UI at http://127.0.0.1:4000/               │
+└─────────────────────────────────────────────────────────────┘
+
+┌────────────────┬────────────────┬─────────────────────────────────┐
+│ Emulator       │ Host:Port      │ View in Emulator UI             │
+├────────────────┼────────────────┼─────────────────────────────────┤
+│ Authentication │ 127.0.0.1:9099 │ http://127.0.0.1:4000/auth      │
+├────────────────┼────────────────┼─────────────────────────────────┤
+│ Functions      │ 127.0.0.1:5001 │ http://127.0.0.1:4000/functions │
+├────────────────┼────────────────┼─────────────────────────────────┤
+│ Firestore      │ 127.0.0.1:8080 │ http://127.0.0.1:4000/firestore │
+└────────────────┴────────────────┴─────────────────────────────────┘
+  Emulator Hub running at 127.0.0.1:4400
+  Other reserved ports: 4500, 9150
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+ 

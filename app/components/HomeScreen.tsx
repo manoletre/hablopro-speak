@@ -15,6 +15,41 @@ interface HomeScreenProps {
   onStartSession: (level: number, language: string) => void;
 }
 
+// Helper function to get country code for flag display
+const getCountryCode = (language: string): string => {
+  const languageToCountryMap: { [key: string]: string } = {
+    'english': 'gb',
+    'español': 'es',
+    'french': 'fr',
+    'portuguese': 'br',
+    'italian': 'it',
+    'german': 'de',
+    'dutch': 'nl',
+    'chinese': 'cn',
+    'japanese': 'jp',
+    'korean': 'kr'
+  };
+  return languageToCountryMap[language] || 'gb';
+};
+
+// Helper component for flag display
+const FlagIcon = ({ language, className = "" }: { language: string; className?: string }) => {
+  const countryCode = getCountryCode(language);
+  return (
+    <span 
+      className={`fi fi-${countryCode} inline-block rounded border border-[#422006] ${className}`}
+      style={{
+        width: '1.44em',
+        height: '1.08em',
+        fontSize: '1em',
+        verticalAlign: 'middle',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }}
+    />
+  );
+};
+
 export default function HomeScreen({ onStartSession }: HomeScreenProps) {
   usePostHog();
 
@@ -277,14 +312,14 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
                 className={`flex items-center p-2 rounded-md cursor-pointer ${uiLanguage === 'english' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
                 onClick={() => selectUiLanguage('english')}
               >
-                <span className="mr-2">🇬🇧</span>
+                <FlagIcon language="english" className="mr-2" />
                 <span>{t('home.english')}</span>
               </div>
               <div 
                 className={`flex items-center p-2 rounded-md cursor-pointer ${uiLanguage === 'español' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
                 onClick={() => selectUiLanguage('español')}
               >
-                <span className="mr-2">🇪🇸</span>
+                <FlagIcon language="español" className="mr-2" />
                 <span>{t('home.spanish')}</span>
               </div>
             </div>
@@ -361,16 +396,7 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
               >
                 <div className="flex items-center">
                   <span className="mr-3 text-lg">
-                    {selectedLanguage === 'english' ? '🇬🇧' : 
-                     selectedLanguage === 'español' ? '🇪🇸' : 
-                     selectedLanguage === 'french' ? '🇫🇷' :
-                     selectedLanguage === 'portuguese' ? '🇵🇹' :
-                     selectedLanguage === 'italian' ? '🇮🇹' :
-                     selectedLanguage === 'german' ? '🇩🇪' :
-                     selectedLanguage === 'dutch' ? '🇳🇱' :
-                     selectedLanguage === 'chinese' ? '🇨🇳' :
-                     selectedLanguage === 'japanese' ? '🇯🇵' :
-                     selectedLanguage === 'korean' ? '🇰🇷' : '🌐'}
+                    <FlagIcon language={selectedLanguage} />
                   </span>
                   <span className="text-lg text-[#422006]">{selectedLanguage}</span>
                 </div>
@@ -386,70 +412,70 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
                         className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'english' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
                         onClick={() => selectConversationLanguage('english')}
                       >
-                        <span className="mr-2 text-xl">🇬🇧</span>
+                        <FlagIcon language="english" className="mr-2" />
                         <span className="text-[#422006]">english</span>
                       </div>
                       <div 
                         className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'español' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
                         onClick={() => selectConversationLanguage('español')}
                       >
-                        <span className="mr-2 text-xl">🇪🇸</span>
+                        <FlagIcon language="español" className="mr-2" />
                         <span className="text-[#422006]">spanish</span>
                       </div>
                       <div 
                         className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'french' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
                         onClick={() => selectConversationLanguage('french')}
                       >
-                        <span className="mr-2 text-xl">🇫🇷</span>
+                        <FlagIcon language="french" className="mr-2" />
                         <span className="text-[#422006]">french</span>
                       </div>
                       <div 
                         className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'portuguese' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
                         onClick={() => selectConversationLanguage('portuguese')}
                       >
-                        <span className="mr-2 text-xl">🇵🇹</span>
+                        <FlagIcon language="portuguese" className="mr-2" />
                         <span className="text-[#422006]">portuguese</span>
                       </div>
                       <div 
                         className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'italian' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
                         onClick={() => selectConversationLanguage('italian')}
                       >
-                        <span className="mr-2 text-xl">🇮🇹</span>
+                        <FlagIcon language="italian" className="mr-2" />
                         <span className="text-[#422006]">italian</span>
                       </div>
                       <div 
                         className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'german' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
                         onClick={() => selectConversationLanguage('german')}
                       >
-                        <span className="mr-2 text-xl">🇩🇪</span>
+                        <FlagIcon language="german" className="mr-2" />
                         <span className="text-[#422006]">german</span>
                       </div>
                       <div 
                         className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'dutch' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
                         onClick={() => selectConversationLanguage('dutch')}
                       >
-                        <span className="mr-2 text-xl">🇳🇱</span>
+                        <FlagIcon language="dutch" className="mr-2" />
                         <span className="text-[#422006]">dutch</span>
                       </div>
                       <div 
                         className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'chinese' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
                         onClick={() => selectConversationLanguage('chinese')}
                       >
-                        <span className="mr-2 text-xl">🇨🇳</span>
+                        <FlagIcon language="chinese" className="mr-2" />
                         <span className="text-[#422006]">chinese</span>
                       </div>
                       <div 
                         className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'japanese' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
                         onClick={() => selectConversationLanguage('japanese')}
                       >
-                        <span className="mr-2 text-xl">🇯🇵</span>
+                        <FlagIcon language="japanese" className="mr-2" />
                         <span className="text-[#422006]">japanese</span>
                       </div>
                       <div 
                         className={`flex items-center p-3 rounded-md cursor-pointer ${selectedLanguage === 'korean' ? 'bg-amber-50' : 'hover:bg-amber-50'}`}
                         onClick={() => selectConversationLanguage('korean')}
                       >
-                        <span className="mr-2 text-xl">🇰🇷</span>
+                        <FlagIcon language="korean" className="mr-2" />
                         <span className="text-[#422006]">korean</span>
                       </div>
                     </div>

@@ -33,15 +33,15 @@ export default function LandingPage() {
 
   // Spanish language list for animation
   const spanishLanguages = [
-    { name: 'inglés', emoji: '🇬🇧', code: 'gb' },
-    { name: 'francés', emoji: '🇫🇷', code: 'fr' },
-    { name: 'italiano', emoji: '🇮🇹', code: 'it' },
-    { name: 'alemán', emoji: '🇩🇪', code: 'de' },
-    { name: 'portugués', emoji: '🇵🇹', code: 'pt' },
-    { name: 'chino', emoji: '🇨🇳', code: 'cn' },
-    { name: 'japonés', emoji: '🇯🇵', code: 'jp' },
-    { name: 'coreano', emoji: '🇰🇷', code: 'kr' },
-    { name: 'holandés', emoji: '🇳🇱', code: 'nl' },
+    { name: 'inglés', code: 'gb' },
+    { name: 'francés', code: 'fr' },
+    { name: 'italiano', code: 'it' },
+    { name: 'alemán', code: 'de' },
+    { name: 'portugués', code: 'br' },
+    { name: 'chino', code: 'cn' },
+    { name: 'japonés', code: 'jp' },
+    { name: 'coreano', code: 'kr' },
+    { name: 'holandés', code: 'nl' },
   ];
 
   return (

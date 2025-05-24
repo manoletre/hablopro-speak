@@ -4,22 +4,21 @@ import { useState, useEffect } from 'react';
 
 interface Language {
   name: string;
-  emoji: string;
-  code: string; // For fallback images
+  code: string;
 }
 
 // Default language data (English)
 const defaultLanguages: Language[] = [
-  { name: 'spanish', emoji: '🇪🇸', code: 'es' },
-  { name: 'french', emoji: '🇫🇷', code: 'fr' },
-  { name: 'italian', emoji: '🇮🇹', code: 'it' },
-  { name: 'german', emoji: '🇩🇪', code: 'de' },
-  { name: 'portuguese', emoji: '🇵🇹', code: 'pt' },
-  { name: 'chinese', emoji: '🇨🇳', code: 'cn' },
-  { name: 'japanese', emoji: '🇯🇵', code: 'jp' },
-  { name: 'korean', emoji: '🇰🇷', code: 'kr' },
-  { name: 'english', emoji: '🇬🇧', code: 'gb' },
-  { name: 'dutch', emoji: '🇳🇱', code: 'nl' },
+  { name: 'spanish', code: 'es' },
+  { name: 'french', code: 'fr' },
+  { name: 'italian', code: 'it' },
+  { name: 'german', code: 'de' },
+  { name: 'portuguese', code: 'br' },
+  { name: 'chinese', code: 'cn' },
+  { name: 'japanese', code: 'jp' },
+  { name: 'korean', code: 'kr' },
+  { name: 'english', code: 'gb' },
+  { name: 'dutch', code: 'nl' },
 ];
 
 interface LanguageTypingAnimationProps {
@@ -28,7 +27,7 @@ interface LanguageTypingAnimationProps {
 
 export default function LanguageTypingAnimation({ languages = defaultLanguages }: LanguageTypingAnimationProps) {
   const [displayText, setDisplayText] = useState('');
-  const [showEmoji, setShowEmoji] = useState(false);
+  const [showFlag, setShowFlag] = useState(false);
   const [currentLanguageIndex, setCurrentLanguageIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const [typingSpeed, setTypingSpeed] = useState(100);
@@ -40,9 +39,9 @@ export default function LanguageTypingAnimation({ languages = defaultLanguages }
     // Handle typing and deleting
     const timer = setTimeout(() => {
       if (!isDeleting) {
-        // Show emoji immediately when we start typing a new language
+        // Show flag immediately when we start typing a new language
         if (displayText.length === 0) {
-          setShowEmoji(true);
+          setShowFlag(true);
         }
         
         // Typing forward
@@ -57,11 +56,11 @@ export default function LanguageTypingAnimation({ languages = defaultLanguages }
           setTypingSpeed(100);
         }
       } else {
-        // Deleting text but keeping emoji until the end
+        // Deleting text but keeping flag until the end
         if (displayText.length === 1) {
-          // When deleting the last character, also remove the emoji
+          // When deleting the last character, also remove the flag
           setDisplayText('');
-          setShowEmoji(false);
+          setShowFlag(false);
           setIsDeleting(false);
           setCurrentLanguageIndex((currentLanguageIndex + 1) % languages.length);
           setTypingSpeed(300); // Pause before typing next word
@@ -82,18 +81,30 @@ export default function LanguageTypingAnimation({ languages = defaultLanguages }
       className="inline-flex items-baseline h-auto text-amber-700"
       style={{ minWidth: '200px', minHeight: '1.2em', display: 'inline-flex', alignItems: 'center' }}
     >
-      {showEmoji && (
+      {showFlag && (
         <span 
-          className="inline-block"
+          className="inline-block mr-2 rounded border border-gray-300"
           role="img" 
           aria-label={`${currentLanguage.name} flag`}
           style={{ 
-            fontSize: '1.2em',
-            marginRight: '0.2em',
-            transform: 'translateY(0.12em)'
+            width: '1.2em',
+            height: '0.9em',
+            transform: 'translateY(0.05em)',
+            overflow: 'hidden'
           }}
         >
-          {currentLanguage.emoji}
+          <span 
+            className={`fi fi-${currentLanguage.code}`}
+            style={{
+              fontSize: '1.2em',
+              lineHeight: '0.75',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              width: '100%',
+              height: '100%',
+              display: 'block'
+            }}
+          />
         </span>
       )}
       <span className="whitespace-nowrap">{displayText}</span>
