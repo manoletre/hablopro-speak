@@ -1,12 +1,86 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import GrammarCard from './GrammarCard';
 import VocabularyCard from './VocabularyCard';
 import { getAuth } from 'firebase/auth';
-import { doc, getDoc, getFirestore, onSnapshot } from 'firebase/firestore';
+import { doc, getFirestore, onSnapshot } from 'firebase/firestore';
 import Image from 'next/image';
+
+type TranslationKey = 
+  | 'home.title'
+  | 'home.editProficiency'
+  | 'home.difficultyTooltip'
+  | 'home.editLanguage'
+  | 'home.beginSession'
+  | 'home.doSessionNow'
+  | 'home.myBookmarks'
+  | 'home.dashboard'
+  | 'home.logout'
+  | 'home.english'
+  | 'home.spanish'
+  | 'home.streak'
+  | 'home.longestStreak'
+  | 'home.longestStreakTitle'
+  | 'home.learningHistory'
+  | 'home.loadingHistory'
+  | 'home.noSessions'
+  | 'home.sessions'
+  | 'home.currentStreak'
+  | 'home.days'
+  | 'home.nextMilestone'
+  | 'home.totalSessions'
+  | 'home.less'
+  | 'home.more'
+  | 'home.session'
+  | 'auth.signInRequired'
+  | 'auth.signInWithGoogle'
+  | 'auth.termsAndPrivacy'
+  | 'auth.failedToSignIn'
+  | 'bookmarks.title'
+  | 'bookmarks.all'
+  | 'bookmarks.grammar'
+  | 'bookmarks.vocabulary'
+  | 'bookmarks.noBookmarks'
+  | 'bookmarks.noGrammarBookmarks'
+  | 'bookmarks.noVocabularyBookmarks'
+  | 'sessionResults.title'
+  | 'sessionResults.grammarCorrections'
+  | 'sessionResults.vocabulary'
+  | 'sessionResults.conversationSummary'
+  | 'sessionResults.analyzingGrammar'
+  | 'sessionResults.analyzingVocabulary'
+  | 'sessionResults.noGrammarCorrections'
+  | 'sessionResults.noVocabularyItems'
+  | 'sessionResults.noConversation'
+  | 'sessionResults.failedToAnalyze'
+  | 'sessionResults.newSession'
+  | 'sessionResults.grammarAndStyle'
+  | 'sessionResults.streakCongrats'
+  | 'sessionResults.streakImage'
+  | 'sessionResults.dayStreak'
+  | 'sessionResults.keepPracticing'
+  | 'sessionResults.awesome'
+  | 'sessionResults.loadingMessage1'
+  | 'sessionResults.loadingMessage2'
+  | 'sessionResults.loadingMessage3'
+  | 'sessionResults.loadingMessage4'
+  | 'sessionResults.loadingMessage5'
+  | 'sessionResults.loadingMessage6'
+  | 'sessionResults.loadingMessage7'
+  | 'sessionResults.loadingMessage8'
+  | 'sessionResults.loadingMessage9'
+  | 'sessionResults.loadingMessage10'
+  | 'voiceChat.title'
+  | 'voiceChat.listening'
+  | 'voiceChat.connected'
+  | 'voiceChat.connecting'
+  | 'voiceChat.nachoSpeaking'
+  | 'voiceChat.wrappingUp'
+  | 'voiceChat.pressWord'
+  | 'voiceChat.translating'
+  | 'home.lostStreak';
 
 // Define the conversation message structure
 interface ConversationMessage {
@@ -42,8 +116,8 @@ interface FeedbackData {
 }
 
 // Loading Animation Component
-function LoadingAnimation({ t }: { t: (key: any) => string }) {
-  const loadingMessages = [
+function LoadingAnimation({ t }: { t: (key: TranslationKey, params?: Record<string, string | number>) => string }) {
+  const loadingMessages: TranslationKey[] = useMemo(() => [
     'sessionResults.loadingMessage1',
     'sessionResults.loadingMessage2',
     'sessionResults.loadingMessage3',
@@ -54,14 +128,14 @@ function LoadingAnimation({ t }: { t: (key: any) => string }) {
     'sessionResults.loadingMessage8',
     'sessionResults.loadingMessage9',
     'sessionResults.loadingMessage10',
-  ];
+  ], []);
 
   const initialMessageIndex = Math.floor(Math.random() * loadingMessages.length);
   const [currentMessageIndex, setCurrentMessageIndex] = useState(initialMessageIndex);
   const [isVisible, setIsVisible] = useState(true);
   const [usedIndices, setUsedIndices] = useState<number[]>([initialMessageIndex]);
 
-  const getRandomMessageIndex = () => {
+  const getRandomMessageIndex = useCallback(() => {
     const availableIndices = loadingMessages
       .map((_, index) => index)
       .filter(index => !usedIndices.includes(index));
@@ -73,7 +147,7 @@ function LoadingAnimation({ t }: { t: (key: any) => string }) {
     }
     
     return availableIndices[Math.floor(Math.random() * availableIndices.length)];
-  };
+  }, [usedIndices, loadingMessages]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -88,7 +162,7 @@ function LoadingAnimation({ t }: { t: (key: any) => string }) {
     }, 4000); // Changed from 5000 to 4000 (4 seconds)
 
     return () => clearInterval(interval);
-  }, [usedIndices]);
+  }, [usedIndices, getRandomMessageIndex]);
 
   return (
     <div className="fixed inset-0 bg-[#fffaed] flex items-center justify-center z-50">

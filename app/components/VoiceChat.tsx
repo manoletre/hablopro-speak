@@ -86,7 +86,6 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
   const [popupWordIndex, setPopupWordIndex] = useState<number | null>(null);
   const [translatingWord, setTranslatingWord] = useState<string | null>(null);
   const [translation, setTranslation] = useState<string | null>(null);
-  const [dotCount, setDotCount] = useState<number>(1);
   const [tooltipPosition, setTooltipPosition] = useState<{ top: number; left: number; width: number } | null>(null);
 
   // Animate dots for translating message
@@ -94,7 +93,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
     let interval: NodeJS.Timeout;
     if (translatingWord && translation === null) {
       interval = setInterval(() => {
-        setDotCount(prev => (prev % 3) + 1);
+        // Animation logic can be handled via CSS or other means if needed
       }, 500);
     }
     return () => {
@@ -107,7 +106,6 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
     setPopupWordIndex(null);
     setTranslatingWord(null);
     setTranslation(null);
-    setDotCount(1);
     setTooltipPosition(null);
   }, [subtitleBuffer]);
 
@@ -139,7 +137,6 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
         setPopupWordIndex(null);
         setTranslatingWord(null);
         setTranslation(null);
-        setDotCount(1);
         setTooltipPosition(null);
       }
     };
