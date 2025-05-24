@@ -929,9 +929,6 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="text-center">
-                  <div className="font-medium text-[#422006] mb-2">
-                    "{translatingWord}"
-                  </div>
                   {translation === null ? (
                     <div className="flex items-center justify-center space-x-1 text-[#422006] text-sm">
                       <span>{t('voiceChat.translating')}</span>

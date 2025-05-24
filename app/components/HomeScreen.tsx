@@ -62,7 +62,6 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [showStreakDisplay, setShowStreakDisplay] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
-  const [longestStreak, setLongestStreak] = useState(0);
   const [showLostStreakDialog, setShowLostStreakDialog] = useState(false);
   const [showDifficultyTooltip, setShowDifficultyTooltip] = useState(false);
   const [lostStreakDays, setLostStreakDays] = useState(0);
@@ -85,7 +84,6 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
           
           // Handle streak data
           let current = data.currentStreak || 0;
-          const longest = data.longestStreak || 0;
           const lastActiveTimestamp = data.lastActive;
           if (lastActiveTimestamp) {
             const lastActiveDate = lastActiveTimestamp.toDate();
@@ -101,7 +99,6 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
             }
           }
           setCurrentStreak(current);
-          setLongestStreak(longest);
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -317,7 +314,7 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
         {user && (
           <button
             onClick={() => setShowStreakDisplay(true)}
-            className="flex items-center justify-center text-[#422006] hover:bg-amber-50 rounded-lg px-3 py-2 transition-colors"
+            className="flex items-center justify-center text-[#422006] hover:bg-amber-50 rounded-lg px-3 py-2 transition-colors border border-amber-800/20 bg-amber-50/50"
           >
             <span className="mr-2">🔥</span>
             <span className="font-medium">{currentStreak}</span>
