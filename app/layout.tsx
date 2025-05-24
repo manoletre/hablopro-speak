@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
 import { LanguageProvider } from './context/LanguageContext';
 import { PostHogProvider } from "./components/PostHogProvider";
+import CountryFlagPolyfill from "./components/CountryFlagPolyfill";
 import { Outfit, Poppins, Mynerve, Indie_Flower } from 'next/font/google';
 
 const outfit = Outfit({
@@ -98,6 +99,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${outfit.variable} ${poppins.variable} ${mynerve.variable} ${indieFlower.variable}`}>  
       <body suppressHydrationWarning>
+        <CountryFlagPolyfill />
         <PostHogProvider>
           <LanguageProvider>
             <AuthProvider>
