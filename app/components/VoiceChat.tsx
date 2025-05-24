@@ -856,7 +856,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
           </div>
           
           {/* Main Content */}
-          <div className="flex-1 flex flex-col items-center justify-between px-6 pb-10">
+          <div className="flex-1 flex flex-col items-center justify-between px-6 pb-10 relative">
             {/* Status indicator */}
             <div className="w-full text-center mb-4">
               <p className="text-[#422006] opacity-60">
@@ -866,59 +866,54 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
               </p>
             </div>
             
-            {/* Animated Nacho */}
-            <div className="flex-1 flex items-center justify-center">
+            {/* Animated Nacho - centered independently */}
+            <div className="flex-1 flex items-center justify-center min-h-0">
               <AnimatedNacho isSpeaking={aiSpeaking} size="lg" level={difficultyLevel} />
-            </div> 
-            
-            {/* AI response transcript with fixed height and scrolling */}
+            </div>
+
+            {/* AI response transcript - positioned independently of Nacho */}
             {subtitleBuffer && (
-              <div className="w-full max-w-xl relative">
-                <div className="flex justify-between items-center mb-2">
-                  <p className="text-xs text-[#422006] opacity-70">{t('voiceChat.pressWord')}</p>
-                  <button
-                    onClick={stopConversation}
-                    className="px-3 py-1 text-xs rounded-md border border-amber-800/30 bg-amber-50 text-[#422006] hover:bg-amber-100"
-                  >
-                    Stop session
-                  </button>
-                </div>
-                <div className="bg-amber-100 rounded-lg p-4 shadow-sm">
-                  <p className="text-[#422006] text-sm mb-1 opacity-60">Nacho says:</p>
-                  <div 
-                    ref={subtitleContainerRef}
-                    className="max-h-64 overflow-y-auto"
-                    style={{ scrollBehavior: 'smooth' }}
-                  >
-                    <div className="text-[#422006]">
-                      <div className="flex flex-wrap">
-                        {subtitleBuffer.split(/(\s+)/).map((token, idx) =>
-                          /\s+/.test(token) ? (
-                            <span key={idx}>{token}</span>
-                          ) : (
-                            <span
-                              key={idx}
-                              className={`inline-block px-0.5 cursor-pointer rounded ${popupWordIndex === idx ? 'bg-amber-300' : 'hover:bg-amber-200'}`}
-                              onClick={(e) => handleWordClick(token, idx, e)}
-                            >
-                              {token}
-                            </span>
-                          )
-                        )}
+              <div className="absolute bottom-0 left-0 right-0 mx-2 sm:bottom-4 sm:left-4 sm:right-4 sm:mx-0">
+                <div className="w-full mx-auto">
+                  <div className="flex justify-end items-center mb-2">
+                    <button
+                      onClick={stopConversation}
+                      className="px-3 py-1 text-xs rounded-md border border-amber-800/30 bg-amber-50 text-[#422006] hover:bg-amber-100"
+                    >
+                      Stop session
+                    </button>
+                  </div>
+                  <div className="relative mb-2">
+                    {/* Gradient background for the "press word" text - positioned below button */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#fffaed]/60 to-[#fffaed] rounded-full blur-sm"></div>
+                    <p className="relative text-xs text-[#422006] opacity-70 bg-[#fffaed]/90 px-2 py-1 rounded-full text-center">{t('voiceChat.pressWord')}</p>
+                  </div>
+                  <div className="bg-amber-100/95 backdrop-blur-sm rounded-lg p-4 shadow-sm border border-amber-200 w-full sm:max-w-[800px] sm:mx-auto">
+                    <p className="text-[#422006] text-sm mb-1 opacity-60">Nacho says:</p>
+                    <div 
+                      ref={subtitleContainerRef}
+                      className="max-h-32 sm:max-h-64 overflow-y-auto"
+                      style={{ scrollBehavior: 'smooth' }}
+                    >
+                      <div className="text-[#422006]">
+                        <div className="flex flex-wrap">
+                          {subtitleBuffer.split(/(\s+)/).map((token, idx) =>
+                            /\s+/.test(token) ? (
+                              <span key={idx}>{token}</span>
+                            ) : (
+                              <span
+                                key={idx}
+                                className={`inline-block px-0.5 cursor-pointer rounded ${popupWordIndex === idx ? 'bg-amber-300' : 'hover:bg-amber-200'}`}
+                                onClick={(e) => handleWordClick(token, idx, e)}
+                              >
+                                {token}
+                              </span>
+                            )
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            )}
-            {tooltipPosition && popupWordIndex !== null && (
-              <div style={{ position: 'fixed', top: tooltipPosition.top - 40, left: tooltipPosition.left + tooltipPosition.width / 2, transform: 'translateX(-50%)', zIndex: 1000 }}>
-                <div className="bg-white border border-gray-300 rounded-lg p-2 shadow-md">
-                  {translation !== null ? (
-                    <span className="text-xs text-[#422006]">{translation}</span>
-                  ) : (
-                    <span className="text-xs text-[#422006]">{t('voiceChat.translating')}{'.'.repeat(dotCount)}</span>
-                  )}
                 </div>
               </div>
             )}

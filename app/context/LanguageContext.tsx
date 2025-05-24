@@ -64,6 +64,16 @@ type TranslationKey =
   | 'sessionResults.dayStreak'
   | 'sessionResults.keepPracticing'
   | 'sessionResults.awesome'
+  | 'sessionResults.loadingMessage1'
+  | 'sessionResults.loadingMessage2'
+  | 'sessionResults.loadingMessage3'
+  | 'sessionResults.loadingMessage4'
+  | 'sessionResults.loadingMessage5'
+  | 'sessionResults.loadingMessage6'
+  | 'sessionResults.loadingMessage7'
+  | 'sessionResults.loadingMessage8'
+  | 'sessionResults.loadingMessage9'
+  | 'sessionResults.loadingMessage10'
   | 'voiceChat.title'
   | 'voiceChat.listening'
   | 'voiceChat.connected'
@@ -83,7 +93,7 @@ interface LanguageContextType {
 
 const translations: Record<Language, Record<TranslationKey, string>> = {
   english: {
-    'home.title': "don't put off until tomorrow what you can learn today.",
+    'home.title': "learn by speaking.",
     'home.editProficiency': 'choose the difficulty level:',
     'home.difficultyTooltip': 'This controls how complex Nacho\'s language will be.',
     'home.editLanguage': 'choose the language you want to speak:',
@@ -136,6 +146,16 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'sessionResults.failedToAnalyze': 'Failed to analyze conversation. Please try again.',
     'sessionResults.newSession': 'New Session',
     'sessionResults.grammarAndStyle': 'Grammar and Style',
+    'sessionResults.loadingMessage1': 'Scanning for grammatical gremlins and vocab villains…',
+    'sessionResults.loadingMessage2': 'Polishing your phrases for peak precision…',
+    'sessionResults.loadingMessage3': 'Hunting down tricky word choices—suggestions loading!',
+    'sessionResults.loadingMessage4': 'Inspecting syntax for sneaky slip-ups…',
+    'sessionResults.loadingMessage5': 'Line-by-line proofread in progress—grammar tips ahead!',
+    'sessionResults.loadingMessage6': 'Matching your words with perfect phrasing…',
+    'sessionResults.loadingMessage7': 'Nacho\'s AI neurons are debugging your dialogue…',
+    'sessionResults.loadingMessage8': 'Sharpening your vocab and tightening your tenses…',
+    'sessionResults.loadingMessage9': 'Examining for typos, tense traps, and better word fits…',
+    'sessionResults.loadingMessage10': 'Almost ready—green-lighting your next flawless sentence!',
     'voiceChat.title': 'Speaking Practice',
     'voiceChat.listening': 'Listening...',
     'voiceChat.connected': 'Connected and ready',
@@ -147,7 +167,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'home.lostStreak': 'you lost your streak',
   },
   español: {
-    'home.title': 'no dejes para mañana lo que puedes aprender hoy.',
+    'home.title': 'aprende hablando.',
     'home.editProficiency': 'elige el nivel de dificultad:',
     'home.difficultyTooltip': 'Esto controla la complejidad del idioma que Nacho te hablará.',
     'home.editLanguage': 'elige el idioma que quieres hablar:',
@@ -200,6 +220,16 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'sessionResults.dayStreak': '¡Racha de {count} días!',
     'sessionResults.keepPracticing': '¡Sigue practicando para mantener tu racha!',
     'sessionResults.awesome': '¡Genial!',
+    'sessionResults.loadingMessage1': 'Escaneando duendes gramaticales y villanos de vocabulario…',
+    'sessionResults.loadingMessage2': 'Puliendo tus frases para máxima precisión…',
+    'sessionResults.loadingMessage3': 'Cazando elecciones de palabras complicadas—¡sugerencias cargando!',
+    'sessionResults.loadingMessage4': 'Inspeccionando sintaxis para deslices astutos…',
+    'sessionResults.loadingMessage5': 'Revisión línea por línea en progreso—¡consejos gramaticales en camino!',
+    'sessionResults.loadingMessage6': 'Emparejando tus palabras con fraseo perfecto…',
+    'sessionResults.loadingMessage7': 'Las neuronas de IA de Nacho están depurando tu diálogo…',
+    'sessionResults.loadingMessage8': 'Afilando tu vocabulario y ajustando tus tiempos verbales…',
+    'sessionResults.loadingMessage9': 'Examinando errores tipográficos, trampas de tiempo y mejores opciones de palabras…',
+    'sessionResults.loadingMessage10': '¡Casi listo—dando luz verde a tu próxima oración perfecta!',
     'voiceChat.title': 'Práctica de Habla',
     'voiceChat.listening': 'Escuchando...',
     'voiceChat.connected': 'Conectado y listo',

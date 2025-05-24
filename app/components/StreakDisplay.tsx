@@ -177,11 +177,6 @@ export default function StreakDisplay({ onClose }: StreakDisplayProps) {
     return Math.min(Math.ceil(count / 2), 4) as Level;
   };
 
-  // Get total streak days (for milestone calculation)
-  const getTotalStreakDays = () => {
-    return Object.keys(sessionData).filter(date => sessionData[date] > 0).length;
-  };
-
   // Determine if a day is the next milestone day
   const isMilestoneDay = (date: string) => {
     if (!user || currentStreak === 0) return false;
@@ -316,8 +311,7 @@ export default function StreakDisplay({ onClose }: StreakDisplayProps) {
         </div>
         
         {/* Color legend */}
-        <div className="mt-6 flex items-center justify-between text-xs text-[#422006]">
-          <div>{getTotalStreakDays()} {t('home.totalSessions')}</div>
+        <div className="mt-6 flex items-center justify-end text-xs text-[#422006]">
           <div className="flex items-center gap-1">
             <span>{t('home.less')}</span>
             {[0, 1, 2, 3, 4].map(level => (

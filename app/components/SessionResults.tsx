@@ -5,7 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import GrammarCard from './GrammarCard';
 import VocabularyCard from './VocabularyCard';
 import { getAuth } from 'firebase/auth';
-import { doc, getDoc, getFirestore } from 'firebase/firestore';
+import { doc, getDoc, getFirestore, onSnapshot } from 'firebase/firestore';
 import Image from 'next/image';
 
 // Define the conversation message structure
@@ -39,6 +39,89 @@ interface VocabularyItem {
 interface FeedbackData {
   grammar: GrammarCorrection[];
   vocabulary: VocabularyItem[];
+}
+
+// Loading Animation Component
+function LoadingAnimation({ t }: { t: (key: any) => string }) {
+  const loadingMessages = [
+    'sessionResults.loadingMessage1',
+    'sessionResults.loadingMessage2',
+    'sessionResults.loadingMessage3',
+    'sessionResults.loadingMessage4',
+    'sessionResults.loadingMessage5',
+    'sessionResults.loadingMessage6',
+    'sessionResults.loadingMessage7',
+    'sessionResults.loadingMessage8',
+    'sessionResults.loadingMessage9',
+    'sessionResults.loadingMessage10',
+  ];
+
+  const initialMessageIndex = Math.floor(Math.random() * loadingMessages.length);
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(initialMessageIndex);
+  const [isVisible, setIsVisible] = useState(true);
+  const [usedIndices, setUsedIndices] = useState<number[]>([initialMessageIndex]);
+
+  const getRandomMessageIndex = () => {
+    const availableIndices = loadingMessages
+      .map((_, index) => index)
+      .filter(index => !usedIndices.includes(index));
+    
+    // If all messages have been used, reset the used indices
+    if (availableIndices.length === 0) {
+      setUsedIndices([]);
+      return Math.floor(Math.random() * loadingMessages.length);
+    }
+    
+    return availableIndices[Math.floor(Math.random() * availableIndices.length)];
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsVisible(false);
+      
+      setTimeout(() => {
+        const newIndex = getRandomMessageIndex();
+        setCurrentMessageIndex(newIndex);
+        setUsedIndices(prev => [...prev, newIndex]);
+        setIsVisible(true);
+      }, 500); // Wait for fade out before changing message
+    }, 4000); // Changed from 5000 to 4000 (4 seconds)
+
+    return () => clearInterval(interval);
+  }, [usedIndices]);
+
+  return (
+    <div className="fixed inset-0 bg-[#fffaed] flex items-center justify-center z-50">
+      <div className="text-center max-w-md mx-auto px-6">
+        {/* Nacho analyzing image */}
+        <div className="mb-6">
+          <Image 
+            src="/images/nacho_analyzing.png"
+            alt="Nacho analyzing"
+            width={200}
+            height={200}
+            className="w-48 h-48 mx-auto object-contain"
+          />
+        </div>
+        
+        {/* Animated loading dots */}
+        <div className="flex justify-center space-x-2 mb-8">
+          <div className="w-3 h-3 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+          <div className="w-3 h-3 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+          <div className="w-3 h-3 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+        </div>
+        
+        {/* Cycling message */}
+        <p 
+          className={`text-lg text-[#422006] transition-opacity duration-500 ${
+            isVisible ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          {t(loadingMessages[currentMessageIndex])}
+        </p>
+      </div>
+    </div>
+  );
 }
 
 export default function SessionResults({ conversationHistory, onClose }: SessionResultsProps) {
@@ -76,42 +159,100 @@ export default function SessionResults({ conversationHistory, onClose }: Session
         
         const db = getFirestore();
         
-        // Get today's date in YYYY-MM-DD format
+        // Get user's timezone offset for consistent date calculations
+        const timezoneOffsetMinutes = new Date().getTimezoneOffset();
+        
+        // Get today's date in user's local timezone (same logic as Firebase function)
         const today = new Date();
-        const todayString = today.toISOString().substring(0, 10); // YYYY-MM-DD format
+        const localDate = new Date(today.getTime() - (timezoneOffsetMinutes * 60 * 1000));
+        const todayString = localDate.toISOString().substring(0, 10); // YYYY-MM-DD format
         
-        // Check if today's date exists in the user's days collection
-        const dayRef = doc(db, `users/${user.uid}/days/${todayString}`);
-        const daySnap = await getDoc(dayRef);
+        console.log('Checking streak for local date:', todayString);
         
-        // Get user data to show the current streak
+        // Set up real-time listeners for both user and day documents
         const userRef = doc(db, 'users', user.uid);
-        const userSnap = await getDoc(userRef);
+        const dayRef = doc(db, `users/${user.uid}/days/${todayString}`);
         
-        if (userSnap.exists()) {
-          const userData = userSnap.data();
-          const currentStreak = userData?.currentStreak || 0;
+        let userUnsubscribe: (() => void) | null = null;
+        let dayUnsubscribe: (() => void) | null = null;
+        let hasShownDialog = false;
+        
+        // Listen for changes to the day document
+        dayUnsubscribe = onSnapshot(dayRef, (daySnap) => {
+          if (hasShownDialog) return;
           
-          // Show dialog if this is the first session of the day (count === 1)
-          if (daySnap.exists() && daySnap.data()?.count === 1) {
-            console.log('First session of the day detected, showing streak dialog');
-            setStreakCount(currentStreak);
-            setRandomStreakImage(getRandomStreakImage());
-            setShowStreakDialog(true);
-          } else {
-            console.log('Not the first session of the day or day document not found');
-            if (daySnap.exists()) {
-              console.log(`Day count: ${daySnap.data()?.count}`);
-            }
+          const dayData = daySnap.data();
+          const sessionCount = dayData?.count || 0;
+          
+          console.log(`Day document updated: count = ${sessionCount}`);
+          
+          // If this is the first session of the day, set up user listener for streak
+          if (sessionCount === 1) {
+            console.log('First session detected, setting up user listener for streak update');
+            
+            // Listen for changes to the user document to get the updated streak
+            userUnsubscribe = onSnapshot(userRef, (userSnap) => {
+              if (hasShownDialog) return;
+              
+              const userData = userSnap.data();
+              const currentStreak = userData?.currentStreak || 0;
+              const lastActive = userData?.lastActive;
+              
+              // Verify the lastActive timestamp is recent (within last 30 seconds)
+              // This ensures we're showing the dialog for the current session
+              if (lastActive) {
+                const lastActiveTime = lastActive.toDate();
+                const now = new Date();
+                const timeDiff = now.getTime() - lastActiveTime.getTime();
+                
+                console.log(`User document updated: streak = ${currentStreak}, time diff = ${timeDiff}ms`);
+                
+                // Show dialog if streak was updated recently (within 30 seconds)
+                if (timeDiff < 30000 && currentStreak > 0) {
+                  console.log('Showing streak dialog immediately after Firebase function completion');
+                  hasShownDialog = true;
+                  setStreakCount(currentStreak);
+                  setRandomStreakImage(getRandomStreakImage());
+                  setShowStreakDialog(true);
+                  
+                  // Clean up listeners
+                  if (userUnsubscribe) userUnsubscribe();
+                  if (dayUnsubscribe) dayUnsubscribe();
+                }
+              }
+            });
           }
-        }
+        });
+        
+        // Clean up listeners after 10 seconds to prevent memory leaks
+        const cleanup = setTimeout(() => {
+          console.log('Cleaning up streak listeners after timeout');
+          if (userUnsubscribe) userUnsubscribe();
+          if (dayUnsubscribe) dayUnsubscribe();
+        }, 10000);
+        
+        // Return cleanup function
+        return () => {
+          clearTimeout(cleanup);
+          if (userUnsubscribe) userUnsubscribe();
+          if (dayUnsubscribe) dayUnsubscribe();
+        };
+        
       } catch (err) {
-        console.error('Error checking user streak:', err);
+        console.error('Error setting up streak listeners:', err);
       }
     };
     
+    // Only start checking after the session analysis is complete
     if (!loading && !error) {
-      checkUserStreak();
+      const cleanup = checkUserStreak();
+      
+      // Return cleanup function
+      return () => {
+        if (cleanup && typeof cleanup.then === 'function') {
+          cleanup.then(cleanupFn => cleanupFn && cleanupFn());
+        }
+      };
     }
   }, [loading, error]);
 
@@ -209,15 +350,20 @@ export default function SessionResults({ conversationHistory, onClose }: Session
   
   return (
     <div className="w-full h-screen bg-[#fffaed] font-poppins flex flex-col overflow-y-auto">
-      {/* Fixed New Session Button */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-[#fffaed]/80 backdrop-blur-sm p-4">
-        <button
-          onClick={onClose}
-          className="w-full py-3 rounded-lg bg-[#422006] text-white font-medium hover:bg-[#422006]/90 transition-colors"
-        >
-          {t('sessionResults.newSession')}
-        </button>
-      </div>
+      {/* Loading Animation Overlay */}
+      {loading && <LoadingAnimation t={t} />}
+      
+      {/* Fixed New Session Button - Only show when not loading */}
+      {!loading && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-[#fffaed]/80 backdrop-blur-sm p-4">
+          <button
+            onClick={onClose}
+            className="w-full py-3 rounded-lg bg-[#422006] text-white font-medium hover:bg-[#422006]/90 transition-colors"
+          >
+            {t('sessionResults.newSession')}
+          </button>
+        </div>
+      )}
 
       {/* Header */}
       <div className="w-full p-4 mt-16">
@@ -231,11 +377,7 @@ export default function SessionResults({ conversationHistory, onClose }: Session
         {/* Vocabulary */}
         <div className="mb-6">
           <h3 className="text-lg font-medium text-[#422006] mb-2">{t('sessionResults.vocabulary')}</h3>
-          {loading ? (
-            <p className="text-[#422006]/60 text-center p-4 bg-white/70 rounded-lg border border-amber-100">
-              {t('sessionResults.analyzingVocabulary')}
-            </p>
-          ) : error ? (
+          {error ? (
             <p className="text-red-500 text-center p-4 bg-white/70 rounded-lg border border-amber-100">
               {t('sessionResults.failedToAnalyze')}
             </p>
@@ -262,11 +404,7 @@ export default function SessionResults({ conversationHistory, onClose }: Session
         {/* Grammar Corrections */}
         <div className="mb-6">
           <h3 className="text-lg font-medium text-[#422006] mb-2">{t('sessionResults.grammarAndStyle')}</h3>
-          {loading ? (
-            <p className="text-[#422006]/60 text-center p-4 bg-white/70 rounded-lg border border-amber-100">
-              {t('sessionResults.analyzingGrammar')}
-            </p>
-          ) : error ? (
+          {error ? (
             <p className="text-red-500 text-center p-4 bg-white/70 rounded-lg border border-amber-100">
               {t('sessionResults.failedToAnalyze')}
             </p>

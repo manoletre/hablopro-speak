@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { DocumentSnapshot } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 
 admin.initializeApp();
@@ -53,53 +54,61 @@ export const onSessionCreate = functions
     const dayRef = db.doc(`users/${uid}/days/${dayId}`);
     const userRef = db.doc(`users/${uid}`);
 
-    await db.runTransaction(async (t: admin.firestore.Transaction) => {
-      // 1. Read all necessary documents first
-      const userSnap = await t.get(userRef);
-      const { currentStreak = 0, longestStreak = 0, lastActive } = userSnap.data() || {};
+    try {
+      await db.runTransaction(async (t: admin.firestore.Transaction) => {
+        // 1. Read all necessary documents first
+        const userSnap = await t.get(userRef);
+        const { currentStreak = 0, longestStreak = 0, lastActive } = userSnap.data() || {};
 
-      let sameDay = false;
-      let continues = false;
+        let sameDay = false;
+        let continues = false;
 
-      if (lastActive) {
-        // Convert lastActive to user's local time
-        const lastActiveDate = lastActive.toDate?.();
-        if (lastActiveDate) {
-          const lastActiveDayId = getUserLocalDateString(lastActiveDate, timezoneOffsetMinutes);
-          
-          // Check if it's the same day
-          sameDay = lastActiveDayId === dayId;
-          
-          // Calculate yesterday's date in user's timezone
-          const yesterday = new Date(ts);
-          yesterday.setDate(yesterday.getDate() - 1);
-          const yesterdayId = getUserLocalDateString(yesterday, timezoneOffsetMinutes);
-          
-          // Check if it continues the streak (was yesterday)
-          continues = lastActiveDayId === yesterdayId;
-          
-          console.log(`- Last active date: ${lastActiveDate.toISOString()}`);
-          console.log(`- Last active local day: ${lastActiveDayId}`);
-          console.log(`- Yesterday local day: ${yesterdayId}`);
-          console.log(`- Same day? ${sameDay}, Continues streak? ${continues}`);
+        if (lastActive) {
+          // Convert lastActive to user's local time
+          const lastActiveDate = lastActive.toDate?.();
+          if (lastActiveDate) {
+            const lastActiveDayId = getUserLocalDateString(lastActiveDate, timezoneOffsetMinutes);
+            
+            // Check if it's the same day
+            sameDay = lastActiveDayId === dayId;
+            
+            // Calculate yesterday's date in user's timezone
+            const yesterday = new Date(ts);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayId = getUserLocalDateString(yesterday, timezoneOffsetMinutes);
+            
+            // Check if it continues the streak (was yesterday)
+            continues = lastActiveDayId === yesterdayId;
+            
+            console.log(`- Last active date: ${lastActiveDate.toISOString()}`);
+            console.log(`- Last active local day: ${lastActiveDayId}`);
+            console.log(`- Yesterday local day: ${yesterdayId}`);
+            console.log(`- Same day? ${sameDay}, Continues streak? ${continues}`);
+          }
         }
-      }
 
-      const newStreak = sameDay ? currentStreak // multiple sessions today
-        : continues ? currentStreak + 1 // streak +1
-        : 1; // reset
-        
-      console.log(`- Current streak: ${currentStreak} → New streak: ${newStreak}`);
-      console.log(`- Longest streak: ${Math.max(longestStreak, newStreak)}`);
+        const newStreak = sameDay ? currentStreak // multiple sessions today
+          : continues ? currentStreak + 1 // streak +1
+          : 1; // reset
+          
+        console.log(`- Current streak: ${currentStreak} → New streak: ${newStreak}`);
+        console.log(`- Longest streak: ${Math.max(longestStreak, newStreak)}`);
 
-      // 2. Perform all writes after reads
-      t.set(dayRef, { count: admin.firestore.FieldValue.increment(1) }, { merge: true });
-      t.set(userRef, {
-        currentStreak: newStreak,
-        longestStreak: Math.max(longestStreak, newStreak),
-        lastActive: snap.data()?.startedAt
-      }, { merge: true });
-    });
+        // 2. Perform all writes after reads
+        t.set(dayRef, { count: FieldValue.increment(1) }, { merge: true });
+        t.set(userRef, {
+          currentStreak: newStreak,
+          longestStreak: Math.max(longestStreak, newStreak),
+          lastActive: snap.data()?.startedAt
+        }, { merge: true });
+      });
+      
+      console.log(`Successfully updated streak for user ${uid}`);
+    } catch (error) {
+      console.error(`Error updating streak for user ${uid}:`, error);
+      // Don't throw the error - let the function complete gracefully
+      // The session will still be created even if streak calculation fails
+    }
   });
 
 // Send a welcome email via Amazon SES when a new user profile is created
