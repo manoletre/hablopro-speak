@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 
 type Language = 'english' | 'español';
 
@@ -13,6 +13,7 @@ const languageCodes: Record<Language, string> = {
 type TranslationKey = 
   | 'home.title'
   | 'home.editProficiency'
+  | 'home.difficultyTooltip'
   | 'home.editLanguage'
   | 'home.beginSession'
   | 'home.doSessionNow'
@@ -84,6 +85,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
   english: {
     'home.title': "don't put off until tomorrow what you can learn today.",
     'home.editProficiency': 'choose the difficulty level:',
+    'home.difficultyTooltip': 'This controls how complex Nacho\'s language will be.',
     'home.editLanguage': 'choose the language you want to speak:',
     'home.beginSession': 'begin session',
     'home.doSessionNow': 'do a session now',
@@ -147,6 +149,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
   español: {
     'home.title': 'no dejes para mañana lo que puedes aprender hoy.',
     'home.editProficiency': 'elige el nivel de dificultad:',
+    'home.difficultyTooltip': 'Esto controla la complejidad del idioma que Nacho te hablará.',
     'home.editLanguage': 'elige el idioma que quieres hablar:',
     'home.beginSession': 'comenzar sesión',
     'home.doSessionNow': 'comenzar sesión ahora',
@@ -239,9 +242,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return text;
   };
 
-  const getLanguageCode = () => {
+  const getLanguageCode = useCallback(() => {
     return languageCodes[language];
-  };
+  }, [language]);
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t, getLanguageCode }}>

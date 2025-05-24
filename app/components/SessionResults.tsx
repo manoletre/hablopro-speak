@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import GrammarCard from './GrammarCard';
 import VocabularyCard from './VocabularyCard';
@@ -42,16 +42,18 @@ interface FeedbackData {
 }
 
 export default function SessionResults({ conversationHistory, onClose }: SessionResultsProps) {
-  const { t, getLanguageCode } = useLanguage();
+  const { t, language } = useLanguage();
   const [grammarCorrections, setGrammarCorrections] = useState<GrammarCorrection[]>([]);
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [apiCalled, setApiCalled] = useState<boolean>(false);
   const [uniqueSessionId] = useState<string>(() => Date.now().toString());
   const [showStreakDialog, setShowStreakDialog] = useState<boolean>(false);
   const [streakCount, setStreakCount] = useState<number>(0);
   const [randomStreakImage, setRandomStreakImage] = useState<string>('');
+  
+  // Use useRef to track if API has been called to prevent duplicate calls in React Strict Mode
+  const apiCalledRef = useRef<boolean>(false);
   
   // Add immediate console log to debug received props
   console.log('SessionResults received conversation history:', conversationHistory);
@@ -113,17 +115,26 @@ export default function SessionResults({ conversationHistory, onClose }: Session
     }
   }, [loading, error]);
 
+  // Get language code mapping
+  const getLanguageCode = (lang: string) => {
+    const languageCodes: Record<string, string> = {
+      'english': 'en',
+      'español': 'es'
+    };
+    return languageCodes[lang] || 'en';
+  };
+
   useEffect(() => {
     const fetchFeedback = async () => {
-      // Only call the API once
-      if (apiCalled) {
+      // Only call the API once using ref to prevent issues with React Strict Mode
+      if (apiCalledRef.current) {
         console.log('Feedback API already called, skipping');
         return;
       }
       
       try {
         setLoading(true);
-        // Only set apiCalled to true after starting the fetch
+        
         // Check if there's any conversation history to analyze
         if (conversationHistory.length === 0) {
           console.log('No conversation history to analyze');
@@ -147,8 +158,8 @@ export default function SessionResults({ conversationHistory, onClose }: Session
         }
         
         console.log('Sending transcript to API:', transcript);
-        console.log('Using UI language code for feedback:', getLanguageCode());
-        setApiCalled(true); // Set here, after all early returns
+        console.log('Using language code for feedback:', getLanguageCode(language));
+        apiCalledRef.current = true; // Set here, after all early returns
         
         // Call the feedback API once
         const response = await fetch('/api/feedback', {
@@ -158,7 +169,7 @@ export default function SessionResults({ conversationHistory, onClose }: Session
           },
           body: JSON.stringify({
             transcript,
-            language: getLanguageCode(),
+            language: getLanguageCode(language),
           }),
         });
         
@@ -180,7 +191,7 @@ export default function SessionResults({ conversationHistory, onClose }: Session
       }
     };
     
-    if (conversationHistory.length > 0 && !apiCalled) {
+    if (conversationHistory.length > 0 && !apiCalledRef.current) {
       fetchFeedback();
     } else if (conversationHistory.length === 0) {
       setLoading(false);
@@ -194,7 +205,7 @@ export default function SessionResults({ conversationHistory, onClose }: Session
     return () => {
       console.log('SessionResults unmounting');
     };
-  }, [conversationHistory, apiCalled, getLanguageCode]);
+  }, [conversationHistory, language]);
   
   return (
     <div className="w-full h-screen bg-[#fffaed] font-poppins flex flex-col overflow-y-auto">

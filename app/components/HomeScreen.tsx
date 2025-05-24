@@ -64,9 +64,11 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
   const [currentStreak, setCurrentStreak] = useState(0);
   const [longestStreak, setLongestStreak] = useState(0);
   const [showLostStreakDialog, setShowLostStreakDialog] = useState(false);
+  const [showDifficultyTooltip, setShowDifficultyTooltip] = useState(false);
+  const [lostStreakDays, setLostStreakDays] = useState(0);
 
   useEffect(() => {
-    const fetchStreakData = async () => {
+    const fetchUserData = async () => {
       if (!user) return;
 
       try {
@@ -74,6 +76,14 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
           const data = userDoc.data();
+          
+          // Load saved language preference
+          const savedLanguage = data.lastSelectedLanguage;
+          if (savedLanguage) {
+            setSelectedLanguage(savedLanguage);
+          }
+          
+          // Handle streak data
           let current = data.currentStreak || 0;
           const longest = data.longestStreak || 0;
           const lastActiveTimestamp = data.lastActive;
@@ -84,6 +94,7 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
             const yesterdayStart = new Date(todayStart);
             yesterdayStart.setDate(todayStart.getDate() - 1);
             if (lastActiveDate < yesterdayStart) {
+              setLostStreakDays(current); // Store the lost streak days
               setShowLostStreakDialog(true);
               await updateDoc(userDocRef, { currentStreak: 0 });
               current = 0;
@@ -93,11 +104,11 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
           setLongestStreak(longest);
         }
       } catch (error) {
-        console.error('Error fetching streak data:', error);
+        console.error('Error fetching user data:', error);
       }
     };
 
-    fetchStreakData();
+    fetchUserData();
   }, [user]);
 
   // Toggle sidebar visibility
@@ -122,6 +133,16 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
   const selectConversationLanguage = (language: string) => {
     setSelectedLanguage(language);
     setShowLanguageDropdown(false);
+    
+    // Save the selected language to Firebase
+    if (user) {
+      const userDocRef = doc(db, 'users', user.uid);
+      updateDoc(userDocRef, {
+        lastSelectedLanguage: language
+      }).catch((error) => {
+        console.error('Error saving language preference:', error);
+      });
+    }
   };
 
   const toggleLanguageDropdown = () => {
@@ -351,9 +372,36 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
           {/* Proficiency Section */}
           <div className="mb-4">
             <div className="flex items-center justify-between mb-1">
-              <h2 className="text-[#422006] text-lg font-light">
-                {t('home.editProficiency')}
-              </h2> 
+              <div className="flex items-center">
+                <h2 className="text-[#422006] text-lg font-light">
+                  {t('home.editProficiency')}
+                </h2>
+                <div 
+                  className="relative ml-2"
+                  onMouseEnter={() => setShowDifficultyTooltip(true)}
+                  onMouseLeave={() => setShowDifficultyTooltip(false)}
+                >
+                  <svg 
+                    width="16" 
+                    height="16" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="text-[#422006]/60 cursor-help"
+                  >
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M9.09 9C9.3251 8.33167 9.78915 7.76811 10.4 7.40913C11.0108 7.05016 11.7289 6.91894 12.4272 7.03871C13.1255 7.15849 13.7588 7.52152 14.2151 8.06353C14.6713 8.60553 14.9211 9.29152 14.92 10C14.92 12 11.92 13 11.92 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M12 17H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  
+                  {showDifficultyTooltip && (
+                    <div className="absolute left-1/2 bottom-full mb-2 transform -translate-x-1/2 bg-[#422006] text-white text-sm rounded-lg py-2 px-3 whitespace-nowrap z-10 shadow-lg">
+                      {t('home.difficultyTooltip')}
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[#422006]"></div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
             
             <div className="w-full h-12 rounded-xl border border-amber-200 bg-amber-50/80 p-2 flex items-center px-4">
@@ -519,14 +567,40 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
         <StreakDisplay onClose={() => setShowStreakDisplay(false)} />
       )}
       {showLostStreakDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 relative max-w-sm w-full">
-            <button onClick={() => setShowLostStreakDialog(false)} className="absolute top-2 right-2 text-gray-500 hover:text-gray-700">&times;</button>
-            <h2 className="text-xl font-medium text-center mb-4 text-[#422006]">{t('home.lostStreak')}</h2>
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={() => setShowLostStreakDialog(false)}
+        >
+          <div 
+            className="bg-white rounded-lg p-6 relative max-w-sm w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setShowLostStreakDialog(false)} 
+              className="absolute top-4 right-4 w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M6 6L18 18" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            <h2 className="text-xl font-medium text-center mb-2 text-[#422006] pr-8">
+              {t('home.lostStreak')}
+            </h2>
+            {lostStreakDays > 0 && (
+              <p className="text-center mb-4 text-[#422006]/80">
+                You lost your streak of {lostStreakDays} day{lostStreakDays !== 1 ? 's' : ''}
+              </p>
+            )}
             <div className="w-full h-48 relative mb-4">
               <Image src="/images/lost_streak.png" alt="Lost Streak" fill style={{ objectFit: 'contain' }} />
             </div>
-            <button onClick={() => { setShowLostStreakDialog(false); handleStartSession(difficultyLevel, selectedLanguage); }} className="mt-2 w-full py-2 bg-[#422006] text-white rounded-lg hover:bg-[#5a3108] transition-colors">{t('home.doSessionNow')}</button>
+            <button 
+              onClick={() => { setShowLostStreakDialog(false); handleStartSession(difficultyLevel, selectedLanguage); }} 
+              className="mt-2 w-full py-3 bg-[#422006] text-white rounded-lg hover:bg-[#5a3108] transition-colors font-medium"
+            >
+              {t('home.doSessionNow')}
+            </button>
           </div>
         </div>
       )}

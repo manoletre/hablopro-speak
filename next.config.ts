@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  reactStrictMode: true,
+  reactStrictMode: false,
   images: {
     dangerouslyAllowSVG: true,
     remotePatterns: [
@@ -12,6 +12,7 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
+    domains: ['lh3.googleusercontent.com'],
   },
   // This setting helps suppress hydration warnings due to extensions like Dark Reader
   experimental: {
