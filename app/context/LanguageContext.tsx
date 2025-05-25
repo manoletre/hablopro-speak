@@ -82,6 +82,8 @@ type TranslationKey =
   | 'voiceChat.wrappingUp'
   | 'voiceChat.pressWord'
   | 'voiceChat.translating'
+  | 'voiceChat.canSpeak'
+  | 'voiceChat.canSpeakNative'
   | 'home.lostStreak';
 
 interface LanguageContextType {
@@ -164,6 +166,8 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'voiceChat.wrappingUp': 'Wrapping up...',
     'voiceChat.pressWord': 'Press a word to view its meaning',
     'voiceChat.translating': 'Nacho is translating',
+    'voiceChat.canSpeak': 'I\'m listening - you can speak!',
+    'voiceChat.canSpeakNative': 'You can also speak in english - I understand!',
     'home.lostStreak': 'you lost your streak',
   },
   español: {
@@ -238,6 +242,8 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'voiceChat.wrappingUp': 'Analizando...',
     'voiceChat.pressWord': 'presiona una palabra para ver su significado',
     'voiceChat.translating': 'Nacho está traduciendo',
+    'voiceChat.canSpeak': 'Te escucho - ¡puedes hablar!',
+    'voiceChat.canSpeakNative': '¡También puedes hablar en español - te entiendo!',
     'home.lostStreak': 'perdiste tu racha',
   },
 };

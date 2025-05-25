@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, MouseEvent } from 'react';
 import AnimatedNacho from './AnimatedNacho';
+import AnimatedStatusDisplay from './AnimatedStatusDisplay';
 import SessionResults from './SessionResults';
 import AuthDialog from './AuthDialog';
 import { useAuth } from '../context/AuthContext';
@@ -856,14 +857,15 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
           <div className="flex-1 flex flex-col px-6 min-h-0">
             {/* Status indicator and Nacho - Takes remaining space */}
             <div className="flex-1 flex flex-col items-center justify-center min-h-0">
-              {/* Status indicator */}
-              <div className="w-full text-center mb-4 flex-shrink-0">
-                <p className="text-[#422006] opacity-60">
-                  {isConnected ? 
-                    (aiSpeaking ? t('voiceChat.nachoSpeaking') : (isListening ? t('voiceChat.listening') : t('voiceChat.connected'))) : 
-                    t('voiceChat.connecting')}
-                </p>
-              </div>
+              {/* Animated Status Display */}
+              <AnimatedStatusDisplay
+                isConnected={isConnected}
+                isListening={isListening}
+                aiSpeaking={aiSpeaking}
+                conversationHistory={conversationHistory}
+                targetLanguage={language}
+                difficultyLevel={difficultyLevel}
+              />
               
               {/* Animated Nacho - centered */}
               <div className="flex-1 flex items-center justify-center min-h-0">
