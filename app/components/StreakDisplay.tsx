@@ -59,9 +59,12 @@ export default function StreakDisplay({ onClose }: StreakDisplayProps) {
   
   // Check if a date is today
   const isToday = (date: string) => {
-    // Format today's date to match the format in sessionData (YYYY-MM-DD)
+    // Get today's date in the user's local timezone
     const today = new Date();
-    const todayFormatted = today.toISOString().split('T')[0];
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayFormatted = `${year}-${month}-${day}`;
     
     // Direct string comparison for exact match
     return date === todayFormatted;
@@ -70,7 +73,11 @@ export default function StreakDisplay({ onClose }: StreakDisplayProps) {
   useEffect(() => {
     // Log today's date for debugging purposes
     const today = new Date();
-    console.log('Today is:', today.toISOString().split('T')[0]);
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayFormatted = `${year}-${month}-${day}`;
+    console.log('Today is (local time):', todayFormatted);
   }, []);
 
   useEffect(() => {
