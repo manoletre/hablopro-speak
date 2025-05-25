@@ -180,7 +180,7 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
   };
 
   return (
-    <div className="w-full h-screen max-h-screen bg-[#fffaed] font-poppins flex flex-col overflow-hidden" suppressHydrationWarning>
+    <div className="fixed inset-0 bg-[#fffaed] font-poppins flex flex-col" suppressHydrationWarning>
       {/* Sidebar */}
       {showSidebar && (
         <>
@@ -359,32 +359,36 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 min-h-0 overflow-y-auto">
-        <h1 className="text-[#422006] text-3xl md:text-4xl font-medium text-center mb-6">
-          {t('home.title')}
-        </h1>
-        
-        <div className="w-64 h-64 relative mb-8" suppressHydrationWarning>
-          <Image
-            src={getNachoImage()}
-            alt="Nacho the sloth"
-            fill
-            style={{ 
-              objectFit: 'contain' 
-            }}
-            priority
-            suppressHydrationWarning
-          />
+      {/* Main Content - Structured for proper vertical distribution */}
+      <div className="flex-1 flex flex-col px-4 min-h-0">
+        {/* Title and Image Section - Takes remaining space but allows shrinking */}
+        <div className="flex-1 flex flex-col items-center justify-center min-h-0">
+          <h1 className="text-[#422006] text-2xl sm:text-3xl md:text-4xl font-medium text-center mb-4 sm:mb-6">
+            {t('home.title')}
+          </h1>
+          
+          {/* Responsive Nacho Image */}
+          <div className="w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 relative mb-4 sm:mb-6 flex-shrink-0" suppressHydrationWarning>
+            <Image
+              src={getNachoImage()}
+              alt="Nacho the sloth"
+              fill
+              style={{ 
+                objectFit: 'contain' 
+              }}
+              priority
+              suppressHydrationWarning
+            />
+          </div>
         </div>
         
-        {/* Settings Section */}
-        <div className="w-full max-w-md mb-6">
+        {/* Settings Section - Always at bottom with safe spacing */}
+        <div className="w-full max-w-md mx-auto mb-6 sm:mb-8 pb-4 sm:pb-6 flex-shrink-0">
           {/* Proficiency Section */}
           <div className="mb-4">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center">
-                <h2 className="text-[#422006] text-lg font-light">
+                <h2 className="text-[#422006] text-base sm:text-lg font-light">
                   {t('home.editProficiency')}
                 </h2>
                 <div 
@@ -415,7 +419,7 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
               </div>
             </div>
             
-            <div className="w-full h-12 rounded-xl border border-amber-200 bg-amber-50/80 p-2 flex items-center px-4">
+            <div className="w-full h-10 sm:h-12 rounded-xl border border-amber-200 bg-amber-50/80 p-2 flex items-center px-4">
               <div className="w-full relative">
                 <input 
                   type="range" 
@@ -431,7 +435,7 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
                 />
                 {/* Custom thumb with level number */}
                 <div
-                  className="absolute top-1/2 transform -translate-y-1/2 w-8 h-8 rounded-full bg-[#422006] border-2 border-[#FBBF24] flex items-center justify-center text-white font-medium pointer-events-none"
+                  className="absolute top-1/2 transform -translate-y-1/2 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#422006] border-2 border-[#FBBF24] flex items-center justify-center text-white font-medium pointer-events-none text-xs sm:text-sm"
                   style={{
                     left: `calc(${((difficultyLevel - 1) / 4) * 100}% + ${-8 - (difficultyLevel - 1) * 4}px)`
                   }}
@@ -443,23 +447,23 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
           </div>
 
           {/* Language Section */}
-          <div className="mb-6">
-            <h2 className="text-[#422006] text-lg font-light mb-1">
+          <div className="mb-4 sm:mb-6">
+            <h2 className="text-[#422006] text-base sm:text-lg font-light mb-1">
               {t('home.editLanguage')}
             </h2>
             
             <div className="relative w-full">
               <button 
-                className="w-full h-12 rounded-xl border border-amber-200 bg-amber-50/80 px-4 flex items-center justify-between"
+                className="w-full h-10 sm:h-12 rounded-xl border border-amber-200 bg-amber-50/80 px-4 flex items-center justify-between"
                 onClick={toggleLanguageDropdown}
               >
                 <div className="flex items-center">
-                  <span className="mr-3 text-lg">
+                  <span className="mr-3 text-base sm:text-lg">
                     <FlagIcon language={selectedLanguage} />
                   </span>
-                  <span className="text-lg text-[#422006]">{selectedLanguage}</span>
+                  <span className="text-base sm:text-lg text-[#422006]">{selectedLanguage}</span>
                 </div>
-                <span className="text-amber-800 text-lg">›</span>
+                <span className="text-amber-800 text-base sm:text-lg">›</span>
               </button>
               
               {showLanguageDropdown && (
@@ -550,7 +554,7 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
           {/* Begin Session Button */}
           <button
             onClick={() => handleStartSession(difficultyLevel, selectedLanguage)}
-            className="w-full py-3 bg-[#422006] text-white rounded-lg flex items-center justify-center hover:bg-[#5a3108] transition-colors text-lg"
+            className="w-full py-3 bg-[#422006] text-white rounded-lg flex items-center justify-center hover:bg-[#5a3108] transition-colors text-base sm:text-lg"
           >
             {t('home.beginSession')}
           </button>
