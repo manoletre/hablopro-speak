@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     // Build conversation context
     const recentMessages = conversationHistory.slice(-6); // Last 6 messages for context
     const conversationContext = recentMessages
-      .map((msg: any) => `${msg.role}: ${msg.text}`)
+      .map((msg: { role: string; text: string }) => `${msg.role}: ${msg.text}`)
       .join('\n');
 
     // Create difficulty-appropriate prompt
@@ -96,7 +96,7 @@ If no conversation context exists, provide common conversational vocabulary for 
     
     // Clean up the suggestions to ensure proper null values for empty translations
     if (suggestions.suggestions) {
-      suggestions.suggestions = suggestions.suggestions.map((suggestion: any) => ({
+      suggestions.suggestions = suggestions.suggestions.map((suggestion: { type: string; content: string; translation: string | null }) => ({
         ...suggestion,
         translation: suggestion.translation && suggestion.translation.trim() ? suggestion.translation : null
       }));

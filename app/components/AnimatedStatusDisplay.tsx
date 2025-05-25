@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 
 interface Suggestion {
@@ -21,7 +21,6 @@ interface AnimatedStatusDisplayProps {
 export default function AnimatedStatusDisplay({
   isConnected,
   isListening,
-  aiSpeaking,
   conversationHistory,
   targetLanguage,
   difficultyLevel
@@ -69,14 +68,14 @@ export default function AnimatedStatusDisplay({
         "¡Tú puedes!",
         "¡Progreso excelente!",
         "¡Sigue practicando!",
-        "¡Estás en racha!"
+        "¡Vas con toda!"
       ]
     };
     return messages[uiLanguage] || messages.english;
   };
 
   // Fetch suggestions from API (limited to 3 calls per conversation)
-  const fetchSuggestions = async () => {
+  const fetchSuggestions = useCallback(async () => {
     if (apiCallCount >= 3) {
       return;
     }
@@ -99,10 +98,7 @@ export default function AnimatedStatusDisplay({
 
       if (response.ok) {
         const data = await response.json();
-        console.log('📥 Raw API response:', data);
-        // Filter to only vocabulary suggestions
         const vocabularySuggestions = data.suggestions?.filter((s: Suggestion) => s.type === 'vocabulary') || [];
-        console.log('📚 Filtered vocabulary suggestions:', vocabularySuggestions);
         
         // Add new suggestions to existing ones (don't replace to avoid animation disruption)
         setSuggestions(prev => {
@@ -117,30 +113,11 @@ export default function AnimatedStatusDisplay({
     } catch (error) {
       console.error('Error fetching suggestions:', error);
     }
-  };
-
-  // Connection status messages
-  const getConnectionMessage = () => {
-    if (!isConnected) {
-      return t('voiceChat.connecting');
-    }
-    
-    switch (connectionPhase) {
-      case 'connecting':
-        return t('voiceChat.connecting');
-      case 'connected':
-        return t('voiceChat.connected');
-      case 'ready':
-        return t('voiceChat.listening');
-      default:
-        return t('voiceChat.connected');
-    }
-  };
+  }, [apiCallCount, conversationHistory, targetLanguage, difficultyLevel, uiLanguage]);
 
   // Listening status messages
   const getListeningMessages = () => {
     const messages = [
-      t('voiceChat.listening'),
       t('voiceChat.canSpeak'),
       t('voiceChat.canSpeakNative')
     ];
@@ -165,11 +142,11 @@ export default function AnimatedStatusDisplay({
   };
 
   // Get next message based on current state
-  const getNextMessage = () => {
+  const getNextMessage = useCallback(() => {
     if (!isConnected || connectionPhase === 'connecting') {
       return t('voiceChat.connecting');
     } else if (connectionPhase === 'connected') {
-      return t('voiceChat.connected');
+      return t('voiceChat.listening');
     } else if (connectionPhase === 'ready') {
       // For the first message, always show "you can also speak in english"
       if (messageIndex === 0) {
@@ -177,7 +154,7 @@ export default function AnimatedStatusDisplay({
       }
       
       // After first message, randomly choose between listening messages and encouragements
-      const shouldShowEncouragement = Math.random() < 0.4; // 40% chance for encouragement
+      const shouldShowEncouragement = Math.random() < 0.6; // 60% chance for encouragement
       
       if (shouldShowEncouragement) {
         return getRandomEncouragement();
@@ -191,10 +168,10 @@ export default function AnimatedStatusDisplay({
       // Show encouragement as backup
       return getRandomEncouragement();
     }
-  };
+  }, [isConnected, connectionPhase, messageIndex, t, uiLanguage]);
 
   // Get next suggestion
-  const getNextSuggestion = () => {
+  const getNextSuggestion = useCallback(() => {
     if (connectionPhase === 'ready' && suggestions.length > 0) {
       const availableSuggestions = suggestions.filter((_, index) => !usedSuggestionIndices.has(index));
       
@@ -212,7 +189,7 @@ export default function AnimatedStatusDisplay({
       }
     }
     return '';
-  };
+  }, [connectionPhase, suggestions, usedSuggestionIndices, currentSuggestionIndex]);
 
   // Handle connection phase transitions
   useEffect(() => {
@@ -299,7 +276,7 @@ export default function AnimatedStatusDisplay({
         clearInterval(animationIntervalRef.current);
       }
     };
-  }, [connectionPhase, suggestions.length, usedSuggestionIndices, t, uiLanguage, isConnected, isListening]);
+  }, [connectionPhase, suggestions.length, usedSuggestionIndices, t, uiLanguage, isConnected, isListening, currentMessage, getNextMessage, getNextSuggestion, suggestions]);
 
   // Fetch suggestions when conversation progresses
   useEffect(() => {
@@ -331,7 +308,7 @@ export default function AnimatedStatusDisplay({
         clearTimeout(suggestionTimeoutRef.current);
       }
     };
-  }, [conversationHistory.length, isConnected, connectionPhase, targetLanguage, difficultyLevel, apiCallCount]);
+  }, [conversationHistory.length, isConnected, connectionPhase, targetLanguage, difficultyLevel, apiCallCount, fetchSuggestions]);
 
   return (
     <div className="w-full text-center mb-4 flex-shrink-0">
