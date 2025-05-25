@@ -822,7 +822,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
 
   // Final modified return statement with timer and conditional rendering for results
   return (
-    <div className="w-full h-screen max-h-screen bg-[#fffaed] font-poppins flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-[#fffaed] font-poppins flex flex-col">
       {/* Show auth dialog if no user is authenticated and loading is complete */}
       {!loading && !user && <AuthDialog />}
       
@@ -852,25 +852,28 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
             </div>
           </div>
           
-          {/* Main Content */}
-          <div className="flex-1 flex flex-col items-center justify-between px-6 pb-4 relative min-h-0 overflow-hidden">
-            {/* Status indicator */}
-            <div className="w-full text-center mb-4 flex-shrink-0">
-              <p className="text-[#422006] opacity-60">
-                {isConnected ? 
-                  (aiSpeaking ? t('voiceChat.nachoSpeaking') : (isListening ? t('voiceChat.listening') : t('voiceChat.connected'))) : 
-                  t('voiceChat.connecting')}
-              </p>
-            </div>
-            
-            {/* Animated Nacho - centered independently */}
-            <div className="flex-1 flex items-center justify-center min-h-0">
-              <AnimatedNacho isSpeaking={aiSpeaking} size="lg" level={difficultyLevel} />
+          {/* Main Content - Structured for proper vertical distribution */}
+          <div className="flex-1 flex flex-col px-6 min-h-0">
+            {/* Status indicator and Nacho - Takes remaining space */}
+            <div className="flex-1 flex flex-col items-center justify-center min-h-0">
+              {/* Status indicator */}
+              <div className="w-full text-center mb-4 flex-shrink-0">
+                <p className="text-[#422006] opacity-60">
+                  {isConnected ? 
+                    (aiSpeaking ? t('voiceChat.nachoSpeaking') : (isListening ? t('voiceChat.listening') : t('voiceChat.connected'))) : 
+                    t('voiceChat.connecting')}
+                </p>
+              </div>
+              
+              {/* Animated Nacho - centered */}
+              <div className="flex-1 flex items-center justify-center min-h-0">
+                <AnimatedNacho isSpeaking={aiSpeaking} size="lg" level={difficultyLevel} />
+              </div>
             </div>
 
-            {/* AI response transcript - positioned independently of Nacho */}
+            {/* AI response transcript - Always at bottom with safe spacing */}
             {subtitleBuffer && (
-              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-[550px] px-4 pb-4">
+              <div className="w-full max-w-[550px] mx-auto mb-6 sm:mb-8 pb-4 sm:pb-6 flex-shrink-0">
                 <div className="bg-amber-100/95 backdrop-blur-sm rounded-lg shadow-sm border border-amber-200 relative">
                   {/* Header with press word message and stop button */}
                   <div className="flex items-center justify-between p-3 pb-2">
@@ -890,7 +893,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
                     <p className="text-[#422006] text-sm mb-1 opacity-60">Nacho says:</p>
                     <div 
                       ref={subtitleContainerRef}
-                      className="max-h-32 overflow-y-auto mb-2 relative"
+                      className="max-h-40 sm:max-h-48 overflow-y-auto mb-2 relative"
                       style={{ scrollBehavior: 'smooth' }}
                     >
                       <div className="text-[#422006]">
