@@ -146,9 +146,10 @@ export default function AnimatedStatusDisplay({
     if (!isConnected || connectionPhase === 'connecting') {
       return t('voiceChat.connecting');
     } else if (connectionPhase === 'connected') {
-      return t('voiceChat.listening');
+      // When just connected, show the first message
+      return t('voiceChat.canSpeakNative');
     } else if (connectionPhase === 'ready') {
-      // For the first message, always show "you can also speak in english"
+      // For the first message after ready phase, always show "you can also speak in english"
       if (messageIndex === 0) {
         return t('voiceChat.canSpeakNative');
       }
@@ -198,11 +199,23 @@ export default function AnimatedStatusDisplay({
     } else if (isConnected && connectionPhase === 'connecting') {
       // Show "connected" briefly, then transition to "ready"
       setConnectionPhase('connected');
+      
+      // Immediately trigger animation to show the connected message
+      setIsVisible(false);
+      setTimeout(() => {
+        // Explicitly get the connected message since state hasn't updated yet
+        const newMessage = t('voiceChat.canSpeakNative');
+        const newSuggestion = getNextSuggestion();
+        setCurrentMessage(newMessage);
+        setCurrentSuggestion(newSuggestion);
+        setIsVisible(true);
+      }, 300);
+      
       setTimeout(() => {
         setConnectionPhase('ready');
       }, 1500);
     }
-  }, [isConnected, connectionPhase]);
+  }, [isConnected, connectionPhase, getNextMessage, getNextSuggestion]);
 
   // Main animation cycle - runs every 10 seconds
   useEffect(() => {

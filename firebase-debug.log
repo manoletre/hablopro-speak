@@ -531,3 +531,153 @@ INFO: Detected non-HTTP/2 connection.
 [debug] [2025-05-25T21:37:12.628Z] May 25, 2025 4:37:12 PM com.google.cloud.datastore.emulator.firestore.webchannel.FirestoreV1WebChannelAdapter$FirestoreListenHandler onClose
 INFO: channel closed
  {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:37:12 PM com.google.cloud.datastore.emulator.firestore.webchannel.FirestoreV1WebChannelAdapter$FirestoreListenHandler onClose\nINFO: channel closed\n"}}
+[debug] [2025-05-25T21:46:34.797Z] May 25, 2025 4:46:34 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:46:34 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:46:34.928Z] May 25, 2025 4:46:34 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:46:34 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:46:34.943Z] May 25, 2025 4:46:34 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:46:34 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:47:24.878Z] May 25, 2025 4:47:24 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:47:24 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:47:24.931Z] May 25, 2025 4:47:24 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:47:24 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:47:24.945Z] May 25, 2025 4:47:24 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:47:24 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:48:23.260Z] May 25, 2025 4:48:23 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:48:23 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:48:23.329Z] May 25, 2025 4:48:23 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:48:23 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:48:23.344Z] May 25, 2025 4:48:23 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:48:23 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:49:23.366Z] May 25, 2025 4:49:23 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:49:23 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:49:23.386Z] May 25, 2025 4:49:23 PM com.google.cloud.datastore.emulator.firestore.webchannel.FirestoreV1WebChannelAdapter$FirestoreListenHandler onClose
+INFO: channel closed
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:49:23 PM com.google.cloud.datastore.emulator.firestore.webchannel.FirestoreV1WebChannelAdapter$FirestoreListenHandler onClose\nINFO: channel closed\n"}}
+[debug] [2025-05-25T21:50:59.648Z] May 25, 2025 4:50:59 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:50:59 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:50:59.717Z] May 25, 2025 4:50:59 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:50:59 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:50:59.733Z] May 25, 2025 4:50:59 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:50:59 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:51:42.085Z] May 25, 2025 4:51:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:51:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:51:42.127Z] May 25, 2025 4:51:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:51:42 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:51:43.901Z] May 25, 2025 4:51:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:51:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:51:43.923Z] May 25, 2025 4:51:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:51:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:51:50.849Z] May 25, 2025 4:51:50 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:51:50 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:51:50.876Z] May 25, 2025 4:51:50 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:51:50 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:51:50.887Z] May 25, 2025 4:51:50 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:51:50 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:51:52.673Z] May 25, 2025 4:51:52 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:51:52 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:52:13.954Z] May 25, 2025 4:52:13 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:52:13 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:52:43.935Z] May 25, 2025 4:52:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:52:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:52:43.947Z] May 25, 2025 4:52:43 PM com.google.cloud.datastore.emulator.firestore.webchannel.FirestoreV1WebChannelAdapter$FirestoreListenHandler onClose
+INFO: channel closed
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:52:43 PM com.google.cloud.datastore.emulator.firestore.webchannel.FirestoreV1WebChannelAdapter$FirestoreListenHandler onClose\nINFO: channel closed\n"}}
+[debug] [2025-05-25T21:52:52.708Z] May 25, 2025 4:52:52 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:52:52 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:52:52.721Z] May 25, 2025 4:52:52 PM com.google.cloud.datastore.emulator.firestore.webchannel.FirestoreV1WebChannelAdapter$FirestoreWriteHandler onClose
+INFO: channel closed
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:52:52 PM com.google.cloud.datastore.emulator.firestore.webchannel.FirestoreV1WebChannelAdapter$FirestoreWriteHandler onClose\nINFO: channel closed\n"}}
+[debug] [2025-05-25T21:53:21.956Z] May 25, 2025 4:53:21 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:53:21 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:53:21.976Z] May 25, 2025 4:53:21 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:53:21 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:53:21.995Z] May 25, 2025 4:53:21 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:53:21 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:53:22.060Z] [work-queue] {"queuedWork":["/functions/projects/hablopro-speak/triggers/us-central1-onSessionCreate-0-2025-05-25T21:53:22.058Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2025-05-25T21:53:22.061Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/functions/projects/hablopro-speak/triggers/us-central1-onSessionCreate-0-2025-05-25T21:53:22.058Z"],"workRunningCount":1}
+[debug] [2025-05-25T21:53:22.063Z] Accepted request POST /functions/projects/hablopro-speak/triggers/us-central1-onSessionCreate-0 --> us-central1-onSessionCreate-0
+[debug] [2025-05-25T21:53:22.072Z] [functions] Runtime ready! Sending request! {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Runtime ready! Sending request!"}}
+[debug] [2025-05-25T21:53:22.075Z] [functions] Got req.url=/functions/projects/hablopro-speak/triggers/us-central1-onSessionCreate-0, mapping to path=/functions/projects/ {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Got req.url=/functions/projects/hablopro-speak/triggers/us-central1-onSessionCreate-0, mapping to path=/functions/projects/"}}
+[debug] [2025-05-25T21:53:22.079Z] [worker-pool] submitRequest(triggerId=us-central1-onSessionCreate) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] submitRequest(triggerId=us-central1-onSessionCreate)"}}
+[info] i  functions: Beginning execution of "us-central1-onSessionCreate" {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-onSessionCreate"},"extension":{},"message":"Beginning execution of \"us-central1-onSessionCreate\""}}
+[debug] [2025-05-25T21:53:22.083Z] [worker-us-central1-onSessionCreate-cf89818c-efb3-4183-a084-3f7f40de65a4]: BUSY {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-onSessionCreate"},"extension":{},"message":"[worker-us-central1-onSessionCreate-cf89818c-efb3-4183-a084-3f7f40de65a4]: BUSY"}}
+[debug] [2025-05-25T21:53:22.225Z] [runtime-status] [85754] ProcessBackground: lifting resource.name from resource {"name":"projects/hablopro-speak/databases/(default)/documents/users/BXlF33uWSwT6Kg8WpifYvLPTkTEa/sessions/lFlgYVErdF4joKcMWD1a","service":"firestore.googleapis.com"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-onSessionCreate"},"extension":{},"message":"[runtime-status] [85754] ProcessBackground: lifting resource.name from resource {\"name\":\"projects/hablopro-speak/databases/(default)/documents/users/BXlF33uWSwT6Kg8WpifYvLPTkTEa/sessions/lFlgYVErdF4joKcMWD1a\",\"service\":\"firestore.googleapis.com\"}"}}
+[debug] [2025-05-25T21:53:22.227Z] [runtime-status] [85754] RunBackground {"data":{"value":{"name":"projects/hablopro-speak/databases/(default)/documents/users/BXlF33uWSwT6Kg8WpifYvLPTkTEa/sessions/lFlgYVErdF4joKcMWD1a","fields":{"transcript":{"stringValue":"assistant: E aí, como foi o seu último rolê na praia? Conta aí, você foi pra qual praia? E o que você mais curtiu fazer lá?\nuser: Eu fui à praia cerca de Rio de Janeiro, de praia cerca de São Paulo, e foi muito, muito bonito. Estive com a minha família.\nassistant: Que legal! Deve ter sido um passeio super bacana com a família. E o que vocês fizeram juntos na praia? Passaram o dia todo na areia, jogaram algum esporte, ou só aproveitaram pra relaxar e curtir a paisagem?\nuser: Se aproveitarmos para relaxar, curtir a paisagem, mas também fazer um pouco de esporte e também gostar muito do tempo juntos.\nassistant: Parece que vocês se divertiram bastante! É incrível como o ar livre e o mar ajudam a relaxar, né? Além disso, fazer esportes na praia deve ter sido super divertido. Você tem alguma lembrança engraçada ou um momento especial dessa viagem que te marcou?"},"language":{"stringValue":"portuguese"},"difficultyLevel":{"integerValue":"3"},"timezoneOffsetMinutes":{"integerValue":"300"},"startedAt":{"timestampValue":"2025-05-25T21:53:22.010Z"}},"createTime":"2025-05-25T21:53:22.032310Z","updateTime":"2025-05-25T21:53:22.032310Z"},"updateMask":{}},"context":{"eventId":"c007f7ad-4c42-41c4-a8b5-62ae6bd50db3","timestamp":"2025-05-25T21:53:22.032310Z","eventType":"providers/cloud.firestore/eventTypes/document.create","resource":"projects/hablopro-speak/databases/(default)/documents/users/BXlF33uWSwT6Kg8WpifYvLPTkTEa/sessions/lFlgYVErdF4joKcMWD1a"}} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-onSessionCreate"},"extension":{},"message":"[runtime-status] [85754] RunBackground {\"data\":{\"value\":{\"name\":\"projects/hablopro-speak/databases/(default)/documents/users/BXlF33uWSwT6Kg8WpifYvLPTkTEa/sessions/lFlgYVErdF4joKcMWD1a\",\"fields\":{\"transcript\":{\"stringValue\":\"assistant: E aí, como foi o seu último rolê na praia? Conta aí, você foi pra qual praia? E o que você mais curtiu fazer lá?\\nuser: Eu fui à praia cerca de Rio de Janeiro, de praia cerca de São Paulo, e foi muito, muito bonito. Estive com a minha família.\\nassistant: Que legal! Deve ter sido um passeio super bacana com a família. E o que vocês fizeram juntos na praia? Passaram o dia todo na areia, jogaram algum esporte, ou só aproveitaram pra relaxar e curtir a paisagem?\\nuser: Se aproveitarmos para relaxar, curtir a paisagem, mas também fazer um pouco de esporte e também gostar muito do tempo juntos.\\nassistant: Parece que vocês se divertiram bastante! É incrível como o ar livre e o mar ajudam a relaxar, né? Além disso, fazer esportes na praia deve ter sido super divertido. Você tem alguma lembrança engraçada ou um momento especial dessa viagem que te marcou?\"},\"language\":{\"stringValue\":\"portuguese\"},\"difficultyLevel\":{\"integerValue\":\"3\"},\"timezoneOffsetMinutes\":{\"integerValue\":\"300\"},\"startedAt\":{\"timestampValue\":\"2025-05-25T21:53:22.010Z\"}},\"createTime\":\"2025-05-25T21:53:22.032310Z\",\"updateTime\":\"2025-05-25T21:53:22.032310Z\"},\"updateMask\":{}},\"context\":{\"eventId\":\"c007f7ad-4c42-41c4-a8b5-62ae6bd50db3\",\"timestamp\":\"2025-05-25T21:53:22.032310Z\",\"eventType\":\"providers/cloud.firestore/eventTypes/document.create\",\"resource\":\"projects/hablopro-speak/databases/(default)/documents/users/BXlF33uWSwT6Kg8WpifYvLPTkTEa/sessions/lFlgYVErdF4joKcMWD1a\"}}"}}
+[info] >  Session created for user BXlF33uWSwT6Kg8WpifYvLPTkTEa: {"user":"Session created for user BXlF33uWSwT6Kg8WpifYvLPTkTEa:","metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-onSessionCreate"},"extension":{},"message":"\u001b[90m> \u001b[39m Session created for user BXlF33uWSwT6Kg8WpifYvLPTkTEa:"}}
+[info] >  - Server timestamp: 2025-05-25T21:53:22.010Z {"user":"- Server timestamp: 2025-05-25T21:53:22.010Z","metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-onSessionCreate"},"extension":{},"message":"\u001b[90m> \u001b[39m - Server timestamp: 2025-05-25T21:53:22.010Z"}}
+[info] >  - User timezone offset: 300 minutes {"user":"- User timezone offset: 300 minutes","metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-onSessionCreate"},"extension":{},"message":"\u001b[90m> \u001b[39m - User timezone offset: 300 minutes"}}
+[info] >  - Local date ID: 2025-05-25 {"user":"- Local date ID: 2025-05-25","metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-onSessionCreate"},"extension":{},"message":"\u001b[90m> \u001b[39m - Local date ID: 2025-05-25"}}
+[info] >  - Last active date: 2025-05-25T21:11:32.658Z {"user":"- Last active date: 2025-05-25T21:11:32.658Z","metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-onSessionCreate"},"extension":{},"message":"\u001b[90m> \u001b[39m - Last active date: 2025-05-25T21:11:32.658Z"}}
+[info] >  - Last active local day: 2025-05-25 {"user":"- Last active local day: 2025-05-25","metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-onSessionCreate"},"extension":{},"message":"\u001b[90m> \u001b[39m - Last active local day: 2025-05-25"}}
+[info] >  - Yesterday local day: 2025-05-24 {"user":"- Yesterday local day: 2025-05-24","metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-onSessionCreate"},"extension":{},"message":"\u001b[90m> \u001b[39m - Yesterday local day: 2025-05-24"}}
+[info] >  - Same day? true, Continues streak? false {"user":"- Same day? true, Continues streak? false","metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-onSessionCreate"},"extension":{},"message":"\u001b[90m> \u001b[39m - Same day? true, Continues streak? false"}}
+[info] >  - Current streak: 1 → New streak: 1 {"user":"- Current streak: 1 → New streak: 1","metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-onSessionCreate"},"extension":{},"message":"\u001b[90m> \u001b[39m - Current streak: 1 → New streak: 1"}}
+[info] >  - Longest streak: 1 {"user":"- Longest streak: 1","metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-onSessionCreate"},"extension":{},"message":"\u001b[90m> \u001b[39m - Longest streak: 1"}}
+[info] >  Successfully updated streak for user BXlF33uWSwT6Kg8WpifYvLPTkTEa {"user":"Successfully updated streak for user BXlF33uWSwT6Kg8WpifYvLPTkTEa","metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-onSessionCreate"},"extension":{},"message":"\u001b[90m> \u001b[39m Successfully updated streak for user BXlF33uWSwT6Kg8WpifYvLPTkTEa"}}
+[debug] [2025-05-25T21:53:22.316Z] Finishing up request with event=pause {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-onSessionCreate"},"extension":{},"message":"Finishing up request with event=pause"}}
+[info] i  functions: Finished "us-central1-onSessionCreate" in 233.979708ms {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-onSessionCreate"},"extension":{},"message":"Finished \"us-central1-onSessionCreate\" in 233.979708ms"}}
+[debug] [2025-05-25T21:53:22.317Z] [worker-us-central1-onSessionCreate-cf89818c-efb3-4183-a084-3f7f40de65a4]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-onSessionCreate"},"extension":{},"message":"[worker-us-central1-onSessionCreate-cf89818c-efb3-4183-a084-3f7f40de65a4]: IDLE"}}
+[debug] [2025-05-25T21:53:22.317Z] Finishing up request with event=finish {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-onSessionCreate"},"extension":{},"message":"Finishing up request with event=finish"}}
+[debug] [2025-05-25T21:53:22.317Z] Finishing up request with event=close {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-onSessionCreate"},"extension":{},"message":"Finishing up request with event=close"}}
+[debug] [2025-05-25T21:53:22.317Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2025-05-25T21:53:28.490Z] May 25, 2025 4:53:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:53:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:53:28.537Z] May 25, 2025 4:53:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:53:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:53:28.549Z] May 25, 2025 4:53:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:53:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:53:28.561Z] May 25, 2025 4:53:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:53:28 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:53:38.490Z] May 25, 2025 4:53:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:53:38 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:53:53.352Z] May 25, 2025 4:53:53 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:53:53 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:53:53.373Z] May 25, 2025 4:53:53 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:53:53 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:54:22.080Z] May 25, 2025 4:54:22 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:54:22 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:54:22.083Z] May 25, 2025 4:54:22 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:54:22 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-05-25T21:54:22.090Z] May 25, 2025 4:54:22 PM com.google.cloud.datastore.emulator.firestore.webchannel.FirestoreV1WebChannelAdapter$FirestoreWriteHandler onClose
+INFO: channel closed
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:54:22 PM com.google.cloud.datastore.emulator.firestore.webchannel.FirestoreV1WebChannelAdapter$FirestoreWriteHandler onClose\nINFO: channel closed\n"}}
+[debug] [2025-05-25T21:54:23.426Z] May 25, 2025 4:54:23 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"May 25, 2025 4:54:23 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
