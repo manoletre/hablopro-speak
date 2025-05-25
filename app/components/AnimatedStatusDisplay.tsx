@@ -349,7 +349,7 @@ export default function AnimatedStatusDisplay({
 
       {/* Suggestions display - matches subtitles box width and styling */}
       {currentSuggestion && (
-        <div className="w-full max-w-[550px] mx-auto mt-4">
+        <div className="w-full max-w-[550px] mx-auto mt-2">
           <div 
             className={`bg-amber-100/95 backdrop-blur-sm rounded-lg shadow-sm border border-amber-200 relative transition-all duration-300 ${
               isVisible ? 'opacity-80 transform scale-100' : 'opacity-0 transform scale-95'
