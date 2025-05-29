@@ -7,7 +7,7 @@ import SessionResults from './SessionResults';
 import AuthDialog from './AuthDialog';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { usePostHog } from 'posthog-js/react';
 import { trackSessionCompleted, trackSessionStarted } from '../lib/analytics';
@@ -42,6 +42,7 @@ interface VoiceChatProps {
   onClose?: () => void;
   difficultyLevel: number;
   language: string;
+  sessionKey?: string | null; // Unique key for each session to track state
 }
 
 // Helper function to detect CJK languages
@@ -50,7 +51,7 @@ const isCJKLanguage = (language: string): boolean => {
   return cjkLanguages.some(lang => language.toLowerCase().includes(lang));
 };
 
-export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceChatProps) {
+export default function VoiceChat({ onClose, difficultyLevel, language, sessionKey }: VoiceChatProps) {
   usePostHog();
 
   const { user, loading } = useAuth();
@@ -70,6 +71,18 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
   
   // Update the conversation history initialization to avoid hardcoded messages
   const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([]);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  
+  // Use sessionKey-based tracking to persist across component remounts
+  const getStorageKey = () => `firstQuestionStored_${sessionKey}`;
+  const hasStoredFirstQuestion = () => {
+    if (!sessionKey) return false;
+    return localStorage.getItem(getStorageKey()) === 'true';
+  };
+  const markFirstQuestionStored = () => {
+    if (!sessionKey) return;
+    localStorage.setItem(getStorageKey(), 'true');
+  };
 
   // CJK language support - store deltas as individual translatable units
   const [subtitleDeltas, setSubtitleDeltas] = useState<string[]>([]);
@@ -347,7 +360,92 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
         if (completeTranscript && completeTranscript.trim()) {
           console.log('Saving complete AI transcript to history:', completeTranscript);
           
-          // Add this as a discrete message in the conversation
+          // Check if we have already stored the first question for this session
+          const alreadyStoredFirstQuestion = hasStoredFirstQuestion();
+          
+          // Only process for question storage if we haven't stored the first question yet
+          if (user && !sessionId && !alreadyStoredFirstQuestion) {
+            console.log(`First AI response for session ${sessionKey} - checking if it is a question to store`);
+            
+            // Check if this first response is actually a question
+            const isQuestion = completeTranscript.includes('?') || 
+              /\b(what|how|when|where|why|who|which|do|does|did|are|is|can|could|would|will)\b/i.test(completeTranscript);
+            
+            if (isQuestion) {
+              console.log('First AI response is a question - creating session and storing ONLY this first question');
+              
+              const createSessionAndStoreFirstQuestion = async () => {
+                try {
+                  const sessionsRef = collection(db, `users/${user.uid}/sessions`);
+                  const timezoneOffsetMinutes = new Date().getTimezoneOffset();
+                  
+                  // Create session document
+                  const sessionDoc = await addDoc(sessionsRef, {
+                    startedAt: serverTimestamp(),
+                    transcript: '', // Will be updated when session finishes
+                    language,
+                    difficultyLevel,
+                    timezoneOffsetMinutes
+                  });
+                  
+                  console.log(`Session created with ID: ${sessionDoc.id}`);
+                  setSessionId(sessionDoc.id);
+                  
+                  // Store ONLY the first question - this will never happen again for this session
+                  const questionsRef = collection(db, `users/${user.uid}/questions`);
+                  await addDoc(questionsRef, {
+                    question: completeTranscript.trim(),
+                    sessionId: sessionDoc.id,
+                    language,
+                    difficultyLevel,
+                    createdAt: serverTimestamp(),
+                    date: new Date().toISOString().substring(0, 10) // YYYY-MM-DD format
+                  });
+                  
+                  console.log(`FIRST QUESTION stored successfully for session ${sessionKey} - marking as stored`);
+                  markFirstQuestionStored();
+                  
+                } catch (error) {
+                  console.error('Error creating session or storing first question:', error);
+                }
+              };
+              
+              createSessionAndStoreFirstQuestion();
+            } else {
+              console.log('First AI response is not a question - creating session without storing anything in questions collection');
+              
+              // Still create the session, but don't store as a question
+              const createSessionOnly = async () => {
+                try {
+                  const sessionsRef = collection(db, `users/${user.uid}/sessions`);
+                  const timezoneOffsetMinutes = new Date().getTimezoneOffset();
+                  
+                  // Create session document
+                  const sessionDoc = await addDoc(sessionsRef, {
+                    startedAt: serverTimestamp(),
+                    transcript: '', // Will be updated when session finishes
+                    language,
+                    difficultyLevel,
+                    timezoneOffsetMinutes
+                  });
+                  
+                  console.log(`Session created with ID: ${sessionDoc.id} (no question stored - first response was not a question)`);
+                  setSessionId(sessionDoc.id);
+                  markFirstQuestionStored(); // Mark as processed so we don't check again
+                  
+                } catch (error) {
+                  console.error('Error creating session:', error);
+                }
+              };
+              
+              createSessionOnly();
+            }
+          } else {
+            // This session has already stored its first question or this is a subsequent response
+            console.log(`Session ${sessionKey} - NOT storing question (already processed: ${alreadyStoredFirstQuestion}, sessionId exists: ${!!sessionId})`);
+          }
+          
+          // Add this as a discrete message in the conversation history (this happens for all AI responses)
           setConversationHistory(prev => {
             const isDuplicate = prev.some(msg => 
               msg.role === 'assistant' && msg.text === completeTranscript.trim()
@@ -444,7 +542,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
     } catch (error) {
       console.error('Error parsing event:', error);
     }
-  }, [isWrappingUp, wrapUpMessageSent, isCJK]);
+  }, [isWrappingUp, wrapUpMessageSent, isCJK, user, sessionId, language, difficultyLevel]);
 
   // Modify the initWebRTC function to add the data channel onopen event handler
   const initWebRTC = useCallback(async () => {
@@ -493,7 +591,8 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
         },
         body: JSON.stringify({
           difficultyLevel,
-          language
+          language,
+          userId: user?.uid // Include userId to fetch previous questions
         })
       });
       const data = await tokenResponse.json();
@@ -531,6 +630,9 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
       // Add event listener for data channel open event to trigger AI response
       dc.onopen = () => {
         console.log('Data channel is now open');
+        
+        console.log(`Starting new session: ${sessionKey}`);
+        
         // Wait a short moment for the connection to stabilize before triggering AI
         setTimeout(() => {
           console.log('Will now trigger AI to start conversation');
@@ -580,7 +682,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
       cleanupAudioResources();
       setIsConnected(false);
     }
-  }, [cleanupAudioResources, difficultyLevel, language, isConnected, peerConnectionRef, audioRef, dataChannelRef, handleDataChannelEvent, setConversationHistory, setAiTranscript, setSubtitleBuffer, setIsConnected]);
+  }, [handleDataChannelEvent, cleanupAudioResources, difficultyLevel, language, isCJK, user]);
 
   // Wrap the startConversation function with useCallback (at line ~458)
   const startConversation = useCallback(async () => {
@@ -724,18 +826,28 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
     // Save session to Firestore if user is logged in
     if (user) {
       try {
-        const sessionsRef = collection(db, `users/${user.uid}/sessions`);
-        
-        // Get the user's timezone offset in minutes
-        const timezoneOffsetMinutes = new Date().getTimezoneOffset();
-        
-        await addDoc(sessionsRef, {
-          startedAt: serverTimestamp(),
-          transcript: finalConversationHistory.map(msg => `${msg.role}: ${msg.text}`).join('\n'),
-          language,
-          difficultyLevel,
-          timezoneOffsetMinutes
-        });
+        if (sessionId) {
+          // Update existing session with final transcript
+          const sessionRef = doc(db, `users/${user.uid}/sessions`, sessionId);
+          await updateDoc(sessionRef, {
+            transcript: finalConversationHistory.map(msg => `${msg.role}: ${msg.text}`).join('\n'),
+            finishedAt: serverTimestamp()
+          });
+          console.log(`Updated session ${sessionId} with final transcript`);
+        } else {
+          // Fallback: create new session if sessionId is not available
+          const sessionsRef = collection(db, `users/${user.uid}/sessions`);
+          const timezoneOffsetMinutes = new Date().getTimezoneOffset();
+          
+          await addDoc(sessionsRef, {
+            startedAt: serverTimestamp(),
+            transcript: finalConversationHistory.map(msg => `${msg.role}: ${msg.text}`).join('\n'),
+            language,
+            difficultyLevel,
+            timezoneOffsetMinutes
+          });
+          console.log('Created fallback session document');
+        }
         
         // Track session completion with analytics utility
         trackSessionCompleted(
@@ -784,7 +896,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
       setConversationHistory(finalConversationHistory);
       setShowResults(true);
     }, 500);
-  }, [conversationHistory, aiTranscript, cleanupAudioResources, user, language, difficultyLevel, timeRemaining]);
+  }, [conversationHistory, aiTranscript, cleanupAudioResources, user, language, difficultyLevel, timeRemaining, sessionId]);
 
   // Update the reference after definition
   useEffect(() => {

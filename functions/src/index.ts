@@ -104,6 +104,7 @@ export const onSessionCreate = functions
       });
       
       console.log(`Successfully updated streak for user ${uid}`);
+
     } catch (error) {
       console.error(`Error updating streak for user ${uid}:`, error);
       // Don't throw the error - let the function complete gracefully

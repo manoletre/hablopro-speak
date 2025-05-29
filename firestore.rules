@@ -24,7 +24,20 @@ service cloud.firestore {
                        request.auth.uid == uid && 
                        request.resource.data.startedAt == request.time;
         allow read: if request.auth != null && request.auth.uid == uid;
-        allow update, delete: if false; // Make sessions immutable
+        // Allow updates to add transcript and finishedAt when session ends
+        allow update: if request.auth != null && 
+                       request.auth.uid == uid &&
+                       resource.data.startedAt != null; // Session must exist
+        allow delete: if false; // Never allow session deletion
+      }
+      
+      match /questions/{questionId} {
+        // Allow creation and reading of questions by the authenticated user
+        allow create: if request.auth != null && 
+                       request.auth.uid == uid &&
+                       request.resource.data.createdAt == request.time;
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow update, delete: if false; // Make questions immutable
       }
       
       match /days/{dayId} {
