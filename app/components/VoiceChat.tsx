@@ -11,6 +11,7 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { usePostHog } from 'posthog-js/react';
 import { trackSessionCompleted, trackSessionStarted } from '../lib/analytics';
+import { useWakeLock } from '../hooks/useWakeLock';
 
 // Enhanced interface to handle different event types
 interface RealtimeEvent {
@@ -43,11 +44,18 @@ interface VoiceChatProps {
   language: string;
 }
 
+// Helper function to detect CJK languages
+const isCJKLanguage = (language: string): boolean => {
+  const cjkLanguages = ['japanese', 'chinese', 'korean', 'mandarin', 'cantonese', 'ja', 'zh', 'ko'];
+  return cjkLanguages.some(lang => language.toLowerCase().includes(lang));
+};
+
 export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceChatProps) {
   usePostHog();
 
   const { user, loading } = useAuth();
   const { t, language: uiLanguage } = useLanguage();
+  const wakeLock = useWakeLock();
   const [isListening, setIsListening] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [aiTranscript, setAiTranscript] = useState<string>('');
@@ -62,6 +70,10 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
   
   // Update the conversation history initialization to avoid hardcoded messages
   const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([]);
+
+  // CJK language support - store deltas as individual translatable units
+  const [subtitleDeltas, setSubtitleDeltas] = useState<string[]>([]);
+  const isCJK = isCJKLanguage(language);
 
   // Keep references separate to avoid interference
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
@@ -117,17 +129,41 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
     setPopupWordIndex(idx);
     setTranslatingWord(word);
     setTranslation(null);
+
+    // Don't translate if the word is empty or just whitespace
+    if (!word.trim()) {
+      setTranslation(null);
+      return;
+    }
+
     try {
       const res = await fetch('/api/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ word, context: subtitleBuffer, sourceLanguage: language, targetLanguage: uiLanguage })
+        body: JSON.stringify({ 
+          word, 
+          context: subtitleBuffer, 
+          sourceLanguage: language, 
+          targetLanguage: uiLanguage 
+        })
       });
       const data = await res.json();
-      setTranslation(data.translation);
+      
+      // If source and target languages are the same, format the translation as a definition
+      if (language.toLowerCase() === uiLanguage.toLowerCase()) {
+        setTranslation(data.translation.startsWith('Definition:') ? 
+          data.translation : 
+          `Definition: ${data.translation}`
+        );
+      } else {
+        setTranslation(data.translation);
+      }
     } catch (error) {
       console.error('Translation error', error);
-      setTranslation('Error translating');
+      setTranslation(language.toLowerCase() === uiLanguage.toLowerCase() ? 
+        'Error getting definition' : 
+        'Error translating'
+      );
     }
   }, [language, uiLanguage, subtitleBuffer]);
 
@@ -283,6 +319,10 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
         console.log('Response created event received - clearing buffers');
         setSubtitleBuffer(''); // Clear subtitle buffer for new response
         setAiTranscript(''); // Clear transcript buffer for new response
+        // Clear deltas for CJK languages when starting new response
+        if (isCJK) {
+          setSubtitleDeltas([]);
+        }
       }
       
       // Handle AI response audio transcript deltas
@@ -290,6 +330,11 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
         // For all delta events, append to subtitle buffer and AI transcript
         setSubtitleBuffer(prev => prev + data.delta);
         setAiTranscript(prev => prev + data.delta);
+        
+        // For CJK languages, store each delta as a separate translatable unit
+        if (isCJK && data.delta.trim()) {
+          setSubtitleDeltas(prev => [...prev, data.delta!]);
+        }
       }
       
       // Handle AI response audio transcript complete - this contains the full transcript for each response
@@ -399,7 +444,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
     } catch (error) {
       console.error('Error parsing event:', error);
     }
-  }, [setWrapUpMessageSent, setIsWrappingUp, setSubtitleBuffer, setAiTranscript, setConversationHistory, isWrappingUp, wrapUpMessageSent]);
+  }, [isWrappingUp, wrapUpMessageSent, isCJK]);
 
   // Modify the initWebRTC function to add the data channel onopen event handler
   const initWebRTC = useCallback(async () => {
@@ -494,6 +539,10 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
           // Clear any previous AI transcript
           setAiTranscript('');
           setSubtitleBuffer('');
+          // Clear deltas for CJK languages
+          if (isCJK) {
+            setSubtitleDeltas([]);
+          }
           triggerAIToStartConversation();
         }, 1000);
       };
@@ -821,6 +870,35 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
     console.log('Conversation history updated:', conversationHistory);
   }, [conversationHistory]);
 
+  // Wake lock management - completely isolated from WebRTC logic
+  useEffect(() => {
+    let wakeLockRequested = false;
+
+    const manageWakeLock = async () => {
+      if (isConnected && !showResults && !wakeLockRequested) {
+        wakeLockRequested = true;
+        const success = await wakeLock.requestWakeLock();
+        if (success) {
+          console.log('Screen will stay awake during voice session');
+        } else {
+          console.warn('Could not keep screen awake - wake lock not supported or failed');
+        }
+      } else if ((!isConnected || showResults) && wakeLockRequested) {
+        wakeLockRequested = false;
+        await wakeLock.releaseWakeLock();
+      }
+    };
+
+    manageWakeLock();
+
+    // Cleanup on unmount
+    return () => {
+      if (wakeLockRequested) {
+        wakeLock.releaseWakeLock();
+      }
+    };
+  }, [isConnected, showResults]); // Minimal dependencies, no functions to avoid circular deps
+
   // Final modified return statement with timer and conditional rendering for results
   return (
     <div className="fixed inset-0 bg-[#fffaed] font-poppins flex flex-col">
@@ -850,6 +928,18 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
               <span className="text-[#422006] font-medium">
                 {isWrappingUp ? t('voiceChat.wrappingUp') : formatTimeRemaining()}
               </span>
+              {wakeLock.isSupported && isConnected && (
+                <div className="ml-2 flex items-center" title="Screen will stay awake">
+                  <svg 
+                    className="w-4 h-4 text-[#422006] opacity-60" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </div>
+              )}
             </div>
           </div>
           
@@ -900,17 +990,31 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
                     >
                       <div className="text-[#422006]">
                         <div className="flex flex-wrap">
-                          {subtitleBuffer.split(/(\s+)/).map((token, idx) =>
-                            /\s+/.test(token) ? (
-                              <span key={idx}>{token}</span>
-                            ) : (
+                          {isCJK ? (
+                            // For CJK languages, use deltas as clickable units
+                            subtitleDeltas.map((delta, idx) => (
                               <span
                                 key={idx}
-                                className={`inline-block px-0.5 cursor-pointer rounded ${popupWordIndex === idx ? 'bg-amber-300' : 'hover:bg-amber-200'}`}
-                                onClick={(e) => handleWordClick(token, idx, e)}
+                                className={`inline-block cursor-pointer rounded ${popupWordIndex === idx ? 'bg-amber-300' : 'hover:bg-amber-200'}`}
+                                onClick={(e) => handleWordClick(delta, idx, e)}
                               >
-                                {token}
+                                {delta}
                               </span>
+                            ))
+                          ) : (
+                            // For non-CJK languages, use space-separated tokens
+                            subtitleBuffer.split(/(\s+)/).map((token, idx) =>
+                              /\s+/.test(token) ? (
+                                <span key={idx}>{token}</span>
+                              ) : (
+                                <span
+                                  key={idx}
+                                  className={`inline-block px-0.5 cursor-pointer rounded ${popupWordIndex === idx ? 'bg-amber-300' : 'hover:bg-amber-200'}`}
+                                  onClick={(e) => handleWordClick(token, idx, e)}
+                                >
+                                  {token}
+                                </span>
+                              )
                             )
                           )}
                         </div>
@@ -936,7 +1040,10 @@ export default function VoiceChat({ onClose, difficultyLevel, language }: VoiceC
                 <div className="text-center">
                   {translation === null ? (
                     <div className="flex items-center justify-center space-x-1 text-[#422006] text-sm">
-                      <span>{t('voiceChat.translating')}</span>
+                      <span>{language.toLowerCase() === uiLanguage.toLowerCase() ? 
+                        t('voiceChat.gettingDefinition') : 
+                        t('voiceChat.translating')}
+                      </span>
                       <div className="flex space-x-1">
                         <div className="w-1 h-1 bg-[#422006] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                         <div className="w-1 h-1 bg-[#422006] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>

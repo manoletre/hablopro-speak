@@ -39,6 +39,11 @@ type TranslationKey =
   | 'auth.signInRequired'
   | 'auth.signInWithGoogle'
   | 'auth.termsAndPrivacy'
+  | 'auth.bySigningUp'
+  | 'auth.youAgreeToOur'
+  | 'auth.and'
+  | 'auth.termsOfService'
+  | 'auth.privacyPolicy'
   | 'auth.failedToSignIn'
   | 'bookmarks.title'
   | 'bookmarks.all'
@@ -82,6 +87,7 @@ type TranslationKey =
   | 'voiceChat.wrappingUp'
   | 'voiceChat.pressWord'
   | 'voiceChat.translating'
+  | 'voiceChat.gettingDefinition'
   | 'voiceChat.canSpeak'
   | 'voiceChat.canSpeakNative'
   | 'home.lostStreak';
@@ -123,6 +129,11 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'auth.signInRequired': 'Sign In Required',
     'auth.signInWithGoogle': 'Sign in with Google',
     'auth.termsAndPrivacy': 'By signing in, you agree to our Terms of Service and Privacy Policy.',
+    'auth.bySigningUp': 'By signing up, you agree to our',
+    'auth.youAgreeToOur': 'you agree to our',
+    'auth.and': 'and',
+    'auth.termsOfService': 'Terms of Service',
+    'auth.privacyPolicy': 'Privacy Policy',
     'auth.failedToSignIn': 'Failed to sign in with Google. Please try again.',
     'bookmarks.title': 'My Bookmarks',
     'bookmarks.all': 'All',
@@ -166,6 +177,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'voiceChat.wrappingUp': 'Wrapping up...',
     'voiceChat.pressWord': 'Press a word to view its meaning',
     'voiceChat.translating': 'Nacho is translating',
+    'voiceChat.gettingDefinition': 'Getting definition...',
     'voiceChat.canSpeak': 'I\'m listening - you can speak!',
     'voiceChat.canSpeakNative': 'You can also speak in english - I understand!',
     'home.lostStreak': 'you lost your streak',
@@ -199,6 +211,11 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'auth.signInRequired': 'Inicio de Sesión Requerido',
     'auth.signInWithGoogle': 'Iniciar sesión con Google',
     'auth.termsAndPrivacy': 'Al iniciar sesión, aceptas nuestros Términos de Servicio y Política de Privacidad.',
+    'auth.bySigningUp': 'Al registrarte, aceptas nuestros',
+    'auth.youAgreeToOur': 'aceptas nuestros',
+    'auth.and': 'y',
+    'auth.termsOfService': 'Términos de Servicio',
+    'auth.privacyPolicy': 'Política de Privacidad',
     'auth.failedToSignIn': 'Error al iniciar sesión con Google. Por favor, inténtalo de nuevo.',
     'bookmarks.title': 'Mis Marcadores',
     'bookmarks.all': 'Todos',
@@ -242,6 +259,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'voiceChat.wrappingUp': 'Analizando...',
     'voiceChat.pressWord': 'presiona una palabra para ver su significado',
     'voiceChat.translating': 'Nacho está traduciendo',
+    'voiceChat.gettingDefinition': 'Obteniendo definición...',
     'voiceChat.canSpeak': 'Te escucho - ¡puedes hablar!',
     'voiceChat.canSpeakNative': '¡También puedes hablar en español - te entiendo!',
     'home.lostStreak': 'perdiste tu racha',

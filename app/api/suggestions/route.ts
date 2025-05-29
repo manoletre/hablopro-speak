@@ -13,6 +13,7 @@ const SuggestionSchema = z.object({
     type: z.enum(['vocabulary', 'phrase', 'encouragement']),
     content: z.string(),
     translation: z.string().nullable(),
+    definition: z.string().nullable(),
   }))
 });
 
@@ -26,6 +27,9 @@ export async function POST(request: Request) {
       difficultyLevel = 3,
       vocabularyOnly = false
     } = body;
+
+    // Check if we're suggesting for English conversation
+    const isEnglishConversation = targetLanguage.toLowerCase() === 'english';
 
     // Build conversation context
     const recentMessages = conversationHistory.slice(-6); // Last 6 messages for context
@@ -51,30 +55,51 @@ Target language: ${targetLanguage}
 User's native language: ${userNativeLanguage}
 Difficulty level: ${difficultyLevel} (${difficultyDescriptions[difficultyLevel as keyof typeof difficultyDescriptions]})
 
-IMPORTANT: Focus on vocabulary that helps the user RESPOND and CONTRIBUTE to the conversation. Think about what the user might want to say next, not just understanding what was said.
+${isEnglishConversation ? 
+  `IMPORTANT: Since the conversation is in English, focus on providing helpful vocabulary and phrases that native English speakers would use naturally. For each suggestion:
+- Include a brief definition or explanation of how to use it naturally
+- Focus on natural English expressions and idioms
+- Consider the user's native language (${userNativeLanguage}) for context
+- Provide translations only if they would be helpful for understanding` :
+  `IMPORTANT: Focus on vocabulary that helps the user RESPOND and CONTRIBUTE to the conversation. Think about what the user might want to say next, not just understanding what was said.`
+}
 
 ${vocabularyOnly ? 
   `Provide 6-8 vocabulary words or short expressions that the user could use to respond or continue the conversation.` :
   `Types of suggestions:
-- "vocabulary": Key words/expressions the user could say in response (provide translation)
-- "phrase": Complete sentences the user might want to say next (provide translation)
-- "encouragement": Motivational messages to keep the user engaged (no translation needed - leave translation empty)`
+- "vocabulary": Key words/expressions the user could say in response (${isEnglishConversation ? 'provide definition and optional translation' : 'provide translation'})
+- "phrase": Complete sentences the user might want to say next (${isEnglishConversation ? 'provide definition and optional translation' : 'provide translation'})
+- "encouragement": Motivational messages to keep the user engaged (no translation/definition needed - leave both empty)`
 }
 
-Guidelines for vocabulary suggestions:
-- Think predictively: What might the user want to say in response?
+Guidelines for suggestions:
+${isEnglishConversation ? 
+  `- Focus on natural, idiomatic English expressions
+- Include common phrases and idioms that native speakers use
+- Provide clear definitions and usage examples
+- Consider the user's native language (${userNativeLanguage}) for context
+- Include both formal and informal expressions where appropriate
+- Focus on conversational English that sounds natural and fluent` :
+  `- Think predictively: What might the user want to say in response?
 - If asked about preferences: provide vocabulary for common preferences/opinions
 - If asked about experiences: provide vocabulary for describing experiences
 - If discussing a topic: provide vocabulary for expressing opinions, asking follow-up questions
 - Focus on conversational vocabulary that helps the user participate actively
 - Provide words/expressions the user can immediately use to respond
 - Include opinion words, descriptive adjectives, common responses
-- Think about natural conversation flow and what comes next
+- Think about natural conversation flow and what comes next`
+}
 
-Examples of good predictive vocabulary:
-- If discussing food: "delicious", "I prefer", "my favorite is", "I don't like"
-- If discussing hobbies: "I enjoy", "I'm interested in", "I practice", "it's fun"
-- If discussing travel: "I've been to", "I'd like to visit", "beautiful", "interesting"
+Examples of good ${isEnglishConversation ? 'English' : 'predictive'} vocabulary:
+- If discussing food: ${isEnglishConversation ? 
+  '"delicious" (very tasty, extremely good to eat), "I\'m craving" (really want to eat), "my go-to dish" (favorite regular choice), "not my cup of tea" (not something I enjoy)' :
+  '"delicious", "I prefer", "my favorite is", "I don\'t like"'}
+- If discussing hobbies: ${isEnglishConversation ?
+  '"I\'m really into" (very interested in), "I dabble in" (do occasionally), "it\'s my jam" (something I really enjoy), "I\'m hooked on" (addicted to, really enjoy)' :
+  '"I enjoy", "I\'m interested in", "I practice", "it\'s fun"'}
+- If discussing travel: ${isEnglishConversation ?
+  '"I\'ve been meaning to" (planning to), "it\'s on my bucket list" (something I really want to do), "breathtaking" (extremely beautiful), "off the beaten path" (not touristy)' :
+  '"I\'ve been to", "I\'d like to visit", "beautiful", "interesting"'}
 
 Always provide exactly ${vocabularyOnly ? '6-8 vocabulary suggestions' : '6-8 suggestions total'} that help the user actively participate in the conversation.
 
@@ -94,11 +119,17 @@ If no conversation context exists, provide common conversational vocabulary for 
 
     const suggestions = JSON.parse(response.choices[0].message.content || '{"suggestions": []}');
     
-    // Clean up the suggestions to ensure proper null values for empty translations
+    // Clean up the suggestions to ensure proper null values
     if (suggestions.suggestions) {
-      suggestions.suggestions = suggestions.suggestions.map((suggestion: { type: string; content: string; translation: string | null }) => ({
+      suggestions.suggestions = suggestions.suggestions.map((suggestion: { 
+        type: string; 
+        content: string; 
+        translation: string | null;
+        definition: string | null;
+      }) => ({
         ...suggestion,
-        translation: suggestion.translation && suggestion.translation.trim() ? suggestion.translation : null
+        translation: suggestion.translation && suggestion.translation.trim() ? suggestion.translation : null,
+        definition: suggestion.definition && suggestion.definition.trim() ? suggestion.definition : null
       }));
     }
     

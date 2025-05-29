@@ -113,7 +113,7 @@ export default function AnimatedStatusDisplay({
     } catch (error) {
       console.error('Error fetching suggestions:', error);
     }
-  }, [apiCallCount, conversationHistory, targetLanguage, difficultyLevel, uiLanguage]);
+  }, [apiCallCount, conversationHistory, targetLanguage, difficultyLevel, getUserNativeLanguage]);
 
   // Listening status messages
   const getListeningMessages = () => {
@@ -169,7 +169,7 @@ export default function AnimatedStatusDisplay({
       // Show encouragement as backup
       return getRandomEncouragement();
     }
-  }, [isConnected, connectionPhase, messageIndex, t, uiLanguage]);
+  }, [isConnected, connectionPhase, messageIndex, t, getListeningMessages, getRandomEncouragement]);
 
   // Get next suggestion
   const getNextSuggestion = useCallback(() => {
@@ -215,7 +215,7 @@ export default function AnimatedStatusDisplay({
         setConnectionPhase('ready');
       }, 1500);
     }
-  }, [isConnected, connectionPhase, getNextMessage, getNextSuggestion]);
+  }, [isConnected, connectionPhase, getNextMessage, getNextSuggestion, t]);
 
   // Main animation cycle - runs every 10 seconds
   useEffect(() => {
@@ -289,7 +289,7 @@ export default function AnimatedStatusDisplay({
         clearInterval(animationIntervalRef.current);
       }
     };
-  }, [connectionPhase, suggestions.length, usedSuggestionIndices, t, uiLanguage, isConnected, isListening, currentMessage, getNextMessage, getNextSuggestion, suggestions]);
+  }, [connectionPhase, suggestions.length, usedSuggestionIndices, t, isConnected, isListening, currentMessage, getNextMessage, getNextSuggestion, suggestions]);
 
   // Fetch suggestions when conversation progresses
   useEffect(() => {
