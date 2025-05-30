@@ -35,7 +35,7 @@ async function fetchLastQuestions(userId: string, language: string): Promise<str
 const promptTemplates = {
   1: `You speak [target language] using very simple words and short sentences. Use only basic vocabulary that beginners can understand easily. Speak like you're talking to someone who is just starting to learn the language.
 
-CRITICAL CORRECTION RULE: You must ONLY correct the user if they have just spoken AND made a clear mistake in pronunciation, word structure, or vocabulary. If the user spoke correctly or hasn't spoken yet, DO NOT give any corrections. When you do correct, be gentle: "It's 'I am good' not 'I good'." Keep corrections simple and encouraging. If the error is on pronunciation, make sure tell the user that the pronunciation was incorrect and slowly repeat the correct pronunciation.
+CRITICAL CORRECTION RULE: You must ONLY correct the user if they have just spoken AND made a clear mistake in pronunciation, word structure, or vocabulary OR if they did not use the language they are learning (e.g. answered in spanish when they are learning english). If the user spoke correctly or hasn't spoken yet, DO NOT give any corrections. When you do correct, be gentle. Keep corrections simple and encouraging. If the error is on pronunciation, make sure tell the user that the pronunciation was incorrect and slowly repeat the correct pronunciation.
 
 [PREVIOUS_QUESTIONS_INSTRUCTION]
 
@@ -49,7 +49,7 @@ Keep your questions very short and simple. Use only basic words. Ask only ONE qu
 
   2: `You speak [target language] using simple but complete sentences. Use everyday vocabulary that someone with basic knowledge can understand. Your language should be clear and not too complicated.
 
-CRITICAL CORRECTION RULE: You must ONLY correct the user if they have just spoken AND made a clear mistake in pronunciation, word structure, or vocabulary. If the user spoke correctly or hasn't spoken yet, DO NOT give any corrections. When you do correct, be friendly: "Just a small correction: 'I went yesterday' instead of 'I go yesterday'." Keep corrections brief. If the error is on pronunciation, make sure tell the user that the pronunciation was incorrect and slowly repeat the correct pronunciation.
+CRITICAL CORRECTION RULE: You must ONLY correct the user if they have just spoken AND made a clear mistake in pronunciation, word structure, or vocabulary OR if they did not use the language they are learning (e.g. answered in spanish when they are learning english). If the user spoke correctly or hasn't spoken yet, DO NOT give any corrections. When you do correct, be gentle. Keep corrections simple and encouraging. If the error is on pronunciation, make sure tell the user that the pronunciation was incorrect and slowly repeat the correct pronunciation.
 
 [PREVIOUS_QUESTIONS_INSTRUCTION]
 
@@ -63,7 +63,7 @@ Ask only ONE question at a time. After the user responds, you can ask a simple f
 
   3: `You speak [target language] using natural, everyday language. Use common vocabulary and some simple expressions. Your language should sound like normal conversation between people.
 
-CRITICAL CORRECTION RULE: You must ONLY correct the user if they have just spoken AND made a clear mistake in pronunciation, word structure, or vocabulary. If the user spoke correctly or hasn't spoken yet, DO NOT give any corrections. When you do correct, be natural: "Quick correction: 'I have been working since morning' rather than 'I am working since morning'." Make corrections supportive. If the error is on pronunciation, make sure tell the user that the pronunciation was incorrect and slowly repeat the correct pronunciation.
+CRITICAL CORRECTION RULE: You must ONLY correct the user if they have just spoken AND made a clear mistake in pronunciation, word structure, or vocabulary OR if they did not use the language they are learning (e.g. answered in spanish when they are learning english). If the user spoke correctly or hasn't spoken yet, DO NOT give any corrections. When you do correct, be gentle. Keep corrections simple and encouraging. If the error is on pronunciation, make sure tell the user that the pronunciation was incorrect and slowly repeat the correct pronunciation.
 
 [PREVIOUS_QUESTIONS_INSTRUCTION]
 
@@ -77,7 +77,7 @@ Ask only ONE question at a time. Wait for their complete response before asking 
 
   4: `You speak [target language] using more sophisticated vocabulary and complex sentence structures. Include some professional language, idiomatic expressions, and varied vocabulary. Your language should be articulate and well-developed.
 
-CRITICAL CORRECTION RULE: You must ONLY correct the user if they have just spoken AND made a clear mistake in pronunciation, word structure, or vocabulary. If the user spoke correctly or hasn't spoken yet, DO NOT give any corrections. When you do correct, be professional: "A small adjustment: 'I would recommend' instead of 'I would suggest to recommend'." Keep corrections constructive. If the error is on pronunciation, make sure tell the user that the pronunciation was incorrect and slowly repeat the correct pronunciation.
+CRITICAL CORRECTION RULE: You must ONLY correct the user if they have just spoken AND made a clear mistake in pronunciation, word structure, or vocabulary OR if they did not use the language they are learning (e.g. answered in spanish when they are learning english). If the user spoke correctly or hasn't spoken yet, DO NOT give any corrections. When you do correct, be gentle. Keep corrections simple and encouraging. If the error is on pronunciation, make sure tell the user that the pronunciation was incorrect and slowly repeat the correct pronunciation.
 
 IMPORTANT: Keep your responses SHORT and focused. Your main job is to ask challenging questions and listen to the user's responses. Don't give long explanations or elaborate on topics - let the USER do most of the talking.
 
@@ -93,7 +93,7 @@ Ask only ONE question at a time. Keep your responses brief - just acknowledge th
 
   5: `You speak [target language] using advanced, sophisticated language with complex vocabulary, formal expressions, and nuanced phrasing. Use the kind of eloquent, precise language you might hear in academic discussions, political speeches, or professional presentations.
 
-CRITICAL CORRECTION RULE: You must ONLY correct the user if they have just spoken AND made a clear mistake in pronunciation, word structure, or vocabulary. If the user spoke correctly or hasn't spoken yet, DO NOT give any corrections. When you do correct, be refined: "A nuanced distinction: 'economic implications' would be more precise than 'money effects'." Provide corrections that enhance sophistication. If the error is on pronunciation, make sure tell the user that the pronunciation was incorrect and slowly repeat the correct pronunciation.
+CRITICAL CORRECTION RULE: You must ONLY correct the user if they have just spoken AND made a clear mistake in pronunciation, word structure, or vocabulary OR if they did not use the language they are learning (e.g. answered in spanish when they are learning english). If the user spoke correctly or hasn't spoken yet, DO NOT give any corrections. When you do correct, be gentle. Keep corrections simple and encouraging. If the error is on pronunciation, make sure tell the user that the pronunciation was incorrect and slowly repeat the correct pronunciation.
 
 IMPORTANT: Keep your responses VERY SHORT and focused. Your primary role is to ask sophisticated, challenging questions and listen to the user's detailed responses. Avoid lengthy responses or explanations - let the USER demonstrate their advanced language skills through extended speaking.
 
@@ -166,7 +166,7 @@ Make sure to ask completely different questions to keep the conversation fresh a
         language: languageCode,
         model: 'gpt-4o-mini-transcribe',
       },
-      turn_detection: { type: 'server_vad', silence_duration_ms: 1500 },
+      turn_detection: { type: 'server_vad', silence_duration_ms: 2000 },
     });
 
     return NextResponse.json(response);

@@ -59,7 +59,6 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
   const [isConnected, setIsConnected] = useState(false);
   const [aiTranscript, setAiTranscript] = useState<string>('');
   const [subtitleBuffer, setSubtitleBuffer] = useState<string>('');
-  const [active, setActive] = useState(true); // Set to true since we're starting directly in the session
   const [aiSpeaking, setAiSpeaking] = useState(false);
   
   // Session timer state
@@ -81,6 +80,12 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
+  
+  // Add initialization flag to prevent concurrent WebRTC setups
+  const initializingRef = useRef(false);
+  
+  // Add mounted ref to prevent state updates after unmount
+  const mountedRef = useRef(true);
 
   // Add a ref for the subtitle container
   const subtitleContainerRef = useRef<HTMLDivElement | null>(null);
@@ -186,6 +191,9 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
   // Clean up function to properly release all audio resources
   const cleanupAudioResources = useCallback(() => {
     console.log('Cleaning up all audio resources');
+    
+    // Reset initialization flag
+    initializingRef.current = false;
     
     // Set states to indicate disconnection
     setIsListening(false);
@@ -545,7 +553,12 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
 
   // Modify the initWebRTC function to add the data channel onopen event handler
   const initWebRTC = useCallback(async () => {
-    // Prevent multiple connections with extensive logging
+    // Enhanced guards to prevent multiple initializations
+    if (initializingRef.current) {
+      console.log('WebRTC initialization already in progress, skipping');
+      return;
+    }
+    
     if (peerConnectionRef.current) {
       console.log('WebRTC connection already exists (peerConnectionRef), skipping initialization');
       return;
@@ -556,7 +569,9 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
       return;
     }
     
+    // Set flag to prevent concurrent initializations
     console.log('Initializing new WebRTC connection');
+    initializingRef.current = true;
     
     // Function to trigger the AI to start the conversation without overriding server-side prompts
     const triggerAIToStartConversation = () => {
@@ -615,9 +630,17 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
         }
       };
       
-      // Get microphone access
+      // Get microphone access with proper audio constraints
       console.log('Requesting microphone access');
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 24000,
+          channelCount: 1
+        }
+      });
       pc.addTrack(mediaStream.getTracks()[0]);
       
       // Set up data channel
@@ -674,27 +697,27 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
       await pc.setRemoteDescription(answer);
       
       console.log('WebRTC connection established successfully');
-      setIsConnected(true);
+      // Only update state if component is still mounted
+      if (mountedRef.current) {
+        setIsConnected(true);
+      }
     } catch (error) {
       console.error('Error initializing WebRTC:', error);
       // Clean up any partial resources that might have been created
-      cleanupAudioResources();
-      setIsConnected(false);
+      if (typeof cleanupAudioResources === 'function') {
+        cleanupAudioResources();
+      }
+      // Only update state if component is still mounted
+      if (mountedRef.current) {
+        setIsConnected(false);
+      }
+    } finally {
+      // Always reset the initialization flag
+      initializingRef.current = false;
     }
-  }, [handleDataChannelEvent, cleanupAudioResources, difficultyLevel, language, isCJK, user, sessionKey, isConnected]);
+  }, [handleDataChannelEvent, cleanupAudioResources, difficultyLevel, language, isCJK, user?.uid, sessionKey, isConnected]);
 
-  // Wrap the startConversation function with useCallback (at line ~458)
-  const startConversation = useCallback(async () => {
-    // This function is triggered by a user gesture, 
-    // which allows us to properly initialize audio
-    setActive(true);
-    
-    // Start WebRTC connection
-    initWebRTC();
-    setIsListening(true);
-  }, [initWebRTC]);
-
-  // Function to stop the conversation
+   // Function to stop the conversation
   const stopConversation = () => {
     if (isConnected) {
       // If we're already connected, check session duration
@@ -747,10 +770,13 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
   // Initialize component and set up debug logging
   useEffect(() => {
     console.log('==== VoiceChat component mounted ====');
+    mountedRef.current = true;
     
     // Clean up all resources when component unmounts
     return () => {
       console.log('==== VoiceChat component unmounting ====');
+      mountedRef.current = false;
+      
       // Force cleanup of all connections
       cleanupAudioResources();
       
@@ -759,6 +785,9 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
         clearInterval(timerIntervalRef.current);
         timerIntervalRef.current = null;
       }
+      
+      // Reset initialization flag
+      initializingRef.current = false;
       
       // Explicitly clear event listeners from dataChannel if it exists
       if (dataChannelRef.current) {
@@ -770,18 +799,25 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     };
   }, [cleanupAudioResources]);
 
-  // Only start conversation automatically if the user is authenticated
+  // Only start conversation automatically if the user is authenticated - using a more stable approach
   useEffect(() => {
-    // Small delay to ensure component is fully mounted
-    const timer = setTimeout(() => {
-      if (active && !isConnected && !peerConnectionRef.current && user) {
-        console.log('Starting conversation from delayed useEffect');
-        startConversation();
-      }
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, [active, isConnected, user, startConversation]);
+    // Only trigger once when component mounts and user is available
+    if (user && mountedRef.current && !isConnected && !peerConnectionRef.current && !initializingRef.current) {
+      console.log('Auto-starting conversation on mount');
+      const timer = setTimeout(() => {
+        // Double-check conditions before starting to prevent race conditions
+        if (mountedRef.current && !peerConnectionRef.current && !isConnected && !initializingRef.current) {
+          console.log('Starting conversation from delayed useEffect');
+          setIsListening(true);
+          initWebRTC();
+        } else {
+          console.log('Skipping auto-start - already initialized or in progress');
+        }
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [user, initWebRTC, isConnected]); // Only depend on user to prevent re-triggering
 
   // Effect to track session start
   useEffect(() => {
@@ -793,7 +829,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
         difficulty_level: difficultyLevel
       }
     );
-  }, [user, language, difficultyLevel]);
+  }, [user, language, difficultyLevel, initWebRTC, isConnected]);
 
   // Function to finish session and show results
   const finishSession = useCallback(async () => {
@@ -886,9 +922,6 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
     }
-    
-    // Stop active polling/connections
-    setActive(false);
     
     // Show results screen with the finalized conversation history
     setTimeout(() => {
