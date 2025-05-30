@@ -11,7 +11,6 @@ import { addDoc, collection, serverTimestamp, doc, updateDoc } from 'firebase/fi
 import { db } from '../lib/firebase';
 import { usePostHog } from 'posthog-js/react';
 import { trackSessionCompleted, trackSessionStarted } from '../lib/analytics';
-import { useWakeLock } from '../hooks/useWakeLock';
 
 // Enhanced interface to handle different event types
 interface RealtimeEvent {
@@ -56,7 +55,6 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
 
   const { user, loading } = useAuth();
   const { t, language: uiLanguage } = useLanguage();
-  const wakeLock = useWakeLock();
   const [isListening, setIsListening] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [aiTranscript, setAiTranscript] = useState<string>('');
@@ -74,15 +72,6 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
   const [sessionId, setSessionId] = useState<string | null>(null);
   
   // Use sessionKey-based tracking to persist across component remounts
-  const getStorageKey = () => `firstQuestionStored_${sessionKey}`;
-  const hasStoredFirstQuestion = () => {
-    if (!sessionKey) return false;
-    return localStorage.getItem(getStorageKey()) === 'true';
-  };
-  const markFirstQuestionStored = () => {
-    if (!sessionKey) return;
-    localStorage.setItem(getStorageKey(), 'true');
-  };
 
   // CJK language support - store deltas as individual translatable units
   const [subtitleDeltas, setSubtitleDeltas] = useState<string[]>([]);
@@ -310,6 +299,16 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
 
   // Modified handleDataChannelEvent to properly track conversation messages in sequence
   const handleDataChannelEvent = useCallback((event: MessageEvent) => {
+    // Define helper functions inside the callback to avoid dependency issues
+    const hasStoredFirstQuestion = () => {
+      if (!sessionKey) return false;
+      return localStorage.getItem(`firstQuestionStored_${sessionKey}`) === 'true';
+    };
+    const markFirstQuestionStored = () => {
+      if (!sessionKey) return;
+      localStorage.setItem(`firstQuestionStored_${sessionKey}`, 'true');
+    };
+
     try {
       console.log('Received event:', event.data);
       const data: RealtimeEvent = JSON.parse(event.data);
@@ -542,7 +541,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     } catch (error) {
       console.error('Error parsing event:', error);
     }
-  }, [isWrappingUp, wrapUpMessageSent, isCJK, user, sessionId, language, difficultyLevel]);
+  }, [isWrappingUp, wrapUpMessageSent, isCJK, user, sessionId, language, difficultyLevel, sessionKey]);
 
   // Modify the initWebRTC function to add the data channel onopen event handler
   const initWebRTC = useCallback(async () => {
@@ -682,7 +681,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
       cleanupAudioResources();
       setIsConnected(false);
     }
-  }, [handleDataChannelEvent, cleanupAudioResources, difficultyLevel, language, isCJK, user]);
+  }, [handleDataChannelEvent, cleanupAudioResources, difficultyLevel, language, isCJK, user, sessionKey, isConnected]);
 
   // Wrap the startConversation function with useCallback (at line ~458)
   const startConversation = useCallback(async () => {
@@ -982,35 +981,6 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     console.log('Conversation history updated:', conversationHistory);
   }, [conversationHistory]);
 
-  // Wake lock management - completely isolated from WebRTC logic
-  useEffect(() => {
-    let wakeLockRequested = false;
-
-    const manageWakeLock = async () => {
-      if (isConnected && !showResults && !wakeLockRequested) {
-        wakeLockRequested = true;
-        const success = await wakeLock.requestWakeLock();
-        if (success) {
-          console.log('Screen will stay awake during voice session');
-        } else {
-          console.warn('Could not keep screen awake - wake lock not supported or failed');
-        }
-      } else if ((!isConnected || showResults) && wakeLockRequested) {
-        wakeLockRequested = false;
-        await wakeLock.releaseWakeLock();
-      }
-    };
-
-    manageWakeLock();
-
-    // Cleanup on unmount
-    return () => {
-      if (wakeLockRequested) {
-        wakeLock.releaseWakeLock();
-      }
-    };
-  }, [isConnected, showResults]); // Minimal dependencies, no functions to avoid circular deps
-
   // Final modified return statement with timer and conditional rendering for results
   return (
     <div className="fixed inset-0 bg-[#fffaed] font-poppins flex flex-col">
@@ -1040,18 +1010,6 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
               <span className="text-[#422006] font-medium">
                 {isWrappingUp ? t('voiceChat.wrappingUp') : formatTimeRemaining()}
               </span>
-              {wakeLock.isSupported && isConnected && (
-                <div className="ml-2 flex items-center" title="Screen will stay awake">
-                  <svg 
-                    className="w-4 h-4 text-[#422006] opacity-60" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                </div>
-              )}
             </div>
           </div>
           

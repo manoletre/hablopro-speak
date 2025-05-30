@@ -39,12 +39,12 @@ export default function AnimatedStatusDisplay({
   const animationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get user's native language based on UI language
-  const getUserNativeLanguage = () => {
+  const getUserNativeLanguage = useCallback(() => {
     return uiLanguage === 'español' ? 'spanish' : 'english';
-  };
+  }, [uiLanguage]);
 
   // Hardcoded encouragement messages
-  const getEncouragementMessages = () => {
+  const getEncouragementMessages = useCallback(() => {
     const messages = {
       english: [
         "You're doing great!",
@@ -72,7 +72,7 @@ export default function AnimatedStatusDisplay({
       ]
     };
     return messages[uiLanguage] || messages.english;
-  };
+  }, [uiLanguage]);
 
   // Fetch suggestions from API (limited to 3 calls per conversation)
   const fetchSuggestions = useCallback(async () => {
@@ -116,13 +116,13 @@ export default function AnimatedStatusDisplay({
   }, [apiCallCount, conversationHistory, targetLanguage, difficultyLevel, getUserNativeLanguage]);
 
   // Listening status messages
-  const getListeningMessages = () => {
+  const getListeningMessages = useCallback(() => {
     const messages = [
       t('voiceChat.canSpeak'),
       t('voiceChat.canSpeakNative')
     ];
     return messages;
-  };
+  }, [t]);
 
   // Format suggestion message
   const formatSuggestionMessage = (suggestion: Suggestion) => {
@@ -135,11 +135,11 @@ export default function AnimatedStatusDisplay({
   };
 
   // Get a random encouragement message
-  const getRandomEncouragement = () => {
+  const getRandomEncouragement = useCallback(() => {
     const encouragements = getEncouragementMessages();
     const randomIndex = Math.floor(Math.random() * encouragements.length);
     return `✨ ${encouragements[randomIndex]}`;
-  };
+  }, [getEncouragementMessages]);
 
   // Get next message based on current state
   const getNextMessage = useCallback(() => {
@@ -213,7 +213,7 @@ export default function AnimatedStatusDisplay({
       
       setTimeout(() => {
         setConnectionPhase('ready');
-      }, 1500);
+      }, 800); // Faster transition to ready state
     }
   }, [isConnected, connectionPhase, getNextMessage, getNextSuggestion, t]);
 
@@ -280,8 +280,8 @@ export default function AnimatedStatusDisplay({
        setCurrentSuggestion(initialSuggestion);
      }
 
-    // Set up 10-second interval (faster during connection phase)
-    const intervalTime = connectionPhase === 'connecting' ? 2000 : 10000;
+    // Set up 10-second interval (slightly faster during connection phase but not too fast)
+    const intervalTime = connectionPhase === 'connecting' ? 5000 : 10000;
     animationIntervalRef.current = setInterval(performAnimation, intervalTime);
 
     return () => {
