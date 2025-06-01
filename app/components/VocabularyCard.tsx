@@ -1,6 +1,6 @@
 'use client';
 
-import BookmarkButton from './BookmarkButton';
+import { useLanguage } from '../context/LanguageContext';
 
 interface VocabularyCardProps {
   id: string;
@@ -10,40 +10,27 @@ interface VocabularyCardProps {
   example: string;
 }
 
-export default function VocabularyCard({ id, term, wordType, definition, example }: VocabularyCardProps) {
-  // Create a unique ID with proper vocabulary prefix if not provided or ensure it has the vocabulary prefix
-  const vocabId = id ? (id.startsWith('vocab-') ? id : `vocab-${id}`) : `vocab-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+export default function VocabularyCard({ term, wordType, definition, example }: VocabularyCardProps) {
+  const { t } = useLanguage();
   
-  const content = {
-    term,
-    wordType,
-    definition,
-    example
-  };
-
   return (
-    <div className="w-full rounded-xl bg-[#422006]/[0.05] p-5 mb-4">
-      <div className="flex justify-between items-start">
-        <div className="flex items-center">
-          <h2 className="text-xl font-semibold text-[#422006]">{term}</h2>
-          <span className="ml-2 text-sm text-[#422006]/60 italic">{wordType}</span>
+    <div className="bg-white/70 rounded-lg p-4 border border-amber-100">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex-1">
+          <h4 className="font-medium text-[#422006] text-lg">{term}</h4>
+          <span className="text-sm text-[#422006]/60 italic">{wordType}</span>
         </div>
-        <BookmarkButton 
-          type="vocabulary" 
-          content={content} 
-          contentId={vocabId} 
-        />
       </div>
       
-      <div className="mt-4">
-        <div className="mb-3">
-          <p className="text-sm text-[#422006]/60 mb-1">Definition:</p>
-          <p className="text-[#422006]">{definition}</p>
+      <div className="space-y-3">
+        <div>
+          <span className="text-sm font-medium text-[#422006]">{t('vocabularyCard.definition')}</span>
+          <span className="text-sm text-[#422006]">{definition}</span>
         </div>
         
-        <div className="mt-4">
-          <p className="text-sm text-[#422006]/60 mb-1">Example:</p>
-          <p className="text-[#422006] italic">{example}</p>
+        <div>
+          <span className="text-sm font-medium text-[#422006]">{t('vocabularyCard.example')}</span>
+          <span className="text-sm text-[#422006]">{example}</span>
         </div>
       </div>
     </div>

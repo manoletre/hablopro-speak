@@ -82,6 +82,20 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
             setSelectedLanguage(savedLanguage);
           }
           
+          // Load saved proficiency level
+          const savedDifficultyLevel = data.lastSelectedDifficultyLevel;
+          if (savedDifficultyLevel) {
+            setDifficultyLevel(savedDifficultyLevel);
+          }
+          
+          // Load saved UI language
+          const savedUiLanguage = data.uiLanguage;
+          if (savedUiLanguage && (savedUiLanguage === 'english' || savedUiLanguage === 'español')) {
+            setUiLanguage(savedUiLanguage);
+            // Also update localStorage to keep them in sync
+            localStorage.setItem('uiLanguage', savedUiLanguage);
+          }
+          
           // Handle streak data
           let current = data.currentStreak || 0;
           const lastActiveTimestamp = data.lastActive;
@@ -106,7 +120,7 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
     };
 
     fetchUserData();
-  }, [user]);
+  }, [user, setUiLanguage]);
 
   // Toggle sidebar visibility
   const handleSidebarClick = () => {
@@ -125,6 +139,17 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
   const selectUiLanguage = (language: 'english' | 'español') => {
     setUiLanguage(language);
     setShowLanguageMenu(false);
+    
+    // Save the UI language to both localStorage and Firebase
+    localStorage.setItem('uiLanguage', language);
+    if (user) {
+      const userDocRef = doc(db, 'users', user.uid);
+      updateDoc(userDocRef, {
+        uiLanguage: language
+      }).catch((error) => {
+        console.error('Error saving UI language preference:', error);
+      });
+    }
   };
 
   const selectConversationLanguage = (language: string) => {
@@ -138,6 +163,20 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
         lastSelectedLanguage: language
       }).catch((error) => {
         console.error('Error saving language preference:', error);
+      });
+    }
+  };
+
+  const selectDifficultyLevel = (level: number) => {
+    setDifficultyLevel(level);
+    
+    // Save the selected difficulty level to Firebase
+    if (user) {
+      const userDocRef = doc(db, 'users', user.uid);
+      updateDoc(userDocRef, {
+        lastSelectedDifficultyLevel: level
+      }).catch((error) => {
+        console.error('Error saving difficulty level preference:', error);
       });
     }
   };
@@ -207,26 +246,7 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
             
             {/* Navigation links */}
             <div className="p-4">
-              <a 
-                href="/bookmarks" 
-                className="flex items-center p-3 rounded-md hover:bg-amber-50 text-[#422006] transition-colors"
-              >
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  width="20" 
-                  height="20" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  className="mr-3"
-                >
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                </svg>
-                {t('home.myBookmarks')}
-              </a>
+              {/* No navigation links - bookmarks removed */}
             </div>
             
             {/* Empty top area */}
@@ -426,7 +446,7 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
                   min="1" 
                   max="5" 
                   value={difficultyLevel} 
-                  onChange={(e) => setDifficultyLevel(parseInt(e.target.value))}
+                  onChange={(e) => selectDifficultyLevel(parseInt(e.target.value))}
                   className="w-full h-2 bg-[#FCEAC4] rounded-lg appearance-none cursor-pointer slider-thumb"
                   style={{
                     // Dynamically set background gradient for the track

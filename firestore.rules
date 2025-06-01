@@ -29,13 +29,31 @@ service cloud.firestore {
                        request.auth.uid == uid &&
                        resource.data.startedAt != null; // Session must exist
         allow delete: if false; // Never allow session deletion
+        
+        // Vocabulary subcollection
+        match /vocabulary/{vocabId} {
+          allow create: if request.auth != null && 
+                         request.auth.uid == uid &&
+                         request.resource.data.createdAt != null;
+          allow read: if request.auth != null && request.auth.uid == uid;
+          allow update, delete: if false; // Make vocabulary items immutable
+        }
+        
+        // Grammar subcollection
+        match /grammar/{grammarId} {
+          allow create: if request.auth != null && 
+                         request.auth.uid == uid &&
+                         request.resource.data.createdAt != null;
+          allow read: if request.auth != null && request.auth.uid == uid;
+          allow update, delete: if false; // Make grammar items immutable
+        }
       }
       
       match /questions/{questionId} {
         // Allow creation and reading of questions by the authenticated user
         allow create: if request.auth != null && 
                        request.auth.uid == uid &&
-                       request.resource.data.createdAt == request.time;
+                       request.resource.data.createdAt != null;
         allow read: if request.auth != null && request.auth.uid == uid;
         allow update, delete: if false; // Make questions immutable
       }

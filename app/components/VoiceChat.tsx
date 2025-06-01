@@ -65,6 +65,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
   const [timeRemaining, setTimeRemaining] = useState(5 * 60); // 5 minutes in seconds
   const [isWrappingUp, setIsWrappingUp] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false); // Track when session is being finished
   
   // Update the conversation history initialization to avoid hardcoded messages
   const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([]);
@@ -107,6 +108,14 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
   const [translatingWord, setTranslatingWord] = useState<string | null>(null);
   const [translation, setTranslation] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  // Track clicked words for vocabulary review
+  const [clickedWords, setClickedWords] = useState<Array<{
+    word: string;
+    translation: string;
+    context: string;
+    timestamp: number;
+  }>>([]);
 
   // Animate dots for translating message
   useEffect(() => {
@@ -157,20 +166,39 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
       const data = await res.json();
       
       // If source and target languages are the same, format the translation as a definition
-      if (language.toLowerCase() === uiLanguage.toLowerCase()) {
-        setTranslation(data.translation.startsWith('Definition:') ? 
+      const finalTranslation = language.toLowerCase() === uiLanguage.toLowerCase() ? 
+        (data.translation.startsWith('Definition:') ? 
           data.translation : 
-          `Definition: ${data.translation}`
+          `Definition: ${data.translation}`) :
+        data.translation;
+      
+      setTranslation(finalTranslation);
+
+      // Store the clicked word for vocabulary review
+      // Only store if it's not already in the list (avoid duplicates)
+      setClickedWords(prev => {
+        const isAlreadyClicked = prev.some(item => 
+          item.word.toLowerCase() === word.toLowerCase() && 
+          item.context === subtitleBuffer
         );
-      } else {
-        setTranslation(data.translation);
-      }
+        
+        if (!isAlreadyClicked && finalTranslation) {
+          return [...prev, {
+            word: word.trim(),
+            translation: finalTranslation,
+            context: subtitleBuffer,
+            timestamp: Date.now()
+          }];
+        }
+        return prev;
+      });
+      
     } catch (error) {
       console.error('Translation error', error);
-      setTranslation(language.toLowerCase() === uiLanguage.toLowerCase() ? 
+      const errorMessage = language.toLowerCase() === uiLanguage.toLowerCase() ? 
         'Error getting definition' : 
-        'Error translating'
-      );
+        'Error translating';
+      setTranslation(errorMessage);
     }
   }, [language, uiLanguage, subtitleBuffer]);
 
@@ -201,6 +229,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     setAiSpeaking(false);
     setIsWrappingUp(false);
     setWrapUpMessageSent(false);
+    setIsFinishing(false); // Reset finishing state
     
     // Clean up WebRTC peer connection
     if (peerConnectionRef.current) {
@@ -307,6 +336,12 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
 
   // Modified handleDataChannelEvent to properly track conversation messages in sequence
   const handleDataChannelEvent = useCallback((event: MessageEvent) => {
+    // IMPORTANT: Ignore all data channel events when showing results
+    if (showResults) {
+      console.log('Ignoring data channel event - SessionResults is active');
+      return;
+    }
+    
     // Define helper functions inside the callback to avoid dependency issues
     const hasStoredFirstQuestion = () => {
       if (!sessionKey) return false;
@@ -370,6 +405,16 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
           // Check if we have already stored the first question for this session
           const alreadyStoredFirstQuestion = hasStoredFirstQuestion();
           
+          // Enhanced debugging logs for question storage
+          console.log('=== QUESTION STORAGE DEBUG ===');
+          console.log('user exists:', !!user);
+          console.log('user.uid:', user?.uid);
+          console.log('sessionId exists:', !!sessionId);
+          console.log('alreadyStoredFirstQuestion:', alreadyStoredFirstQuestion);
+          console.log('sessionKey:', sessionKey);
+          console.log('completeTranscript:', completeTranscript);
+          console.log('==============================');
+          
           // Only process for question storage if we haven't stored the first question yet
           if (user && !sessionId && !alreadyStoredFirstQuestion) {
             console.log(`First AI response for session ${sessionKey} - checking if it is a question to store`);
@@ -378,11 +423,20 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
             const isQuestion = completeTranscript.includes('?') || 
               /\b(what|how|when|where|why|who|which|do|does|did|are|is|can|could|would|will)\b/i.test(completeTranscript);
             
+            console.log('=== QUESTION DETECTION DEBUG ===');
+            console.log('completeTranscript includes "?":', completeTranscript.includes('?'));
+            console.log('regex test result:', /\b(what|how|when|where|why|who|which|do|does|did|are|is|can|could|would|will)\b/i.test(completeTranscript));
+            console.log('final isQuestion result:', isQuestion);
+            console.log('================================');
+            
             if (isQuestion) {
               console.log('First AI response is a question - creating session and storing ONLY this first question');
               
               const createSessionAndStoreFirstQuestion = async () => {
                 try {
+                  console.log('=== FIREBASE WRITE ATTEMPT ===');
+                  console.log('About to create session document...');
+                  
                   const sessionsRef = collection(db, `users/${user.uid}/sessions`);
                   const timezoneOffsetMinutes = new Date().getTimezoneOffset();
                   
@@ -398,9 +452,11 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
                   console.log(`Session created with ID: ${sessionDoc.id}`);
                   setSessionId(sessionDoc.id);
                   
+                  console.log('About to create question document...');
+                  
                   // Store ONLY the first question - this will never happen again for this session
                   const questionsRef = collection(db, `users/${user.uid}/questions`);
-                  await addDoc(questionsRef, {
+                  const questionDoc = await addDoc(questionsRef, {
                     question: completeTranscript.trim(),
                     sessionId: sessionDoc.id,
                     language,
@@ -409,11 +465,23 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
                     date: new Date().toISOString().substring(0, 10) // YYYY-MM-DD format
                   });
                   
-                  console.log(`FIRST QUESTION stored successfully for session ${sessionKey} - marking as stored`);
+                  console.log(`FIRST QUESTION stored successfully with ID: ${questionDoc.id} for session ${sessionKey} - marking as stored`);
+                  console.log('Question data stored:', {
+                    question: completeTranscript.trim(),
+                    sessionId: sessionDoc.id,
+                    language,
+                    difficultyLevel,
+                    date: new Date().toISOString().substring(0, 10)
+                  });
+                  console.log('===============================');
+                  
                   markFirstQuestionStored();
                   
                 } catch (error) {
+                  console.error('=== FIREBASE WRITE ERROR ===');
                   console.error('Error creating session or storing first question:', error);
+                  console.error('Error details:', error);
+                  console.error('============================');
                 }
               };
               
@@ -549,7 +617,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     } catch (error) {
       console.error('Error parsing event:', error);
     }
-  }, [isWrappingUp, wrapUpMessageSent, isCJK, user, sessionId, language, difficultyLevel, sessionKey]);
+  }, [isWrappingUp, wrapUpMessageSent, isCJK, user, sessionId, language, difficultyLevel, sessionKey, showResults]);
 
   // Modify the initWebRTC function to add the data channel onopen event handler
   const initWebRTC = useCallback(async () => {
@@ -566,6 +634,12 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     
     if (isConnected) {
       console.log('Already connected according to state, skipping initialization');
+      return;
+    }
+    
+    // IMPORTANT: Don't initialize WebRTC when finishing or showing results
+    if (isFinishing || showResults) {
+      console.log('Session is finishing or showing results, skipping WebRTC initialization');
       return;
     }
     
@@ -715,7 +789,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
       // Always reset the initialization flag
       initializingRef.current = false;
     }
-  }, [handleDataChannelEvent, cleanupAudioResources, difficultyLevel, language, isCJK, user?.uid, sessionKey, isConnected]);
+  }, [handleDataChannelEvent, cleanupAudioResources, difficultyLevel, language, isCJK, user?.uid, sessionKey, isConnected, isFinishing, showResults]);
 
    // Function to stop the conversation
   const stopConversation = () => {
@@ -802,22 +876,24 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
   // Only start conversation automatically if the user is authenticated - using a more stable approach
   useEffect(() => {
     // Only trigger once when component mounts and user is available
-    if (user && mountedRef.current && !isConnected && !peerConnectionRef.current && !initializingRef.current) {
+    // IMPORTANT: Do not start WebRTC when showing results or finishing
+    if (user && mountedRef.current && !isConnected && !peerConnectionRef.current && !initializingRef.current && !showResults && !isFinishing) {
       console.log('Auto-starting conversation on mount');
       const timer = setTimeout(() => {
         // Double-check conditions before starting to prevent race conditions
-        if (mountedRef.current && !peerConnectionRef.current && !isConnected && !initializingRef.current) {
+        // IMPORTANT: Also check showResults and isFinishing to prevent starting during results display or finishing
+        if (mountedRef.current && !peerConnectionRef.current && !isConnected && !initializingRef.current && !showResults && !isFinishing) {
           console.log('Starting conversation from delayed useEffect');
           setIsListening(true);
           initWebRTC();
         } else {
-          console.log('Skipping auto-start - already initialized or in progress');
+          console.log('Skipping auto-start - already initialized, in progress, showing results, or finishing');
         }
       }, 100);
       
       return () => clearTimeout(timer);
     }
-  }, [user, initWebRTC, isConnected]); // Only depend on user to prevent re-triggering
+  }, [user, initWebRTC, isConnected, showResults, isFinishing]); // Add isFinishing to dependencies
 
   // Effect to track session start
   useEffect(() => {
@@ -834,6 +910,9 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
   // Function to finish session and show results
   const finishSession = useCallback(async () => {
     console.log('Finishing session - cleaning up and preparing results');
+    
+    // Immediately set finishing state to prevent any WebRTC re-initialization
+    setIsFinishing(true);
     
     // Reset wrap-up state
     setIsWrappingUp(false);
@@ -923,11 +1002,12 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
       timerIntervalRef.current = null;
     }
     
-    // Show results screen with the finalized conversation history
-    setTimeout(() => {
-      setConversationHistory(finalConversationHistory);
-      setShowResults(true);
-    }, 500);
+    // Show results screen with the finalized conversation history immediately
+    // No delay needed - this prevents race conditions with WebRTC re-initialization
+    setConversationHistory(finalConversationHistory);
+    setShowResults(true);
+    
+    console.log('Session finished and results shown immediately');
   }, [conversationHistory, aiTranscript, cleanupAudioResources, user, language, difficultyLevel, timeRemaining, sessionId]);
 
   // Update the reference after definition
@@ -1014,6 +1094,45 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     console.log('Conversation history updated:', conversationHistory);
   }, [conversationHistory]);
 
+  // Add effect to ensure complete cleanup when showing results
+  useEffect(() => {
+    if (showResults) {
+      console.log('===== TRANSITIONING TO SESSIONRESULTS - FORCING COMPLETE CLEANUP =====');
+      console.log('SessionResults is now showing - ensuring complete audio/WebRTC cleanup');
+      
+      // Force immediate cleanup of all audio resources
+      cleanupAudioResources();
+      
+      // Ensure timers are cleared
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+        console.log('Cleared timer interval');
+      }
+      
+      // Explicitly close any remaining data channel connections
+      if (dataChannelRef.current) {
+        console.log('Force closing data channel for SessionResults');
+        try {
+          dataChannelRef.current.close();
+          dataChannelRef.current = null;
+          console.log('Data channel successfully closed');
+        } catch (error) {
+          console.error('Error force-closing data channel:', error);
+        }
+      }
+      
+      // Reset all connection states
+      setIsConnected(false);
+      setIsListening(false);
+      setAiSpeaking(false);
+      setIsWrappingUp(false);
+      setWrapUpMessageSent(false);
+      
+      console.log('===== ALL VOICECHAT CONNECTIONS SHOULD NOW BE COMPLETELY DISABLED =====');
+    }
+  }, [showResults, cleanupAudioResources]);
+
   // Final modified return statement with timer and conditional rendering for results
   return (
     <div className="fixed inset-0 bg-[#fffaed] font-poppins flex flex-col">
@@ -1079,7 +1198,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
                       onClick={stopConversation}
                       className="px-2 py-1 text-xs rounded-md border border-amber-800/30 bg-amber-50 text-[#422006] hover:bg-amber-100 ml-2 flex-shrink-0"
                     >
-                      Stop session
+                      {t('voiceChat.stop')}
                     </button>
                   </div>
                   
@@ -1172,6 +1291,9 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
           conversationHistory={conversationHistory}
           onClose={onClose}
           language={language}
+          sessionId={sessionId}
+          difficultyLevel={difficultyLevel}
+          clickedWords={clickedWords}
         />
       )}
     </div>

@@ -10,7 +10,7 @@ const languageCodes: Record<Language, string> = {
   'español': 'es'
 };
 
-type TranslationKey = 
+export type TranslationKey = 
   | 'home.title'
   | 'home.editProficiency'
   | 'home.difficultyTooltip'
@@ -18,7 +18,6 @@ type TranslationKey =
   | 'home.beginSession'
   | 'home.doSessionNow'
   | 'home.myBookmarks'
-  | 'home.dashboard'
   | 'home.logout'
   | 'home.english'
   | 'home.spanish'
@@ -64,6 +63,7 @@ type TranslationKey =
   | 'sessionResults.failedToAnalyze'
   | 'sessionResults.newSession'
   | 'sessionResults.grammarAndStyle'
+  | 'sessionResults.keyTakeaway'
   | 'sessionResults.streakCongrats'
   | 'sessionResults.streakImage'
   | 'sessionResults.dayStreak'
@@ -79,6 +79,21 @@ type TranslationKey =
   | 'sessionResults.loadingMessage8'
   | 'sessionResults.loadingMessage9'
   | 'sessionResults.loadingMessage10'
+  | 'sessionResults.reviewTitle'
+  | 'sessionResults.reviewDescription'
+  | 'sessionResults.youSaid'
+  | 'sessionResults.better'
+  | 'sessionResults.why'
+  | 'sessionResults.youLookedThisUp'
+  | 'sessionResults.fromContext'
+  | 'sessionResults.wordYouLookedUp'
+  | 'vocabularyCard.definition'
+  | 'vocabularyCard.example'
+  | 'grammarCard.grammarSuggestion'
+  | 'grammarCard.youSaid'
+  | 'grammarCard.better'
+  | 'grammarCard.why'
+  | 'voiceChat.stop'
   | 'voiceChat.title'
   | 'voiceChat.listening'
   | 'voiceChat.connected'
@@ -108,7 +123,6 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'home.beginSession': 'begin session',
     'home.doSessionNow': 'do a session now',
     'home.myBookmarks': 'My Bookmarks',
-    'home.dashboard': 'Learning Dashboard',
     'home.logout': 'Logout',
     'home.english': 'english',
     'home.spanish': 'spanish',
@@ -147,11 +161,6 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'sessionResults.vocabulary': 'Vocabulary',
     'sessionResults.conversationSummary': 'Conversation Summary',
     'sessionResults.analyzingGrammar': 'Analyzing grammar...',
-    'sessionResults.streakCongrats': 'Congratulations!',
-    'sessionResults.streakImage': 'Streak celebration image',
-    'sessionResults.dayStreak': '{count} Day Streak!',
-    'sessionResults.keepPracticing': 'Keep practicing to maintain your streak!',
-    'sessionResults.awesome': 'Awesome!',
     'sessionResults.analyzingVocabulary': 'Analyzing vocabulary...',
     'sessionResults.noGrammarCorrections': 'No grammar corrections for this session',
     'sessionResults.noVocabularyItems': 'No vocabulary items for this session',
@@ -159,6 +168,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'sessionResults.failedToAnalyze': 'Failed to analyze conversation. Please try again.',
     'sessionResults.newSession': 'New Session',
     'sessionResults.grammarAndStyle': 'Grammar and Style',
+    'sessionResults.keyTakeaway': 'Key Takeaway',
+    'sessionResults.streakCongrats': 'Congratulations!',
+    'sessionResults.streakImage': 'Streak celebration image',
+    'sessionResults.dayStreak': '{count} Day Streak!',
+    'sessionResults.keepPracticing': 'Keep practicing to maintain your streak!',
+    'sessionResults.awesome': 'Awesome!',
     'sessionResults.loadingMessage1': 'Scanning for grammatical gremlins and vocab villains…',
     'sessionResults.loadingMessage2': 'Polishing your phrases for peak precision…',
     'sessionResults.loadingMessage3': 'Hunting down tricky word choices—suggestions loading!',
@@ -169,6 +184,21 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'sessionResults.loadingMessage8': 'Sharpening your vocab and tightening your tenses…',
     'sessionResults.loadingMessage9': 'Examining for typos, tense traps, and better word fits…',
     'sessionResults.loadingMessage10': 'Almost ready—green-lighting your next flawless sentence!',
+    'sessionResults.reviewTitle': 'A review of your conversation',
+    'sessionResults.reviewDescription': 'Here\'s what we learned together and where you can improve',
+    'sessionResults.youSaid': 'You said: ',
+    'sessionResults.better': 'Better: ',
+    'sessionResults.why': 'Why',
+    'sessionResults.youLookedThisUp': 'You looked this up',
+    'sessionResults.fromContext': 'From context: ',
+    'sessionResults.wordYouLookedUp': 'You looked this up',
+    'vocabularyCard.definition': 'Definition: ',
+    'vocabularyCard.example': 'Example: ',
+    'grammarCard.grammarSuggestion': 'Grammar Suggestion',
+    'grammarCard.youSaid': 'You said: ',
+    'grammarCard.better': 'Better: ',
+    'grammarCard.why': 'Why?',
+    'voiceChat.stop': 'Stop Session',
     'voiceChat.title': 'Speaking Practice',
     'voiceChat.listening': 'Listening...',
     'voiceChat.connected': 'Connected and ready',
@@ -190,7 +220,6 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'home.beginSession': 'comenzar sesión',
     'home.doSessionNow': 'comenzar sesión ahora',
     'home.myBookmarks': 'Mis Marcadores',
-    'home.dashboard': 'Panel de Aprendizaje',
     'home.logout': 'Cerrar Sesión',
     'home.english': 'inglés',
     'home.spanish': 'español',
@@ -236,6 +265,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'sessionResults.failedToAnalyze': 'Error al analizar la conversación. Por favor, inténtalo de nuevo.',
     'sessionResults.newSession': 'Nueva Sesión',
     'sessionResults.grammarAndStyle': 'Gramática y Estilo',
+    'sessionResults.keyTakeaway': 'Punto Clave',
     'sessionResults.streakCongrats': '¡Felicitaciones!',
     'sessionResults.streakImage': 'Imagen de celebración de racha',
     'sessionResults.dayStreak': '¡Racha de {count} días!',
@@ -251,6 +281,21 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'sessionResults.loadingMessage8': 'Afilando tu vocabulario y ajustando tus tiempos verbales…',
     'sessionResults.loadingMessage9': 'Examinando errores tipográficos, trampas de tiempo y mejores opciones de palabras…',
     'sessionResults.loadingMessage10': '¡Casi listo—dando luz verde a tu próxima oración perfecta!',
+    'sessionResults.reviewTitle': 'Una revisión de tu conversación',
+    'sessionResults.reviewDescription': 'Aquí está lo que aprendimos juntos y donde puedes mejorar',
+    'sessionResults.youSaid': 'Dijiste: ',
+    'sessionResults.better': 'Mejor: ',
+    'sessionResults.why': 'Por qué',
+    'sessionResults.youLookedThisUp': 'Buscaste esto',
+    'sessionResults.fromContext': 'Del contexto: ',
+    'sessionResults.wordYouLookedUp': 'Buscaste esto',
+    'vocabularyCard.definition': 'Definición: ',
+    'vocabularyCard.example': 'Ejemplo: ',
+    'grammarCard.grammarSuggestion': 'Sugerencia de Gramática',
+    'grammarCard.youSaid': 'Dijiste: ',
+    'grammarCard.better': 'Mejor: ',
+    'grammarCard.why': '¿Por qué?',
+    'voiceChat.stop': 'Detener Sesión',
     'voiceChat.title': 'Práctica de Habla',
     'voiceChat.listening': 'Escuchando...',
     'voiceChat.connected': 'Conectado y listo',

@@ -2,85 +2,23 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import GrammarCard from './GrammarCard';
+import type { TranslationKey } from '../context/LanguageContext';
 import VocabularyCard from './VocabularyCard';
 import { getAuth } from 'firebase/auth';
-import { doc, getFirestore, onSnapshot } from 'firebase/firestore';
+import { doc, getFirestore, onSnapshot, collection, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import Image from 'next/image';
 
-type TranslationKey = 
-  | 'home.title'
-  | 'home.editProficiency'
-  | 'home.difficultyTooltip'
-  | 'home.editLanguage'
-  | 'home.beginSession'
-  | 'home.doSessionNow'
-  | 'home.myBookmarks'
-  | 'home.dashboard'
-  | 'home.logout'
-  | 'home.english'
-  | 'home.spanish'
-  | 'home.streak'
-  | 'home.longestStreak'
-  | 'home.longestStreakTitle'
-  | 'home.learningHistory'
-  | 'home.loadingHistory'
-  | 'home.noSessions'
-  | 'home.sessions'
-  | 'home.currentStreak'
-  | 'home.days'
-  | 'home.nextMilestone'
-  | 'home.totalSessions'
-  | 'home.less'
-  | 'home.more'
-  | 'home.session'
-  | 'auth.signInRequired'
-  | 'auth.signInWithGoogle'
-  | 'auth.termsAndPrivacy'
-  | 'auth.failedToSignIn'
-  | 'bookmarks.title'
-  | 'bookmarks.all'
-  | 'bookmarks.grammar'
-  | 'bookmarks.vocabulary'
-  | 'bookmarks.noBookmarks'
-  | 'bookmarks.noGrammarBookmarks'
-  | 'bookmarks.noVocabularyBookmarks'
-  | 'sessionResults.title'
-  | 'sessionResults.grammarCorrections'
-  | 'sessionResults.vocabulary'
-  | 'sessionResults.conversationSummary'
-  | 'sessionResults.analyzingGrammar'
-  | 'sessionResults.analyzingVocabulary'
-  | 'sessionResults.noGrammarCorrections'
-  | 'sessionResults.noVocabularyItems'
-  | 'sessionResults.noConversation'
-  | 'sessionResults.failedToAnalyze'
-  | 'sessionResults.newSession'
-  | 'sessionResults.grammarAndStyle'
-  | 'sessionResults.streakCongrats'
-  | 'sessionResults.streakImage'
-  | 'sessionResults.dayStreak'
-  | 'sessionResults.keepPracticing'
-  | 'sessionResults.awesome'
-  | 'sessionResults.loadingMessage1'
-  | 'sessionResults.loadingMessage2'
-  | 'sessionResults.loadingMessage3'
-  | 'sessionResults.loadingMessage4'
-  | 'sessionResults.loadingMessage5'
-  | 'sessionResults.loadingMessage6'
-  | 'sessionResults.loadingMessage7'
-  | 'sessionResults.loadingMessage8'
-  | 'sessionResults.loadingMessage9'
-  | 'sessionResults.loadingMessage10'
-  | 'voiceChat.title'
-  | 'voiceChat.listening'
-  | 'voiceChat.connected'
-  | 'voiceChat.connecting'
-  | 'voiceChat.nachoSpeaking'
-  | 'voiceChat.wrappingUp'
-  | 'voiceChat.pressWord'
-  | 'voiceChat.translating'
-  | 'home.lostStreak';
+/*
+ * Usage examples:
+ * 
+ * 1. With live conversation history (current usage in VoiceChat):
+ *    <SessionResults conversationHistory={conversationHistory} onClose={onClose} language={language} sessionId={sessionId} difficultyLevel={difficultyLevel} />
+ * 
+ * 2. With Firestore session transcript:
+ *    const sessionDoc = await getDoc(doc(db, `users/${userId}/sessions/${sessionId}`));
+ *    const sessionData = sessionDoc.data();
+ *    <SessionResults transcript={sessionData.transcript} onClose={onClose} language={sessionData.language} sessionId={sessionId} difficultyLevel={sessionData.difficultyLevel} />
+ */
 
 // Define the conversation message structure
 interface ConversationMessage {
@@ -93,12 +31,27 @@ interface SessionResultsProps {
   conversationHistory: ConversationMessage[];
   onClose?: () => void;
   language: string;
+  // Add optional transcript prop for when we receive raw transcript strings
+  transcript?: string;
+  // Add sessionId and difficultyLevel for Firebase storage
+  sessionId?: string | null;
+  difficultyLevel?: number;
+  // Add clicked words from VoiceChat
+  clickedWords?: Array<{
+    word: string;
+    translation: string;
+    context: string;
+    timestamp: number;
+  }>;
 }
 
 // Define the feedback data interface
 interface GrammarCorrection {
+  category: string;
   youSaid: string;
+  problemHighlight: string;
   better: string;
+  improvementHighlight: string;
   explanation: string;
 }
 
@@ -111,8 +64,77 @@ interface VocabularyItem {
 }
 
 interface FeedbackData {
+  keyTakeaway: string;
   grammar: GrammarCorrection[];
   vocabulary: VocabularyItem[];
+}
+
+// Enhanced Grammar Card Component
+function EnhancedGrammarCard({ correction }: { correction: GrammarCorrection }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const { t } = useLanguage();
+
+  // Function to highlight text
+  const highlightText = (text: string, highlight: string, color: 'red' | 'green') => {
+    if (!highlight || highlight.trim() === '') return text;
+    
+    const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const parts = text.split(regex);
+    
+    return parts.map((part, index) => 
+      regex.test(part) ? (
+        <u key={index} style={{ color: color === 'red' ? '#dc2626' : '#16a34a', textDecoration: 'underline' }}>
+          {part}
+        </u>
+      ) : part
+    );
+  };
+
+  return (
+    <div className="bg-white/70 rounded-lg p-4 border border-amber-100">
+      <div className="space-y-3">
+        <div>
+          <span className="text-base font-medium text-[#422006]">{t('sessionResults.youSaid')}</span>
+          <span className="text-base text-[#422006]">
+            {highlightText(correction.youSaid, correction.problemHighlight, 'red')}
+          </span>
+        </div>
+        
+        <div>
+          <span className="text-base font-medium text-[#422006]">{t('sessionResults.better')}</span>
+          <span className="text-base text-[#422006]">
+            {highlightText(correction.better, correction.improvementHighlight, 'green')}
+          </span>
+        </div>
+        
+        <div className="mt-4">
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="flex items-center space-x-1.5 text-xs text-[#422006] bg-amber-100 border border-amber-200 hover:bg-amber-200 transition-all duration-200 cursor-pointer hover:scale-105 px-2 py-1.5 rounded-md"
+          >
+            <span>{t('sessionResults.why')}</span>
+            <svg 
+              width="12" 
+              height="12" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              className="text-[#422006]/60 transition-transform duration-200 hover:scale-110"
+            >
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+              <path d="M9.09 9C9.3251 8.33167 9.78915 7.76811 10.4 7.40913C11.0108 7.05016 11.7289 6.91894 12.4272 7.03871C13.1255 7.15849 13.7588 7.52152 14.2151 8.06353C14.6713 8.60553 14.9211 9.29152 14.92 10C14.92 12 11.92 13 11.92 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M12 17H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          
+          {isExpanded && (
+            <div className="mt-2 p-3 bg-amber-50 rounded border border-amber-200">
+              <p className="text-sm text-[#422006]">{correction.explanation}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // Loading Animation Component
@@ -198,8 +220,88 @@ function LoadingAnimation({ t }: { t: (key: TranslationKey, params?: Record<stri
   );
 }
 
-export default function SessionResults({ conversationHistory, onClose }: SessionResultsProps) {
-  const { t, language } = useLanguage();
+// Utility function to parse transcript string into ConversationMessage array
+function parseTranscriptToConversationHistory(transcript: string): ConversationMessage[] {
+  if (!transcript || typeof transcript !== 'string') {
+    return [];
+  }
+
+  const messages: ConversationMessage[] = [];
+  
+  // Normalize the transcript by replacing various role markers
+  const normalizedTranscript = transcript
+    .replace(/\bA:/gi, 'assistant:') // Replace "A:" with "assistant:"
+    .replace(/\bassistant\s*:/gi, 'assistant:') // Normalize spacing
+    .replace(/\buser\s*:/gi, 'user:') // Normalize spacing
+    .trim();
+
+  // Split on role markers while keeping the markers
+  const parts = normalizedTranscript.split(/(?=(?:user:|assistant:))/i).filter(part => part.trim());
+  
+  const baseTimestamp = Date.now() - 3600000; // Start 1 hour ago for consistent ordering
+  
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i].trim();
+    
+    if (part.toLowerCase().startsWith('user:')) {
+      const text = part.substring(5).trim(); // Remove "user:" and trim
+      if (text.length > 0) {
+        messages.push({
+          role: 'user',
+          text: text,
+          timestamp: baseTimestamp + (messages.length * 30000) // 30 seconds between messages
+        });
+      }
+    } else if (part.toLowerCase().startsWith('assistant:')) {
+      const text = part.substring(10).trim(); // Remove "assistant:" and trim
+      if (text.length > 0) {
+        messages.push({
+          role: 'assistant',
+          text: text,
+          timestamp: baseTimestamp + (messages.length * 30000) // 30 seconds between messages
+        });
+      }
+    }
+  }
+  
+  return messages;
+}
+
+// Helper function to get meaningful context around a clicked word
+const getRelevantContext = (word: string, fullContext: string, maxLength: number = 100) => {
+  // Find where the word appears in the context (case insensitive)
+  const lowerWord = word.toLowerCase();
+  const lowerContext = fullContext.toLowerCase();
+  const wordIndex = lowerContext.indexOf(lowerWord);
+  
+  if (wordIndex === -1) {
+    // Word not found, return the beginning of the context
+    return fullContext.substring(0, maxLength) + (fullContext.length > maxLength ? '...' : '');
+  }
+  
+  // Calculate how much context to show before and after the word
+  const beforeContext = Math.floor((maxLength - word.length) / 2);
+  const afterContext = maxLength - word.length - beforeContext;
+  
+  const startIndex = Math.max(0, wordIndex - beforeContext);
+  const endIndex = Math.min(fullContext.length, wordIndex + word.length + afterContext);
+  
+  let relevantContext = fullContext.substring(startIndex, endIndex);
+  
+  // Add ellipsis if we truncated
+  if (startIndex > 0) {
+    relevantContext = '...' + relevantContext;
+  }
+  if (endIndex < fullContext.length) {
+    relevantContext = relevantContext + '...';
+  }
+  
+  return relevantContext;
+};
+
+export default function SessionResults({ conversationHistory, onClose, language, transcript, sessionId, clickedWords }: SessionResultsProps) {
+  const { t, language: languageContext } = useLanguage();
+  const [keyTakeaway, setKeyTakeaway] = useState<string>('');
   const [grammarCorrections, setGrammarCorrections] = useState<GrammarCorrection[]>([]);
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -212,8 +314,61 @@ export default function SessionResults({ conversationHistory, onClose }: Session
   // Use useRef to track if API has been called to prevent duplicate calls in React Strict Mode
   const apiCalledRef = useRef<boolean>(false);
   
+  // Use useRef to store the stable conversation history once processed
+  const stableConversationHistoryRef = useRef<ConversationMessage[]>([]);
+  
+  // Process conversation history - use transcript if provided, otherwise use conversationHistory
+  // Store it in ref to prevent re-parsing on every render
+  const processedConversationHistory = useMemo(() => {
+    let processed: ConversationMessage[];
+    
+    if (transcript) {
+      console.log('Parsing transcript:', transcript.substring(0, 100) + '...');
+      processed = parseTranscriptToConversationHistory(transcript);
+      console.log('Parsed conversation history:', processed.length, 'messages');
+    } else {
+      processed = conversationHistory;
+    }
+    
+    // Store in ref for stability
+    stableConversationHistoryRef.current = processed;
+    return processed;
+  }, [transcript, conversationHistory]);
+  
   // Add immediate console log to debug received props
-  console.log('SessionResults received conversation history:', conversationHistory);
+  console.log('SessionResults received conversation history:', processedConversationHistory);
+  console.log('SessionResults received transcript:', transcript);
+  console.log('SessionResults received clickedWords:', clickedWords);
+  console.log('===== SessionResults MOUNTED - Should have NO active audio/WebRTC connections =====');
+  
+  // Create a stable conversation display that won't change when feedback loads
+  const stableConversationDisplay = useMemo(() => {
+    const conversationToDisplay = stableConversationHistoryRef.current.length > 0 
+      ? stableConversationHistoryRef.current 
+      : processedConversationHistory;
+    
+    return conversationToDisplay.length > 0 ? (
+      <div className="space-y-4">
+        {[...conversationToDisplay]
+          .sort((a, b) => a.timestamp - b.timestamp)
+          .map((message, index) => (
+            <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[85%] ${message.role === 'user' ? 'ml-8' : 'mr-8'}`}>
+                <div className={`rounded-2xl px-4 py-3 ${
+                  message.role === 'user' 
+                    ? 'bg-amber-100 text-[#422006] rounded-br-md border border-amber-200' 
+                    : 'bg-[#fffaed] text-[#422006] rounded-bl-md border border-[#422006]/20'
+                }`}>
+                  <p className="text-sm leading-relaxed">{message.text}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+      </div>
+    ) : (
+      <p className="text-[#422006]/60 text-center">{t('sessionResults.noConversation')}</p>
+    );
+  }, [processedConversationHistory, t]); // Only depend on the initial processed conversation and translation function
   
   // Function to get a random streak image
   const getRandomStreakImage = () => {
@@ -339,6 +494,90 @@ export default function SessionResults({ conversationHistory, onClose }: Session
     return languageCodes[lang] || 'en';
   };
 
+  // Function to save feedback data to Firebase
+  const saveFeedbackToFirebase = async (feedbackData: FeedbackData) => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      
+      if (!user || !sessionId) {
+        console.log('User not authenticated or sessionId not available, skipping Firebase save');
+        return;
+      }
+
+      const db = getFirestore();
+      const sessionRef = doc(db, `users/${user.uid}/sessions`, sessionId);
+      
+      // Update session with key takeaway
+      await updateDoc(sessionRef, {
+        keyTakeaway: feedbackData.keyTakeaway || ''
+      });
+      
+      console.log('Updated session with key takeaway');
+
+      // Save vocabulary items as subcollection
+      if (feedbackData.vocabulary && feedbackData.vocabulary.length > 0) {
+        const vocabularyRef = collection(db, `users/${user.uid}/sessions/${sessionId}/vocabulary`);
+        
+        for (const vocabItem of feedbackData.vocabulary) {
+          await addDoc(vocabularyRef, {
+            phrase: vocabItem.word || '',
+            definition: vocabItem.meaning || '',
+            example: vocabItem.example || '',
+            type: vocabItem.type || '',
+            source: 'ai_generated',
+            createdAt: serverTimestamp()
+          });
+        }
+        
+        console.log(`Saved ${feedbackData.vocabulary.length} AI-generated vocabulary items to Firebase`);
+      }
+
+      // Save clicked words as vocabulary items
+      if (clickedWords && clickedWords.length > 0) {
+        const vocabularyRef = collection(db, `users/${user.uid}/sessions/${sessionId}/vocabulary`);
+        
+        for (const clickedWord of clickedWords) {
+          await addDoc(vocabularyRef, {
+            phrase: clickedWord.word,
+            definition: clickedWord.translation,
+            example: `${t('sessionResults.fromContext')} "${getRelevantContext(clickedWord.word, clickedWord.context)}"`,
+            type: 'clicked_word',
+            source: 'user_clicked',
+            clickedAt: new Date(clickedWord.timestamp),
+            createdAt: serverTimestamp()
+          });
+        }
+        
+        console.log(`Saved ${clickedWords.length} user-clicked vocabulary items to Firebase`);
+      }
+
+      // Save grammar corrections as subcollection
+      if (feedbackData.grammar && feedbackData.grammar.length > 0) {
+        const grammarRef = collection(db, `users/${user.uid}/sessions/${sessionId}/grammar`);
+        
+        for (const grammarItem of feedbackData.grammar) {
+          await addDoc(grammarRef, {
+            category: grammarItem.category || '',
+            original: grammarItem.youSaid || '',
+            corrected: grammarItem.better || '',
+            why: grammarItem.explanation || '',
+            problemHighlight: grammarItem.problemHighlight || '',
+            improvementHighlight: grammarItem.improvementHighlight || '',
+            createdAt: serverTimestamp()
+          });
+        }
+        
+        console.log(`Saved ${feedbackData.grammar.length} grammar items to Firebase`);
+      }
+
+      console.log('Successfully saved all feedback data to Firebase');
+    } catch (error) {
+      console.error('Error saving feedback to Firebase:', error);
+      // Don't throw the error - we don't want to break the UI if Firebase save fails
+    }
+  };
+
   useEffect(() => {
     const fetchFeedback = async () => {
       // Only call the API once using ref to prevent issues with React Strict Mode
@@ -351,29 +590,40 @@ export default function SessionResults({ conversationHistory, onClose }: Session
         setLoading(true);
         
         // Check if there's any conversation history to analyze
-        if (conversationHistory.length === 0) {
+        if (processedConversationHistory.length === 0) {
           console.log('No conversation history to analyze');
           setLoading(false);
           return;
         }
         
-        // Sort by timestamp to ensure proper conversation order
-        const sortedHistory = [...conversationHistory].sort((a, b) => a.timestamp - b.timestamp);
+        // Use the original transcript if provided, otherwise reconstruct it
+        // This ensures we send the exact same transcript that was saved to Firestore
+        let transcriptToSend: string;
         
-        // Convert conversation history to transcript format
-        const transcript = sortedHistory
-          .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.text}`)
-          .join('\n\n');
+        if (transcript) {
+          // Use the original transcript from Firestore - this ensures consistency
+          transcriptToSend = transcript;
+          console.log('Using original transcript from Firestore for feedback API');
+        } else {
+          // Reconstruct transcript using the same format as saved to Firestore
+          // (lowercase roles, single newline separator)
+          const sortedHistory = [...processedConversationHistory].sort((a, b) => a.timestamp - b.timestamp);
+          transcriptToSend = sortedHistory
+            .map(msg => `${msg.role}: ${msg.text}`)
+            .join('\n');
+          console.log('Reconstructed transcript for feedback API');
+        }
         
-        // Only send if transcript is not empty (should usually be the case if history has length > 0)
-        if (!transcript.trim()) {
+        // Only send if transcript is not empty
+        if (!transcriptToSend.trim()) {
           console.log('Generated transcript is empty, skipping API call');
           setLoading(false);
           return;
         }
         
-        console.log('Sending transcript to API:', transcript);
-        console.log('Using language code for feedback:', getLanguageCode(language));
+        console.log('Sending transcript to API (first 200 chars):', transcriptToSend.substring(0, 200) + '...');
+        console.log('Using UI language for feedback:', getLanguageCode(languageContext));
+        console.log('Using target language for content:', language);
         apiCalledRef.current = true; // Set here, after all early returns
         
         // Call the feedback API once
@@ -383,8 +633,9 @@ export default function SessionResults({ conversationHistory, onClose }: Session
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            transcript,
-            language: getLanguageCode(language),
+            transcript: transcriptToSend,
+            language: getLanguageCode(languageContext), // UI language for prompt selection
+            targetLanguage: language, // Target language being learned for content
           }),
         });
         
@@ -395,9 +646,13 @@ export default function SessionResults({ conversationHistory, onClose }: Session
         const feedbackData: FeedbackData = await response.json();
         console.log('Received feedback data:', feedbackData);
         
-        setGrammarCorrections(feedbackData.grammar);
-        setVocabulary(feedbackData.vocabulary);
+        setKeyTakeaway(feedbackData.keyTakeaway || '');
+        setGrammarCorrections(feedbackData.grammar || []);
+        setVocabulary(feedbackData.vocabulary || []);
         setError(null);
+
+        // Save feedback data to Firebase if user is authenticated and sessionId is available
+        await saveFeedbackToFirebase(feedbackData);
       } catch (err) {
         console.error('Error fetching feedback:', err);
         setError('Failed to analyze conversation. Please try again.');
@@ -406,132 +661,177 @@ export default function SessionResults({ conversationHistory, onClose }: Session
       }
     };
     
-    if (conversationHistory.length > 0 && !apiCalledRef.current) {
+    if (processedConversationHistory.length > 0 && !apiCalledRef.current) {
       fetchFeedback();
-    } else if (conversationHistory.length === 0) {
+    } else if (processedConversationHistory.length === 0) {
       setLoading(false);
     }
     
     // Ensure any active API connections are terminated when viewing results
     console.log('SessionResults mounted, ensuring connections are closed');
-    console.log('Conversation history in useEffect:', JSON.stringify(conversationHistory));
+    console.log('Conversation history in useEffect:', JSON.stringify(processedConversationHistory));
     
     // Return cleanup function
     return () => {
       console.log('SessionResults unmounting');
     };
-  }, [conversationHistory, language]);
-  
+  }, [processedConversationHistory, language, languageContext, saveFeedbackToFirebase, transcript]);  
+
   return (
-    <div className="w-full h-screen max-h-screen bg-[#fffaed] font-poppins flex flex-col overflow-hidden">
+    <div className="absolute inset-0 bg-[#fffaed] font-poppins overflow-y-auto">
       {/* Loading Animation Overlay */}
       {loading && <LoadingAnimation t={t} />}
       
-      {/* Fixed New Session Button - Only show when not loading */}
+      {/* Main Container with max width */}
       {!loading && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-[#fffaed]/80 backdrop-blur-sm p-4 flex-shrink-0">
-          <button
-            onClick={onClose}
-            className="w-full py-3 rounded-lg bg-[#422006] text-white font-medium hover:bg-[#422006]/90 transition-colors"
-          >
-            {t('sessionResults.newSession')}
-          </button>
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="w-full p-4 mt-16 flex-shrink-0">
-        <div className="flex-1">
-          <h2 className="text-lg font-medium text-[#422006]">{t('sessionResults.title')}</h2>
-        </div>
-      </div>
-      
-      {/* Content */}
-      <div className="flex-1 px-4 pb-8 overflow-y-auto min-h-0"> 
-        {/* Vocabulary */}
-        <div className="mb-6">
-          <h3 className="text-lg font-medium text-[#422006] mb-2">{t('sessionResults.vocabulary')}</h3>
-          {error ? (
-            <p className="text-red-500 text-center p-4 bg-white/70 rounded-lg border border-amber-100">
-              {t('sessionResults.failedToAnalyze')}
-            </p>
-          ) : vocabulary.length > 0 ? (
-            <div className="space-y-4">
-              {vocabulary.map((word, index) => (
-                <VocabularyCard
-                  key={index}
-                  id={`vocab-${index}-${uniqueSessionId}`}
-                  term={word.word}
-                  wordType={word.type}
-                  definition={word.meaning}
-                  example={word.example}
-                />
-              ))}
+        <div className="w-full max-w-[800px] mx-auto min-h-full">
+          {/* Header Section */}
+          <div className="p-6 pb-4">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-start space-x-4 flex-1">
+                {/* Nacho taking notes image */}
+                <div className="flex-shrink-0">
+                  <Image 
+                    src="/images/nacho_taking_notes.png"
+                    alt="Nacho taking notes"
+                    width={60}
+                    height={60}
+                    className="w-15 h-15 object-contain"
+                  />
+                </div>
+                
+                {/* Title and description */}
+                <div className="flex-1">
+                  <h1 className="text-xl font-semibold text-[#422006] mb-2">
+                    {t('sessionResults.reviewTitle')}
+                  </h1>
+                  <p className="text-sm text-[#422006]/70">
+                    {t('sessionResults.reviewDescription')}
+                  </p>
+                </div>
+              </div>
+              
+              {/* Close button */}
+              <button
+                onClick={onClose}
+                className="flex-shrink-0 p-2 hover:bg-[#422006]/10 rounded-full transition-colors"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="#422006" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
             </div>
-          ) : (
-            <p className="text-[#422006]/60 text-center p-4 bg-white/70 rounded-lg border border-amber-100">
-              {t('sessionResults.noVocabularyItems')}
-            </p>
-          )}
-        </div>
+          </div>
+          
+          {/* Content */}
+          <div className="px-6 pb-6">
+            {/* Key Takeaway */}
+            {keyTakeaway && (
+              <div className="mb-8">
+                <h3 className="text-lg font-medium text-[#422006] mb-4">{t('sessionResults.keyTakeaway')}</h3>
+                <div className="bg-amber-100 rounded-lg p-4 border border-amber-200">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="white"/>
+                      </svg>
+                    </div>
+                    <p className="text-[#422006] leading-relaxed">{keyTakeaway}</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
-        {/* Grammar Corrections */}
-        <div className="mb-6">
-          <h3 className="text-lg font-medium text-[#422006] mb-2">{t('sessionResults.grammarAndStyle')}</h3>
-          {error ? (
-            <p className="text-red-500 text-center p-4 bg-white/70 rounded-lg border border-amber-100">
-              {t('sessionResults.failedToAnalyze')}
-            </p>
-          ) : grammarCorrections.length > 0 ? (
-            <div className="space-y-4">
-              {grammarCorrections.map((correction, index) => (
-                <GrammarCard
-                  key={index}
-                  id={`grammar-${index}-${uniqueSessionId}`}
-                  userSaid={correction.youSaid}
-                  better={correction.better}
-                  explanation={correction.explanation}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="text-[#422006]/60 text-center p-4 bg-white/70 rounded-lg border border-amber-100">
-              {t('sessionResults.noGrammarCorrections')}
-            </p>
-          )}
-        </div>
-
-        <br />
-
-        {/* Conversation Summary */}
-        <div className="mb-6">
-          <h3 className="text-lg font-medium text-[#422006] mb-2">{t('sessionResults.conversationSummary')}</h3>
-          <div className="bg-white/70 rounded-lg p-4 border border-amber-100">
-            {conversationHistory.length > 0 ? (
-              <div className="space-y-4">
-                {[...conversationHistory]
-                  .sort((a, b) => a.timestamp - b.timestamp)
-                  .map((message, index) => (
-                    <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className="flex flex-col">
-                        <div className={`max-w-3/4 rounded-lg p-3 ${
-                          message.role === 'user' ? 'bg-amber-100 text-[#422006]' : 'bg-[#422006] text-white'
-                        }`}>
-                          {message.text}
-                        </div>
-                        <span className={`text-xs mt-1 ${message.role === 'user' ? 'text-right' : 'text-left'} text-[#422006]/60`}>
-                          {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
+            {/* Vocabulary */}
+            <div className="mb-8">
+              <h3 className="text-lg font-medium text-[#422006] mb-4">{t('sessionResults.vocabulary')}</h3>
+              {error ? (
+                <p className="text-red-500 text-center p-4 bg-white/70 rounded-lg border border-amber-100">
+                  {t('sessionResults.failedToAnalyze')}
+                </p>
+              ) : (vocabulary.length > 0 || (clickedWords && clickedWords.length > 0)) ? (
+                <div className="space-y-4">
+                  {/* AI-generated vocabulary */}
+                  {vocabulary.map((word, index) => (
+                    <div key={`ai-vocab-${index}-${uniqueSessionId}`} className="relative">
+                      <VocabularyCard
+                        id={`ai-vocab-${index}-${uniqueSessionId}`}
+                        term={word.word}
+                        wordType={word.type}
+                        definition={word.meaning}
+                        example={word.example}
+                      />
                     </div>
                   ))}
+                  
+                  {/* User-clicked words */}
+                  {clickedWords && clickedWords.map((clickedWord, index) => (
+                    <div key={`clicked-vocab-${index}-${uniqueSessionId}`} className="relative">
+                      <div className="absolute top-2 right-2 z-10">
+                        <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full border border-blue-200">
+                          {t('sessionResults.youLookedThisUp')}
+                        </span>
+                      </div>
+                      <VocabularyCard
+                        id={`clicked-vocab-${index}-${uniqueSessionId}`}
+                        term={clickedWord.word}
+                        wordType={t('sessionResults.wordYouLookedUp')}
+                        definition={clickedWord.translation}
+                        example={`${t('sessionResults.fromContext')} "${getRelevantContext(clickedWord.word, clickedWord.context)}"`}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[#422006]/60 text-center p-4 bg-white/70 rounded-lg border border-amber-100">
+                  {t('sessionResults.noVocabularyItems')}
+                </p>
+              )}
+            </div>
+
+            {/* Grammar & Style */}
+            <div className="mb-8">
+              <h3 className="text-lg font-medium text-[#422006] mb-4">{t('sessionResults.grammarAndStyle')}</h3>
+              {error ? (
+                <p className="text-red-500 text-center p-4 bg-white/70 rounded-lg border border-amber-100">
+                  {t('sessionResults.failedToAnalyze')}
+                </p>
+              ) : grammarCorrections.length > 0 ? (
+                <div className="space-y-4">
+                  {grammarCorrections.map((correction, index) => (
+                    <EnhancedGrammarCard
+                      key={index}
+                      correction={correction}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[#422006]/60 text-center p-4 bg-white/70 rounded-lg border border-amber-100">
+                  {t('sessionResults.noGrammarCorrections')}
+                </p>
+              )}
+            </div>
+
+            {/* Conversation Summary */}
+            <div className="mb-8">
+              <h3 className="text-lg font-medium text-[#422006] mb-4">{t('sessionResults.conversationSummary')}</h3>
+              <div className="bg-white/70 rounded-lg p-4 border border-amber-100">
+                {stableConversationDisplay}
               </div>
-            ) : (
-              <p className="text-[#422006]/60 text-center">{t('sessionResults.noConversation')}</p>
-            )}
+            </div>
+
+            {/* New Session Button - Now at the bottom */}
+            <div className="pt-4">
+              <button
+                onClick={onClose}
+                className="w-full py-3 rounded-lg bg-[#422006] text-white font-medium hover:bg-[#422006]/90 transition-colors"
+              >
+                {t('sessionResults.newSession')}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Streak Dialog */}
       {showStreakDialog && (

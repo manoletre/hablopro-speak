@@ -33,7 +33,7 @@ async function fetchLastQuestions(userId: string, language: string): Promise<str
 
 // Prompt templates for different difficulty levels
 const promptTemplates = {
-  1: `You speak [target language] using very simple words and short sentences. Use only basic vocabulary that beginners can understand easily. Speak like you're talking to someone who is just starting to learn the language.
+  1: `You speak [target language] using very simple words and short sentences. Use only basic vocabulary that beginners can understand easily. Speak like you're talking to someone who is just starting to learn the language: very slow, very simple, very clear.
 
 CRITICAL CORRECTION RULE: You must ONLY correct the user if they have just spoken AND made a clear mistake in pronunciation, word structure, or vocabulary OR if they did not use the language they are learning (e.g. answered in spanish when they are learning english). If the user spoke correctly or hasn't spoken yet, DO NOT give any corrections. When you do correct, be gentle. Keep corrections simple and encouraging. If the error is on pronunciation, make sure tell the user that the pronunciation was incorrect and slowly repeat the correct pronunciation.
 
