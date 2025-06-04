@@ -105,6 +105,8 @@ export type TranslationKey =
   | 'voiceChat.gettingDefinition'
   | 'voiceChat.canSpeak'
   | 'voiceChat.canSpeakNative'
+  | 'voiceChat.couldNotStart'
+  | 'voiceChat.tryAgain'
   | 'home.lostStreak';
 
 interface LanguageContextType {
@@ -210,6 +212,8 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'voiceChat.gettingDefinition': 'Getting definition...',
     'voiceChat.canSpeak': 'I\'m listening - you can speak!',
     'voiceChat.canSpeakNative': 'You can also speak in english - I understand!',
+    'voiceChat.couldNotStart': 'Could not start voice session. Write manuel@hablo.pro so that this bug is fixed ASAP.',
+    'voiceChat.tryAgain': 'Try Again',
     'home.lostStreak': 'you lost your streak',
   },
   español: {
@@ -307,6 +311,8 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'voiceChat.gettingDefinition': 'Obteniendo definición...',
     'voiceChat.canSpeak': 'Te escucho - ¡puedes hablar!',
     'voiceChat.canSpeakNative': '¡También puedes hablar en español - te entiendo!',
+    'voiceChat.couldNotStart': 'No se pudo iniciar la sesión de voz. Escribe a manuel@hablo.pro para que arreglemos este error cuanto antes.',
+    'voiceChat.tryAgain': 'Intentar de nuevo',
     'home.lostStreak': 'perdiste tu racha',
   },
 };

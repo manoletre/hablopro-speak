@@ -66,6 +66,9 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
   const [isWrappingUp, setIsWrappingUp] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false); // Track when session is being finished
+
+  // Error state for initialization failures
+  const [initError, setInitError] = useState<string | null>(null);
   
   // Update the conversation history initialization to avoid hardcoded messages
   const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([]);
@@ -672,7 +675,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     try {
       // Get ephemeral token
       console.log('Fetching session token');
-      const tokenResponse = await fetch('/api/session', { 
+      const tokenResponse = await fetch('/api/session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -683,6 +686,20 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
           userId: user?.uid // Include userId to fetch previous questions
         })
       });
+      if (!tokenResponse.ok) {
+        console.error('Failed to fetch session token');
+        if (mountedRef.current) {
+          setInitError(t('voiceChat.couldNotStart'));
+          setIsConnected(false);
+          setIsListening(false);
+        }
+        if (typeof cleanupAudioResources === 'function') {
+          cleanupAudioResources();
+        }
+        initializingRef.current = false;
+        return;
+      }
+
       const data = await tokenResponse.json();
       const EPHEMERAL_KEY = data.client_secret.value;
       
@@ -774,6 +791,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
       // Only update state if component is still mounted
       if (mountedRef.current) {
         setIsConnected(true);
+        setInitError(null);
       }
     } catch (error) {
       console.error('Error initializing WebRTC:', error);
@@ -784,6 +802,8 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
       // Only update state if component is still mounted
       if (mountedRef.current) {
         setIsConnected(false);
+        setIsListening(false);
+        setInitError(t('voiceChat.couldNotStart'));
       }
     } finally {
       // Always reset the initialization flag
@@ -1167,6 +1187,17 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
           
           {/* Main Content - Structured for proper vertical distribution */}
           <div className="flex-1 flex flex-col px-6 min-h-0">
+            {initError && (
+              <div className="bg-red-100 text-red-700 p-3 rounded-md mb-4 flex items-center justify-between">
+                <span className="mr-2 flex-1">{initError}</span>
+                <button
+                  onClick={() => { setInitError(null); setIsListening(true); initWebRTC(); }}
+                  className="px-2 py-1 text-xs rounded-md border border-red-600 bg-red-50 hover:bg-red-100"
+                >
+                  {t('voiceChat.tryAgain')}
+                </button>
+              </div>
+            )}
             {/* Status indicator and Nacho - Takes remaining space */}
             <div className="flex-1 flex flex-col items-center justify-center min-h-0">
               {/* Animated Status Display */}
