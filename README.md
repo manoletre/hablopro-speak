@@ -1,57 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HabloPro Speak
+
+HabloPro Speak is an AI-powered language tutor built with Next.js, Firebase and OpenAI. Users practice real-time voice conversations with "Nacho" the AI tutor and receive feedback on how to improve. Sessions, bookmarks and streaks are stored in Firestore and analytics are tracked via PostHog.
+
+## Features
+
+- Real-time voice chat with OpenAI's streaming API
+- Word translations and vocabulary suggestions on demand
+- Personalized grammar and vocabulary feedback after each session
+- Google Sign-In using Firebase Authentication
+- Streak tracking and welcome emails via Firebase Cloud Functions
+- PostHog analytics for sessions and daily active users
+
+## Project Structure
+
+- `app/` – Next.js pages, components and React context providers
+  - `app/api/` – serverless routes that interact with OpenAI for sessions, feedback, suggestions and translations
+- `functions/` – Firebase Cloud Functions triggered on new sessions and user creation
+- `public/` – static assets (icons, audio, images)
+- `firestore.rules` – security rules for Firestore
+- `next.config.ts` – Next.js configuration and PostHog proxy setup
 
 ## Getting Started
 
-First, run the development server:
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Copy `.env.local.example` to `.env.local` and fill in your keys:
+   ```bash
+   # Firebase
+   NEXT_PUBLIC_FIREBASE_API_KEY=...
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
+   NEXT_PUBLIC_FIREBASE_APP_ID=...
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+   # OpenAI
+   OPENAI_API_KEY=...
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+   # PostHog
+   NEXT_PUBLIC_POSTHOG_KEY=...
+   NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
+   NEXT_PUBLIC_POSTHOG_PROJECT_ID=...
+   ```
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+   Then open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Learning Next Steps
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+If you're new to the project, these files are great starting points:
 
-## Learn More
+1. **OpenAI API usage** – see `app/api/session/route.ts` and `app/api/feedback/route.ts` to understand how prompts are built and responses parsed.
+2. **Firestore data structure** – check `firestore.rules` and `functions/src/index.ts` to see how session data and streaks are stored.
+3. **React context providers** – `app/context/AuthContext.tsx` and `app/context/LanguageContext.tsx` manage auth state and UI translations.
+4. **Analytics** – `POSTHOG_IMPLEMENTATION.md` describes the events sent to PostHog.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## Firebase Authentication Setup
-
-This application uses Firebase Authentication for Google Sign-In. Follow these steps to set it up:
-
-1. Create a Firebase project at [https://console.firebase.google.com/](https://console.firebase.google.com/)
-2. Enable Authentication and set up Google as a sign-in provider
-3. Create a web app in your Firebase project to get your configuration values
-4. Copy the `.env.local.example` file to `.env.local` and update with your Firebase configuration:
-
-```bash
-# Firebase Authentication Configuration
-NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
-NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
-```
-
-5. Restart your development server for the changes to take effect
+Contributions and feedback are welcome!
