@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, MouseEvent } from 'react';
-import pinyin from 'pinyin';
+import { pinyin } from 'pinyin-pro';
 import { toKatakana } from 'wanakana';
 import AnimatedNacho from './AnimatedNacho';
 import AnimatedStatusDisplay from './AnimatedStatusDisplay';
@@ -1228,7 +1228,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
                             // For CJK languages, use deltas as clickable units
                             subtitleDeltas.map((delta, idx) => {
                               const romanized = language.toLowerCase().includes('chinese')
-                                ? pinyin(delta).flat().join('')
+                                ? pinyin(delta, { toneType: 'none', type: 'array' }).join('')
                                 : toKatakana(delta);
                               return (
                                 <span
@@ -1261,7 +1261,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
                                   {showRomanization && (language.toLowerCase().includes('chinese') || language.toLowerCase().includes('japanese')) ? (
                                     <ruby>
                                       <rb>{token}</rb>
-                                      <rt>{language.toLowerCase().includes('chinese') ? pinyin(token).flat().join('') : toKatakana(token)}</rt>
+                                      <rt>{language.toLowerCase().includes('chinese') ? pinyin(token, { toneType: 'none', type: 'array' }).join('') : toKatakana(token)}</rt>
                                     </ruby>
                                   ) : (
                                     token

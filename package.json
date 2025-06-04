@@ -27,7 +27,7 @@
     "react-dom": "^19.0.0",
     "react-github-calendar": "^4.5.7",
     "zod": "^3.25.28",
-    "pinyin": "^2.10.0",
+    "pinyin-pro": "^3.18.0",
     "wanakana": "^4.0.2"
   },
   "devDependencies": {
