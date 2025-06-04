@@ -6,6 +6,7 @@ HabloPro Speak is an AI-powered language tutor built with Next.js, Firebase and 
 
 - Real-time voice chat with OpenAI's streaming API
 - Word translations and vocabulary suggestions on demand
+- Optional "Show Romanization" toggle for Chinese and Japanese subtitles
 - Personalized grammar and vocabulary feedback after each session
 - Google Sign-In using Firebase Authentication
 - Streak tracking and welcome emails via Firebase Cloud Functions

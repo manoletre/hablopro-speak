@@ -1,12 +1,15 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, MouseEvent } from 'react';
+import pinyin from 'pinyin';
+import { toKatakana } from 'wanakana';
 import AnimatedNacho from './AnimatedNacho';
 import AnimatedStatusDisplay from './AnimatedStatusDisplay';
 import SessionResults from './SessionResults';
 import AuthDialog from './AuthDialog';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useRomanization } from '../context/RomanizationContext';
 import { addDoc, collection, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { usePostHog } from 'posthog-js/react';
@@ -55,6 +58,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
 
   const { user, loading } = useAuth();
   const { t, language: uiLanguage } = useLanguage();
+  const { showRomanization, toggleRomanization } = useRomanization();
   const [isListening, setIsListening] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [aiTranscript, setAiTranscript] = useState<string>('');
@@ -1195,6 +1199,14 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
                       {t('voiceChat.pressWord')}
                     </p>
                     <button
+                      onClick={toggleRomanization}
+                      className="px-2 py-1 text-xs rounded-md border border-amber-800/30 bg-amber-50 text-[#422006] hover:bg-amber-100 ml-2 flex-shrink-0"
+                    >
+                      {showRomanization
+                        ? t('voiceChat.hideRomanization')
+                        : t('voiceChat.showRomanization')}
+                    </button>
+                    <button
                       onClick={stopConversation}
                       className="px-2 py-1 text-xs rounded-md border border-amber-800/30 bg-amber-50 text-[#422006] hover:bg-amber-100 ml-2 flex-shrink-0"
                     >
@@ -1214,15 +1226,27 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
                         <div className="flex flex-wrap">
                           {isCJK ? (
                             // For CJK languages, use deltas as clickable units
-                            subtitleDeltas.map((delta, idx) => (
-                              <span
-                                key={idx}
-                                className={`inline-block cursor-pointer rounded ${popupWordIndex === idx ? 'bg-amber-300' : 'hover:bg-amber-200'}`}
-                                onClick={(e) => handleWordClick(delta, idx, e)}
-                              >
-                                {delta}
-                              </span>
-                            ))
+                            subtitleDeltas.map((delta, idx) => {
+                              const romanized = language.toLowerCase().includes('chinese')
+                                ? pinyin(delta).flat().join('')
+                                : toKatakana(delta);
+                              return (
+                                <span
+                                  key={idx}
+                                  className={`inline-block cursor-pointer rounded ${popupWordIndex === idx ? 'bg-amber-300' : 'hover:bg-amber-200'}`}
+                                  onClick={(e) => handleWordClick(delta, idx, e)}
+                                >
+                                  {showRomanization && (language.toLowerCase().includes('chinese') || language.toLowerCase().includes('japanese')) ? (
+                                    <ruby>
+                                      <rb>{delta}</rb>
+                                      <rt>{romanized}</rt>
+                                    </ruby>
+                                  ) : (
+                                    delta
+                                  )}
+                                </span>
+                              );
+                            })
                           ) : (
                             // For non-CJK languages, use space-separated tokens
                             subtitleBuffer.split(/(\s+)/).map((token, idx) =>
@@ -1234,7 +1258,14 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
                                   className={`inline-block px-0.5 cursor-pointer rounded ${popupWordIndex === idx ? 'bg-amber-300' : 'hover:bg-amber-200'}`}
                                   onClick={(e) => handleWordClick(token, idx, e)}
                                 >
-                                  {token}
+                                  {showRomanization && (language.toLowerCase().includes('chinese') || language.toLowerCase().includes('japanese')) ? (
+                                    <ruby>
+                                      <rb>{token}</rb>
+                                      <rt>{language.toLowerCase().includes('chinese') ? pinyin(token).flat().join('') : toKatakana(token)}</rt>
+                                    </ruby>
+                                  ) : (
+                                    token
+                                  )}
                                 </span>
                               )
                             )
