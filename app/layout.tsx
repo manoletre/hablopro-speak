@@ -3,6 +3,7 @@ import "./globals.css";
 import "flag-icons/css/flag-icons.min.css";
 import { AuthProvider } from "./context/AuthContext";
 import { LanguageProvider } from './context/LanguageContext';
+import { RomanizationProvider } from './context/RomanizationContext';
 import { PostHogProvider } from "./components/PostHogProvider";
 import { Outfit, Poppins, Mynerve, Indie_Flower } from 'next/font/google';
 
@@ -100,11 +101,13 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={`${outfit.variable} ${poppins.variable} ${mynerve.variable} ${indieFlower.variable}`}>  
       <body suppressHydrationWarning>
         <PostHogProvider>
-          <LanguageProvider>
-            <AuthProvider>
-              {children}
-            </AuthProvider>
-          </LanguageProvider>
+          <RomanizationProvider>
+            <LanguageProvider>
+              <AuthProvider>
+                {children}
+              </AuthProvider>
+            </LanguageProvider>
+          </RomanizationProvider>
         </PostHogProvider>
       </body>
     </html>

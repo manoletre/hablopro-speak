@@ -105,6 +105,8 @@ export type TranslationKey =
   | 'voiceChat.gettingDefinition'
   | 'voiceChat.canSpeak'
   | 'voiceChat.canSpeakNative'
+  | 'voiceChat.showRomanization'
+  | 'voiceChat.hideRomanization'
   | 'home.lostStreak';
 
 interface LanguageContextType {
@@ -210,6 +212,8 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'voiceChat.gettingDefinition': 'Getting definition...',
     'voiceChat.canSpeak': 'I\'m listening - you can speak!',
     'voiceChat.canSpeakNative': 'You can also speak in english - I understand!',
+    'voiceChat.showRomanization': 'Show Romanization',
+    'voiceChat.hideRomanization': 'Hide Romanization',
     'home.lostStreak': 'you lost your streak',
   },
   español: {
@@ -307,6 +311,8 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'voiceChat.gettingDefinition': 'Obteniendo definición...',
     'voiceChat.canSpeak': 'Te escucho - ¡puedes hablar!',
     'voiceChat.canSpeakNative': '¡También puedes hablar en español - te entiendo!',
+    'voiceChat.showRomanization': 'Mostrar romanización',
+    'voiceChat.hideRomanization': 'Ocultar romanización',
     'home.lostStreak': 'perdiste tu racha',
   },
 };

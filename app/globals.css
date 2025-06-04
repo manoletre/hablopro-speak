@@ -80,3 +80,8 @@ body {
   background-repeat: repeat-x;
   opacity: 0.8;
 }
+
+/* Style for ruby annotations */
+ruby rt {
+  font-size: 0.75rem;
+}
