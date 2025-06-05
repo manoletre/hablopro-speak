@@ -11,6 +11,7 @@ import { addDoc, collection, serverTimestamp, doc, updateDoc } from 'firebase/fi
 import { db } from '../lib/firebase';
 import { usePostHog } from 'posthog-js/react';
 import { trackSessionCompleted, trackSessionStarted } from '../lib/analytics';
+import { pinyin } from 'pinyin-pro';
 
 // Enhanced interface to handle different event types
 interface RealtimeEvent {
@@ -48,6 +49,62 @@ interface VoiceChatProps {
 const isCJKLanguage = (language: string): boolean => {
   const cjkLanguages = ['japanese', 'chinese', 'korean', 'mandarin', 'cantonese', 'ja', 'zh', 'ko'];
   return cjkLanguages.some(lang => language.toLowerCase().includes(lang));
+};
+
+// Helper function to detect Chinese language specifically
+const isChineseLanguage = (language: string): boolean => {
+  const chineseLanguages = ['chinese', 'mandarin', 'cantonese', 'zh'];
+  return chineseLanguages.some(lang => language.toLowerCase().includes(lang));
+};
+
+  // Helper function to check if a character is Chinese
+  const isChineseCharacter = (char: string): boolean => {
+    const chineseRegex = /[\u4e00-\u9fff]/;
+    return chineseRegex.test(char);
+  };
+
+// Component to render Chinese text with pinyin
+const ChineseTextWithPinyin = ({ text, onWordClick, popupWordIndex }: { 
+  text: string; 
+  onWordClick: (word: string, idx: number, e: MouseEvent<HTMLSpanElement>) => void;
+  popupWordIndex: number | null;
+}) => {
+  const characters = text.split('');
+  
+  return (
+    <div className="inline-block">
+      {characters.map((char, idx) => {
+        if (isChineseCharacter(char)) {
+          // Get pinyin for this character
+          const charPinyin = pinyin(char, { toneType: 'symbol', type: 'array' });
+          const pinyinText = charPinyin[0] || '';
+          
+          return (
+            <div key={idx} className="inline-block text-center mx-0.5">
+              <div 
+                className={`cursor-pointer rounded px-0.5 ${popupWordIndex === idx ? 'bg-amber-300' : 'hover:bg-amber-200'}`}
+                onClick={(e) => onWordClick(char, idx, e)}
+              >
+                {char}
+              </div>
+              {pinyinText && (
+                <div className="text-xs text-[#422006] opacity-70 leading-tight mt-0.5">
+                  {pinyinText}
+                </div>
+              )}
+            </div>
+          );
+        } else {
+          // For non-Chinese characters (spaces, punctuation, etc.)
+          return (
+            <span key={idx} className="inline-block">
+              {char === ' ' ? '\u00A0' : char}
+            </span>
+          );
+        }
+      })}
+    </div>
+  );
 };
 
 export default function VoiceChat({ onClose, difficultyLevel, language, sessionKey }: VoiceChatProps) {
@@ -1212,8 +1269,15 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
                     >
                       <div className="text-[#422006]">
                         <div className="flex flex-wrap">
-                          {isCJK ? (
-                            // For CJK languages, use deltas as clickable units
+                          {isChineseLanguage(language) ? (
+                            // For Chinese languages, show pinyin below characters
+                            <ChineseTextWithPinyin 
+                              text={subtitleBuffer}
+                              onWordClick={handleWordClick}
+                              popupWordIndex={popupWordIndex}
+                            />
+                          ) : isCJK ? (
+                            // For other CJK languages, use deltas as clickable units
                             subtitleDeltas.map((delta, idx) => (
                               <span
                                 key={idx}
