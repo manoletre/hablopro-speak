@@ -2,6 +2,59 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { pinyin } from 'pinyin-pro';
+
+// Helper function to detect Chinese language specifically
+const isChineseLanguage = (language: string): boolean => {
+  const chineseLanguages = ['chinese', 'mandarin', 'cantonese', 'zh'];
+  return chineseLanguages.some(lang => language.toLowerCase().includes(lang));
+};
+
+// Helper function to check if a character is Chinese
+const isChineseCharacter = (char: string): boolean => {
+  const chineseRegex = /[\u4e00-\u9fff]/;
+  return chineseRegex.test(char);
+};
+
+// Component to render Chinese text with pinyin
+const ChineseTextWithPinyin = ({ text, showPinyin }: { 
+  text: string; 
+  showPinyin: boolean;
+}) => {
+  const characters = text.split('');
+  
+  return (
+    <span className="inline-block">
+      {characters.map((char, idx) => {
+        if (isChineseCharacter(char)) {
+          // Get pinyin for this character
+          const charPinyin = pinyin(char, { toneType: 'symbol', type: 'array' });
+          const pinyinText = charPinyin[0] || '';
+          
+          return (
+            <span key={idx} className={`inline-block text-center ${showPinyin ? 'mx-0.5' : 'mx-0'}`}>
+              <span className="block">
+                {char}
+              </span>
+              {showPinyin && pinyinText && (
+                <span className="block text-xs opacity-70 leading-tight mt-0.5">
+                  {pinyinText}
+                </span>
+              )}
+            </span>
+          );
+        } else {
+          // For non-Chinese characters (spaces, punctuation, etc.)
+          return (
+            <span key={idx} className="inline-block align-top">
+              {char === ' ' ? '\u00A0' : char}
+            </span>
+          );
+        }
+      })}
+    </span>
+  );
+};
 
 interface Suggestion {
   type: 'vocabulary' | 'phrase' | 'encouragement';
@@ -16,6 +69,7 @@ interface AnimatedStatusDisplayProps {
   conversationHistory: Array<{ role: string; text: string; timestamp: number }>;
   targetLanguage: string;
   difficultyLevel: number;
+  showPinyin?: boolean;
 }
 
 export default function AnimatedStatusDisplay({
@@ -23,7 +77,8 @@ export default function AnimatedStatusDisplay({
   isListening,
   conversationHistory,
   targetLanguage,
-  difficultyLevel
+  difficultyLevel,
+  showPinyin = false
 }: AnimatedStatusDisplayProps) {
   const { t, language: uiLanguage } = useLanguage();
   const [currentMessage, setCurrentMessage] = useState('');
@@ -128,8 +183,8 @@ export default function AnimatedStatusDisplay({
   const formatSuggestionMessage = (suggestion: Suggestion) => {
     if (suggestion.type === 'vocabulary') {
       return suggestion.translation 
-        ? `💡 ${suggestion.content} = ${suggestion.translation}`
-        : `💡 ${suggestion.content}`;
+        ? `→ ${suggestion.content} = ${suggestion.translation}`
+        : `→ ${suggestion.content}`;
     }
     return suggestion.content;
   };
@@ -357,7 +412,9 @@ export default function AnimatedStatusDisplay({
           >
             <div className="px-4 py-3">
               <p className="text-[#422006] text-sm">
-                {currentSuggestion}
+                {isChineseLanguage(targetLanguage) ? (
+                  <ChineseTextWithPinyin text={currentSuggestion} showPinyin={showPinyin} />
+                ) : currentSuggestion}
               </p>
             </div>
             

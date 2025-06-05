@@ -1,12 +1,65 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, MouseEvent } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import type { TranslationKey } from '../context/LanguageContext';
 import VocabularyCard from './VocabularyCard';
 import { getAuth } from 'firebase/auth';
 import { doc, getFirestore, onSnapshot, collection, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import Image from 'next/image';
+import { pinyin } from 'pinyin-pro';
+
+// Helper function to detect Chinese language specifically
+const isChineseLanguage = (language: string): boolean => {
+  const chineseLanguages = ['chinese', 'mandarin', 'cantonese', 'zh'];
+  return chineseLanguages.some(lang => language.toLowerCase().includes(lang));
+};
+
+// Helper function to check if a character is Chinese
+const isChineseCharacter = (char: string): boolean => {
+  const chineseRegex = /[\u4e00-\u9fff]/;
+  return chineseRegex.test(char);
+};
+
+// Component to render Chinese text with pinyin
+const ChineseTextWithPinyin = ({ text, showPinyin }: { 
+  text: string; 
+  showPinyin: boolean;
+}) => {
+  const characters = text.split('');
+  
+  return (
+    <span className="inline-block">
+      {characters.map((char, idx) => {
+        if (isChineseCharacter(char)) {
+          // Get pinyin for this character
+          const charPinyin = pinyin(char, { toneType: 'symbol', type: 'array' });
+          const pinyinText = charPinyin[0] || '';
+          
+          return (
+            <span key={idx} className={`inline-block text-center ${showPinyin ? 'mx-0.5' : 'mx-0'}`}>
+              <span className="block">
+                {char}
+              </span>
+              {showPinyin && pinyinText && (
+                <span className="block text-xs opacity-70 leading-tight mt-0.5">
+                  {pinyinText}
+                </span>
+              )}
+            </span>
+          );
+        } else {
+          // For non-Chinese characters (spaces, punctuation, etc.)
+          return (
+            <span key={idx} className="inline-block align-top">
+              {char === ' ' ? '\u00A0' : char}
+            </span>
+          );
+        }
+      })}
+    </span>
+  );
+};
 
 /*
  * Usage examples:
@@ -70,13 +123,21 @@ interface FeedbackData {
 }
 
 // Enhanced Grammar Card Component
-function EnhancedGrammarCard({ correction }: { correction: GrammarCorrection }) {
+function EnhancedGrammarCard({ correction, showPinyin, language }: { 
+  correction: GrammarCorrection; 
+  showPinyin: boolean;
+  language: string;
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { t } = useLanguage();
 
-  // Function to highlight text
+  // Function to highlight text with pinyin support
   const highlightText = (text: string, highlight: string, color: 'red' | 'green') => {
-    if (!highlight || highlight.trim() === '') return text;
+    if (!highlight || highlight.trim() === '') {
+      return isChineseLanguage(language) ? (
+        <ChineseTextWithPinyin text={text} showPinyin={showPinyin} />
+      ) : text;
+    }
     
     const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
     const parts = text.split(regex);
@@ -84,9 +145,15 @@ function EnhancedGrammarCard({ correction }: { correction: GrammarCorrection }) 
     return parts.map((part, index) => 
       regex.test(part) ? (
         <u key={index} style={{ color: color === 'red' ? '#dc2626' : '#16a34a', textDecoration: 'underline' }}>
-          {part}
+          {isChineseLanguage(language) ? (
+            <ChineseTextWithPinyin text={part} showPinyin={showPinyin} />
+          ) : part}
         </u>
-      ) : part
+      ) : (
+        isChineseLanguage(language) ? (
+          <ChineseTextWithPinyin key={index} text={part} showPinyin={showPinyin} />
+        ) : part
+      )
     );
   };
 
@@ -128,7 +195,11 @@ function EnhancedGrammarCard({ correction }: { correction: GrammarCorrection }) 
           
           {isExpanded && (
             <div className="mt-2 p-3 bg-amber-50 rounded border border-amber-200">
-              <p className="text-sm text-[#422006]">{correction.explanation}</p>
+              <p className="text-sm text-[#422006]">
+                {isChineseLanguage(language) ? (
+                  <ChineseTextWithPinyin text={correction.explanation} showPinyin={showPinyin} />
+                ) : correction.explanation}
+              </p>
             </div>
           )}
         </div>
@@ -311,6 +382,9 @@ export default function SessionResults({ conversationHistory, onClose, language,
   const [streakCount, setStreakCount] = useState<number>(0);
   const [randomStreakImage, setRandomStreakImage] = useState<string>('');
   
+  // State for pinyin visibility toggle
+  const [showPinyin, setShowPinyin] = useState(false);
+  
   // Use useRef to track if API has been called to prevent duplicate calls in React Strict Mode
   const apiCalledRef = useRef<boolean>(false);
   
@@ -359,7 +433,11 @@ export default function SessionResults({ conversationHistory, onClose, language,
                     ? 'bg-amber-100 text-[#422006] rounded-br-md border border-amber-200' 
                     : 'bg-[#fffaed] text-[#422006] rounded-bl-md border border-[#422006]/20'
                 }`}>
-                  <p className="text-sm leading-relaxed">{message.text}</p>
+                  <p className="text-sm leading-relaxed">
+                    {isChineseLanguage(language) ? (
+                      <ChineseTextWithPinyin text={message.text} showPinyin={showPinyin} />
+                    ) : message.text}
+                  </p>
                 </div>
               </div>
             </div>
@@ -682,6 +760,34 @@ export default function SessionResults({ conversationHistory, onClose, language,
       {/* Loading Animation Overlay */}
       {loading && <LoadingAnimation t={t} />}
       
+      {/* Fixed Pinyin Toggle Button - only show for Chinese */}
+      {!loading && isChineseLanguage(language) && (
+        <div className="fixed top-4 right-4 z-40">
+          <button
+            onClick={() => setShowPinyin(!showPinyin)}
+            className="px-3 py-2 text-sm rounded-lg border border-amber-800/30 bg-amber-50 text-[#422006] hover:bg-amber-100 flex items-center space-x-2 shadow-lg backdrop-blur-sm"
+          >
+            {!showPinyin ? (
+              <>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+                <span>pinyin</span>
+              </>
+            ) : (
+              <>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span>pinyin</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
+      
       {/* Main Container with max width */}
       {!loading && (
         <div className="w-full max-w-[800px] mx-auto min-h-full">
@@ -736,7 +842,11 @@ export default function SessionResults({ conversationHistory, onClose, language,
                         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="white"/>
                       </svg>
                     </div>
-                    <p className="text-[#422006] leading-relaxed">{keyTakeaway}</p>
+                    <p className="text-[#422006] leading-relaxed">
+                      {isChineseLanguage(language) ? (
+                        <ChineseTextWithPinyin text={keyTakeaway} showPinyin={showPinyin} />
+                      ) : keyTakeaway}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -760,6 +870,8 @@ export default function SessionResults({ conversationHistory, onClose, language,
                         wordType={word.type}
                         definition={word.meaning}
                         example={word.example}
+                        showPinyin={showPinyin}
+                        language={language}
                       />
                     </div>
                   ))}
@@ -778,6 +890,8 @@ export default function SessionResults({ conversationHistory, onClose, language,
                         wordType={t('sessionResults.wordYouLookedUp')}
                         definition={clickedWord.translation}
                         example={`${t('sessionResults.fromContext')} "${getRelevantContext(clickedWord.word, clickedWord.context)}"`}
+                        showPinyin={showPinyin}
+                        language={language}
                       />
                     </div>
                   ))}
@@ -802,6 +916,8 @@ export default function SessionResults({ conversationHistory, onClose, language,
                     <EnhancedGrammarCard
                       key={index}
                       correction={correction}
+                      showPinyin={showPinyin}
+                      language={language}
                     />
                   ))}
                 </div>

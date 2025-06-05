@@ -1241,6 +1241,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
                 conversationHistory={conversationHistory}
                 targetLanguage={language}
                 difficultyLevel={difficultyLevel}
+                showPinyin={showPinyin}
               />
               
               {/* Animated Nacho - centered */}
@@ -1265,7 +1266,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
                           onClick={() => setShowPinyin(!showPinyin)}
                           className="px-2 py-1 text-xs rounded-md border border-amber-800/30 bg-amber-50 text-[#422006] hover:bg-amber-100 flex items-center space-x-1"
                         >
-                          {showPinyin ? (
+                          {!showPinyin ? (
                             <>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
