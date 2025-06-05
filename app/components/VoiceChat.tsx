@@ -64,12 +64,14 @@ const isChineseLanguage = (language: string): boolean => {
   };
 
 // Component to render Chinese text with pinyin
-const ChineseTextWithPinyin = ({ text, onWordClick, popupWordIndex }: { 
+const ChineseTextWithPinyin = ({ text, onWordClick, popupWordIndex, showPinyin }: { 
   text: string; 
   onWordClick: (word: string, idx: number, e: MouseEvent<HTMLSpanElement>) => void;
   popupWordIndex: number | null;
+  showPinyin: boolean;
 }) => {
   const characters = text.split('');
+  let chineseCharIndex = 0; // Track index for Chinese characters only
   
   return (
     <div className="inline-block">
@@ -78,16 +80,17 @@ const ChineseTextWithPinyin = ({ text, onWordClick, popupWordIndex }: {
           // Get pinyin for this character
           const charPinyin = pinyin(char, { toneType: 'symbol', type: 'array' });
           const pinyinText = charPinyin[0] || '';
+          const currentChineseIndex = chineseCharIndex++;
           
           return (
-            <div key={idx} className="inline-block text-center mx-0.5">
+            <div key={idx} className={`inline-block text-center ${showPinyin ? 'mx-0.5' : 'mx-0'}`}>
               <div 
-                className={`cursor-pointer rounded px-0.5 ${popupWordIndex === idx ? 'bg-amber-300' : 'hover:bg-amber-200'}`}
-                onClick={(e) => onWordClick(char, idx, e)}
+                className={`cursor-pointer rounded px-0.5 ${popupWordIndex === currentChineseIndex ? 'bg-amber-300' : 'hover:bg-amber-200'}`}
+                onClick={(e) => onWordClick(char, currentChineseIndex, e)}
               >
                 {char}
               </div>
-              {pinyinText && (
+              {showPinyin && pinyinText && (
                 <div className="text-xs text-[#422006] opacity-70 leading-tight mt-0.5">
                   {pinyinText}
                 </div>
@@ -96,8 +99,9 @@ const ChineseTextWithPinyin = ({ text, onWordClick, popupWordIndex }: {
           );
         } else {
           // For non-Chinese characters (spaces, punctuation, etc.)
+          // These should appear at character level, not pinyin level
           return (
-            <span key={idx} className="inline-block">
+            <span key={idx} className="inline-block align-top" style={{ lineHeight: '1.25' }}>
               {char === ' ' ? '\u00A0' : char}
             </span>
           );
@@ -173,6 +177,9 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     context: string;
     timestamp: number;
   }>>([]);
+
+  // State for pinyin visibility toggle
+  const [showPinyin, setShowPinyin] = useState(false);
 
   // Animate dots for translating message
   useEffect(() => {
@@ -1246,17 +1253,44 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
             {subtitleBuffer && (
               <div className="w-full max-w-[550px] mx-auto mb-6 sm:mb-8 pb-4 sm:pb-6 flex-shrink-0">
                 <div className="bg-amber-100/95 backdrop-blur-sm rounded-lg shadow-sm border border-amber-200 relative">
-                  {/* Header with press word message and stop button */}
+                  {/* Header with press word message and buttons */}
                   <div className="flex items-center justify-between p-3 pb-2">
                     <p className="text-xs text-[#422006] opacity-70 flex-1">
                       {t('voiceChat.pressWord')}
                     </p>
-                    <button
-                      onClick={stopConversation}
-                      className="px-2 py-1 text-xs rounded-md border border-amber-800/30 bg-amber-50 text-[#422006] hover:bg-amber-100 ml-2 flex-shrink-0"
-                    >
-                      {t('voiceChat.stop')}
-                    </button>
+                    <div className="flex items-center space-x-2 flex-shrink-0">
+                      {/* Pinyin toggle button - only show for Chinese */}
+                      {isChineseLanguage(language) && (
+                        <button
+                          onClick={() => setShowPinyin(!showPinyin)}
+                          className="px-2 py-1 text-xs rounded-md border border-amber-800/30 bg-amber-50 text-[#422006] hover:bg-amber-100 flex items-center space-x-1"
+                        >
+                          {showPinyin ? (
+                            <>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
+                              </svg>
+                              <span>pinyin</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                              <span>pinyin</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                      <button
+                        onClick={stopConversation}
+                        className="px-2 py-1 text-xs rounded-md border border-amber-800/30 bg-amber-50 text-[#422006] hover:bg-amber-100"
+                      >
+                        {t('voiceChat.stop')}
+                      </button>
+                    </div>
                   </div>
                   
                   {/* Subtitles content */}
@@ -1275,6 +1309,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
                               text={subtitleBuffer}
                               onWordClick={handleWordClick}
                               popupWordIndex={popupWordIndex}
+                              showPinyin={showPinyin}
                             />
                           ) : isCJK ? (
                             // For other CJK languages, use deltas as clickable units
