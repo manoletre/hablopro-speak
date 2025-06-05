@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo, MouseEvent } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import type { TranslationKey } from '../context/LanguageContext';
 import VocabularyCard from './VocabularyCard';
@@ -446,7 +446,7 @@ export default function SessionResults({ conversationHistory, onClose, language,
     ) : (
       <p className="text-[#422006]/60 text-center">{t('sessionResults.noConversation')}</p>
     );
-  }, [processedConversationHistory, t]); // Only depend on the initial processed conversation and translation function
+  }, [processedConversationHistory, t, showPinyin, language]); // Include showPinyin and language in dependencies
   
   // Function to get a random streak image
   const getRandomStreakImage = () => {
@@ -573,7 +573,7 @@ export default function SessionResults({ conversationHistory, onClose, language,
   };
 
   // Function to save feedback data to Firebase
-  const saveFeedbackToFirebase = async (feedbackData: FeedbackData) => {
+  const saveFeedbackToFirebase = useCallback(async (feedbackData: FeedbackData) => {
     try {
       const auth = getAuth();
       const user = auth.currentUser;
@@ -654,7 +654,7 @@ export default function SessionResults({ conversationHistory, onClose, language,
       console.error('Error saving feedback to Firebase:', error);
       // Don't throw the error - we don't want to break the UI if Firebase save fails
     }
-  };
+  }, [sessionId, t, clickedWords]);
 
   useEffect(() => {
     const fetchFeedback = async () => {
