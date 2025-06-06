@@ -11,7 +11,7 @@ import VoiceChat from '../components/VoiceChat';
 // Declare global types for Sleekplan
 declare global {
   interface Window {
-    $sleek: any[];
+    $sleek: unknown[];
     SLEEK_PRODUCT_ID?: number;
   }
 }
