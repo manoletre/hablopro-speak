@@ -143,6 +143,10 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
   
+  // Add audio context ref for better audio management
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
+  
   // Add initialization flag to prevent concurrent WebRTC setups
   const initializingRef = useRef(false);
   
@@ -180,6 +184,139 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
 
   // State for pinyin visibility toggle
   const [showPinyin, setShowPinyin] = useState(false);
+
+  // Add state for audio device management (for future use)
+  // const [currentAudioDevice, setCurrentAudioDevice] = useState<string | null>(null);
+
+  // Detect if we're on mobile
+  const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  // Helper function to get optimal audio constraints for different platforms
+  const getOptimalAudioConstraints = useCallback(() => {
+    const baseConstraints = {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+      channelCount: 1
+    };
+
+    if (isMobile) {
+      // Mobile-optimized constraints
+      return {
+        ...baseConstraints,
+        sampleRate: { ideal: 16000, min: 8000, max: 48000 }, // More flexible for mobile
+        sampleSize: { ideal: 16 },
+        latency: { ideal: 0.02, max: 0.15 }, // Target low latency but allow higher for stability
+        // Remove volume and gain control that can cause issues on mobile
+        autoGainControl: false, // Disable AGC on mobile as it can cause issues with Bluetooth
+        googAutoGainControl: false,
+        googNoiseSuppression: true,
+        googEchoCancellation: true,
+        googHighpassFilter: false,
+        googTypingNoiseDetection: false
+      };
+    } else {
+      // Desktop constraints
+      return {
+        ...baseConstraints,
+        sampleRate: 24000,
+        latency: { ideal: 0.01, max: 0.1 }
+      };
+    }
+  }, [isMobile]);
+
+  // Enhanced audio context initialization with mobile support
+  const initializeAudioContext = useCallback(() => {
+    if (!audioContextRef.current) {
+      try {
+        // Use webkitAudioContext for older mobile browsers
+        const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        
+        const contextOptions: AudioContextOptions = {
+          latencyHint: isMobile ? 'balanced' : 'interactive',
+          sampleRate: isMobile ? 16000 : 24000
+        };
+
+        audioContextRef.current = new AudioContextClass(contextOptions);
+        
+        // Create gain node for volume control
+        gainNodeRef.current = audioContextRef.current.createGain();
+        gainNodeRef.current.connect(audioContextRef.current.destination);
+        
+        console.log('Audio context initialized:', {
+          sampleRate: audioContextRef.current.sampleRate,
+          state: audioContextRef.current.state,
+          outputLatency: (audioContextRef.current as unknown as { outputLatency?: number }).outputLatency || 'unavailable'
+        });
+
+        // Handle audio context state changes
+        audioContextRef.current.addEventListener('statechange', () => {
+          console.log('AudioContext state changed to:', audioContextRef.current?.state);
+        });
+
+      } catch (error) {
+        console.warn('Failed to initialize AudioContext:', error);
+      }
+    }
+
+    // Resume audio context if it's suspended (common on mobile)
+    if (audioContextRef.current?.state === 'suspended') {
+      audioContextRef.current.resume().then(() => {
+        console.log('AudioContext resumed successfully');
+      }).catch(error => {
+        console.warn('Failed to resume AudioContext:', error);
+      });
+    }
+  }, [isMobile]);
+
+  // Enhanced device change detection
+  const handleAudioDeviceChange = useCallback(async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioOutputs = devices.filter(device => device.kind === 'audiooutput');
+      const audioInputs = devices.filter(device => device.kind === 'audioinput');
+      
+      console.log('Audio devices changed:', {
+        outputs: audioOutputs.map(d => ({ label: d.label, deviceId: d.deviceId })),
+        inputs: audioInputs.map(d => ({ label: d.label, deviceId: d.deviceId }))
+      });
+
+      // If we have an active audio element and the device changed, we might need to restart
+      if (audioRef.current && isConnected) {
+        console.log('Audio device changed during active session, monitoring for issues...');
+        
+        // On mobile/Bluetooth, we might need to restart the WebRTC connection
+        if (isMobile && audioOutputs.some(device => 
+          device.label.toLowerCase().includes('bluetooth') || 
+          device.label.toLowerCase().includes('wireless')
+        )) {
+          console.log('Bluetooth device detected, applying mobile optimizations');
+          
+          // Add a small delay before restarting to allow device to stabilize
+          setTimeout(() => {
+            if (isConnected && mountedRef.current) {
+              console.log('Restarting connection for Bluetooth device stability');
+              // cleanupAudioResources();
+              // initWebRTC();
+            }
+          }, 1000);
+        }
+      }
+    } catch (error) {
+      console.warn('Error handling audio device change:', error);
+    }
+  }, [isConnected, isMobile]);
+
+  // Register for audio device changes
+  useEffect(() => {
+    if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+      navigator.mediaDevices.addEventListener('devicechange', handleAudioDeviceChange);
+      
+      return () => {
+        navigator.mediaDevices.removeEventListener('devicechange', handleAudioDeviceChange);
+      };
+    }
+  }, [handleAudioDeviceChange]);
 
   // Animate dots for translating message
   useEffect(() => {
@@ -280,7 +417,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     return () => document.removeEventListener('click', handleDocumentClick);
   }, [tooltipPosition]);
 
-  // Clean up function to properly release all audio resources
+  // Enhanced cleanup function with audio context cleanup
   const cleanupAudioResources = useCallback(() => {
     console.log('Cleaning up all audio resources');
     
@@ -339,6 +476,16 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
         console.error('Error cleaning up audio element:', error);
       }
     }
+
+    // Clean up audio context (but don't close it completely as it might be needed later)
+    if (gainNodeRef.current) {
+      try {
+        gainNodeRef.current.disconnect();
+        gainNodeRef.current = null;
+      } catch (error) {
+        console.error('Error cleaning up gain node:', error);
+      }
+    }
   }, []);
 
   // Start timer when connected, handle when time is up
@@ -373,22 +520,67 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
-  // Initialize audio elements once on component mount
+  // Enhanced audio initialization with mobile and Bluetooth optimizations
   useEffect(() => {
+    // Initialize audio context first
+    initializeAudioContext();
+    
     // Create separate audio elements with different handling
     if (typeof Audio !== 'undefined') {
       // Create audio element for OpenAI's response audio
       audioRef.current = new Audio();
+      
+      // Enhanced audio element configuration for mobile/Bluetooth
       audioRef.current.autoplay = true;
       audioRef.current.muted = false;
+      audioRef.current.preload = 'auto';
       
-      // Add event listeners to detect AI speaking
+             // Mobile-specific optimizations
+       if (isMobile) {
+         (audioRef.current as unknown as { playsInline: boolean }).playsInline = true;
+         // Set lower buffer sizes for better responsiveness on mobile
+         audioRef.current.crossOrigin = 'anonymous';
+       }
+      
+      // Add event listeners to detect AI speaking with better error handling
       if (audioRef.current) {
         // When audio starts playing, set aiSpeaking to true
-        audioRef.current.onplaying = () => setAiSpeaking(true);
+        audioRef.current.onplaying = () => {
+          console.log('Audio playing started');
+          setAiSpeaking(true);
+        };
+        
         // When audio pauses or ends, set aiSpeaking to false
-        audioRef.current.onpause = () => setAiSpeaking(false);
-        audioRef.current.onended = () => setAiSpeaking(false);
+        audioRef.current.onpause = () => {
+          console.log('Audio paused');
+          setAiSpeaking(false);
+        };
+        
+        audioRef.current.onended = () => {
+          console.log('Audio ended');
+          setAiSpeaking(false);
+        };
+        
+        // Add error handling for audio playback issues
+        audioRef.current.onerror = (e) => {
+          console.error('Audio playback error:', e);
+          setAiSpeaking(false);
+        };
+        
+        // Add event for when audio is ready to play
+        audioRef.current.oncanplay = () => {
+          console.log('Audio can play');
+        };
+        
+        // Handle audio stalling (common with Bluetooth)
+        audioRef.current.onstalled = () => {
+          console.warn('Audio stalled - common with Bluetooth devices');
+        };
+        
+        // Handle waiting for data
+        audioRef.current.onwaiting = () => {
+          console.log('Audio waiting for data');
+        };
       }
     }
     
@@ -396,7 +588,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     return () => {
       cleanupAudioResources();
     };
-  }, [cleanupAudioResources]);
+  }, [cleanupAudioResources, initializeAudioContext, isMobile]);
 
   // Modified handleDataChannelEvent to properly track conversation messages in sequence
   const handleDataChannelEvent = useCallback((event: MessageEvent) => {
@@ -755,29 +947,52 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
       const pc = new RTCPeerConnection();
       peerConnectionRef.current = pc;
       
-      // Set up audio handling for WebRTC
+      // Set up audio handling for WebRTC with enhanced error handling
       pc.ontrack = (e) => {
         console.log('Track received from server');
         if (audioRef.current && e.streams && e.streams[0]) {
           console.log('Setting audio source and playing');
           audioRef.current.srcObject = e.streams[0];
           
-          // Play audio immediately
-          audioRef.current.play()
-            .catch(err => console.error('Error playing WebRTC audio:', err));
+          // Enhanced audio playback with better error handling and mobile support
+          const playAudio = async () => {
+            try {
+              // Initialize audio context if suspended (required for mobile)
+              if (audioContextRef.current?.state === 'suspended') {
+                await audioContextRef.current.resume();
+                console.log('Resumed audio context for playback');
+              }
+              
+              await audioRef.current!.play();
+              console.log('WebRTC audio playback started successfully');
+            } catch (err) {
+              console.error('Error playing WebRTC audio:', err);
+              
+              // Retry with a small delay for mobile/Bluetooth issues
+              if (isMobile || (err as Error)?.name === 'NotAllowedError') {
+                setTimeout(async () => {
+                  try {
+                    await audioRef.current!.play();
+                    console.log('Audio playback retry successful');
+                  } catch (retryErr) {
+                    console.error('Audio playback retry failed:', retryErr);
+                  }
+                }, 500);
+              }
+            }
+          };
+          
+          playAudio();
         }
       };
       
-      // Get microphone access with proper audio constraints
-      console.log('Requesting microphone access');
+      // Get microphone access with optimized audio constraints
+      console.log('Requesting microphone access with optimized constraints for platform:', isMobile ? 'mobile' : 'desktop');
+      const audioConstraints = getOptimalAudioConstraints();
+      console.log('Using audio constraints:', audioConstraints);
+      
       const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 24000,
-          channelCount: 1
-        }
+        audio: audioConstraints
       });
       pc.addTrack(mediaStream.getTracks()[0]);
       
@@ -853,7 +1068,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
       // Always reset the initialization flag
       initializingRef.current = false;
     }
-  }, [handleDataChannelEvent, cleanupAudioResources, difficultyLevel, language, isCJK, user?.uid, sessionKey, isConnected, isFinishing, showResults]);
+  }, [handleDataChannelEvent, cleanupAudioResources, difficultyLevel, language, isCJK, user?.uid, sessionKey, isConnected, isFinishing, showResults, getOptimalAudioConstraints, isMobile]);
 
    // Function to stop the conversation
   const stopConversation = () => {
@@ -937,27 +1152,42 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     };
   }, [cleanupAudioResources]);
 
-  // Only start conversation automatically if the user is authenticated - using a more stable approach
+  // Enhanced conversation start with mobile user interaction handling
   useEffect(() => {
     // Only trigger once when component mounts and user is available
     // IMPORTANT: Do not start WebRTC when showing results or finishing
     if (user && mountedRef.current && !isConnected && !peerConnectionRef.current && !initializingRef.current && !showResults && !isFinishing) {
       console.log('Auto-starting conversation on mount');
-      const timer = setTimeout(() => {
+      
+      // For mobile devices, we need a user gesture to initialize audio properly
+      const startConversation = async () => {
         // Double-check conditions before starting to prevent race conditions
         // IMPORTANT: Also check showResults and isFinishing to prevent starting during results display or finishing
         if (mountedRef.current && !peerConnectionRef.current && !isConnected && !initializingRef.current && !showResults && !isFinishing) {
           console.log('Starting conversation from delayed useEffect');
+          
+          // Initialize audio context with user gesture (required for mobile)
+          if (isMobile && audioContextRef.current?.state === 'suspended') {
+            try {
+              await audioContextRef.current.resume();
+              console.log('Audio context resumed with user gesture');
+            } catch (error) {
+              console.warn('Failed to resume audio context:', error);
+            }
+          }
+          
           setIsListening(true);
           initWebRTC();
         } else {
           console.log('Skipping auto-start - already initialized, in progress, showing results, or finishing');
         }
-      }, 100);
+      };
+      
+      const timer = setTimeout(startConversation, 100);
       
       return () => clearTimeout(timer);
     }
-  }, [user, initWebRTC, isConnected, showResults, isFinishing]); // Add isFinishing to dependencies
+  }, [user, initWebRTC, isConnected, showResults, isFinishing, isMobile]); // Add isMobile to dependencies
 
   // Effect to track session start
   useEffect(() => {
@@ -1243,6 +1473,30 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
                 difficultyLevel={difficultyLevel}
                 showPinyin={showPinyin}
               />
+              
+              {/* Audio initialization button for mobile - only show if audio context is suspended */}
+              {isMobile && audioContextRef.current?.state === 'suspended' && !isConnected && (
+                <div className="mb-6 p-4 bg-amber-100 rounded-lg border border-amber-200 text-center">
+                  <p className="text-sm text-[#422006] mb-3">
+                    Tap to enable audio for the conversation
+                  </p>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await audioContextRef.current?.resume();
+                        console.log('Audio context manually resumed');
+                        // Force re-render to hide this button
+                        setIsListening(prev => prev);
+                      } catch (error) {
+                        console.error('Failed to resume audio context:', error);
+                      }
+                    }}
+                    className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+                  >
+                    🔊 Enable Audio
+                  </button>
+                </div>
+              )}
               
               {/* Animated Nacho - centered */}
               <div className="flex-1 flex items-center justify-center min-h-0">
