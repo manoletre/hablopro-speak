@@ -141,6 +141,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
   // Keep references separate to avoid interference
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const micTrackRef = useRef<MediaStreamTrack | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
   
   // Add initialization flag to prevent concurrent WebRTC setups
@@ -318,6 +319,16 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
         console.error('Error closing peer connection:', error);
       }
     }
+
+    // Stop microphone track if it exists
+    if (micTrackRef.current) {
+      try {
+        micTrackRef.current.stop();
+        micTrackRef.current = null;
+      } catch (error) {
+        console.error('Error stopping mic track:', error);
+      }
+    }
     
     // Clean up audio element
     if (audioRef.current) {
@@ -388,15 +399,22 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
         audioRef.current.onplaying = () => setAiSpeaking(true);
         // When audio pauses or ends, set aiSpeaking to false
         audioRef.current.onpause = () => setAiSpeaking(false);
-        audioRef.current.onended = () => setAiSpeaking(false);
-      }
+      audioRef.current.onended = () => setAiSpeaking(false);
     }
-    
-    // Clean up all audio resources on unmount
-    return () => {
-      cleanupAudioResources();
-    };
-  }, [cleanupAudioResources]);
+  }
+
+  // Clean up all audio resources on unmount
+  return () => {
+    cleanupAudioResources();
+  };
+}, [cleanupAudioResources]);
+
+  // Disable microphone track while AI is speaking to avoid echo or accidental input
+  useEffect(() => {
+    if (micTrackRef.current) {
+      micTrackRef.current.enabled = !aiSpeaking;
+    }
+  }, [aiSpeaking]);
 
   // Modified handleDataChannelEvent to properly track conversation messages in sequence
   const handleDataChannelEvent = useCallback((event: MessageEvent) => {
@@ -770,16 +788,17 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
       
       // Get microphone access with proper audio constraints
       console.log('Requesting microphone access');
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          sampleRate: 24000,
           channelCount: 1
         }
       });
-      pc.addTrack(mediaStream.getTracks()[0]);
+      const micTrack = mediaStream.getAudioTracks()[0];
+      micTrackRef.current = micTrack;
+      pc.addTrack(micTrack);
       
       // Set up data channel
       console.log('Creating data channel');
