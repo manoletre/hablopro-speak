@@ -26,89 +26,99 @@ function getUserLocalDateString(date: Date, timezoneOffsetMinutes: number = 0): 
   return localDate.toISOString().substring(0, 10); // Returns YYYY-MM-DD
 }
 
-export const onSessionCreate = functions
+export const onSessionComplete = functions
   .runWith({
     serviceAccount: 'cloud-functions1@hablopro-speak.iam.gserviceaccount.com'
   })
   .firestore
   .document('users/{uid}/sessions/{sid}')
-  .onCreate(async (snap: DocumentSnapshot, ctx: functions.EventContext) => {
+  .onUpdate(async (change, ctx: functions.EventContext) => {
     const { uid } = ctx.params;
-    const ts = snap.data()?.startedAt.toDate();
-    if (!ts) return;
+    const beforeData = change.before.data();
+    const afterData = change.after.data();
     
-    // Get the session data which may include timezone information
-    const sessionData = snap.data();
-    
-    // Default to 0 (UTC) if timezoneOffset isn't provided
-    const timezoneOffsetMinutes = sessionData?.timezoneOffsetMinutes || 0;
-    
-    // Generate the day ID in the user's local timezone
-    const dayId = getUserLocalDateString(ts, timezoneOffsetMinutes);
-    
-    console.log(`Session created for user ${uid}:`);
-    console.log(`- Server timestamp: ${ts.toISOString()}`);
-    console.log(`- User timezone offset: ${timezoneOffsetMinutes} minutes`);
-    console.log(`- Local date ID: ${dayId}`);
-
-    const dayRef = db.doc(`users/${uid}/days/${dayId}`);
-    const userRef = db.doc(`users/${uid}`);
-
-    try {
-      await db.runTransaction(async (t: admin.firestore.Transaction) => {
-        // 1. Read all necessary documents first
-        const userSnap = await t.get(userRef);
-        const { currentStreak = 0, longestStreak = 0, lastActive } = userSnap.data() || {};
-
-        let sameDay = false;
-        let continues = false;
-
-        if (lastActive) {
-          // Convert lastActive to user's local time
-          const lastActiveDate = lastActive.toDate?.();
-          if (lastActiveDate) {
-            const lastActiveDayId = getUserLocalDateString(lastActiveDate, timezoneOffsetMinutes);
-            
-            // Check if it's the same day
-            sameDay = lastActiveDayId === dayId;
-            
-            // Calculate yesterday's date in user's timezone
-            const yesterday = new Date(ts);
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayId = getUserLocalDateString(yesterday, timezoneOffsetMinutes);
-            
-            // Check if it continues the streak (was yesterday)
-            continues = lastActiveDayId === yesterdayId;
-            
-            console.log(`- Last active date: ${lastActiveDate.toISOString()}`);
-            console.log(`- Last active local day: ${lastActiveDayId}`);
-            console.log(`- Yesterday local day: ${yesterdayId}`);
-            console.log(`- Same day? ${sameDay}, Continues streak? ${continues}`);
-          }
-        }
-
-        const newStreak = sameDay ? currentStreak // multiple sessions today
-          : continues ? currentStreak + 1 // streak +1
-          : 1; // reset
-          
-        console.log(`- Current streak: ${currentStreak} → New streak: ${newStreak}`);
-        console.log(`- Longest streak: ${Math.max(longestStreak, newStreak)}`);
-
-        // 2. Perform all writes after reads
-        t.set(dayRef, { count: FieldValue.increment(1) }, { merge: true });
-        t.set(userRef, {
-          currentStreak: newStreak,
-          longestStreak: Math.max(longestStreak, newStreak),
-          lastActive: snap.data()?.startedAt
-        }, { merge: true });
-      });
+    // Only process if this update adds a finishedAt timestamp (session completion)
+    if (!beforeData?.finishedAt && afterData?.finishedAt) {
+      console.log(`Session ${ctx.params.sid} completed for user ${uid}`);
       
-      console.log(`Successfully updated streak for user ${uid}`);
+      const ts = afterData.finishedAt.toDate();
+      if (!ts) return;
+      
+      // Get the session data which may include timezone information
+      const sessionData = afterData;
+      
+      // Default to 0 (UTC) if timezoneOffset isn't provided
+      const timezoneOffsetMinutes = sessionData?.timezoneOffsetMinutes || 0;
+      
+      // Generate the day ID in the user's local timezone
+      const dayId = getUserLocalDateString(ts, timezoneOffsetMinutes);
+      
+      console.log(`Session completed for user ${uid}:`);
+      console.log(`- Finished timestamp: ${ts.toISOString()}`);
+      console.log(`- User timezone offset: ${timezoneOffsetMinutes} minutes`);
+      console.log(`- Local date ID: ${dayId}`);
 
-    } catch (error) {
-      console.error(`Error updating streak for user ${uid}:`, error);
-      // Don't throw the error - let the function complete gracefully
-      // The session will still be created even if streak calculation fails
+      const dayRef = db.doc(`users/${uid}/days/${dayId}`);
+      const userRef = db.doc(`users/${uid}`);
+
+      try {
+        await db.runTransaction(async (t: admin.firestore.Transaction) => {
+          // 1. Read all necessary documents first
+          const userSnap = await t.get(userRef);
+          const { currentStreak = 0, longestStreak = 0, lastActive } = userSnap.data() || {};
+
+          let sameDay = false;
+          let continues = false;
+
+          if (lastActive) {
+            // Convert lastActive to user's local time
+            const lastActiveDate = lastActive.toDate?.();
+            if (lastActiveDate) {
+              const lastActiveDayId = getUserLocalDateString(lastActiveDate, timezoneOffsetMinutes);
+              
+              // Check if it's the same day
+              sameDay = lastActiveDayId === dayId;
+              
+              // Calculate yesterday's date in user's timezone
+              const yesterday = new Date(ts);
+              yesterday.setDate(yesterday.getDate() - 1);
+              const yesterdayId = getUserLocalDateString(yesterday, timezoneOffsetMinutes);
+              
+              // Check if it continues the streak (was yesterday)
+              continues = lastActiveDayId === yesterdayId;
+              
+              console.log(`- Last active date: ${lastActiveDate.toISOString()}`);
+              console.log(`- Last active local day: ${lastActiveDayId}`);
+              console.log(`- Yesterday local day: ${yesterdayId}`);
+              console.log(`- Same day? ${sameDay}, Continues streak? ${continues}`);
+            }
+          }
+
+          const newStreak = sameDay ? currentStreak // multiple sessions today
+            : continues ? currentStreak + 1 // streak +1
+            : 1; // reset
+            
+          console.log(`- Current streak: ${currentStreak} → New streak: ${newStreak}`);
+          console.log(`- Longest streak: ${Math.max(longestStreak, newStreak)}`);
+
+          // 2. Perform all writes after reads
+          t.set(dayRef, { count: FieldValue.increment(1) }, { merge: true });
+          t.set(userRef, {
+            currentStreak: newStreak,
+            longestStreak: Math.max(longestStreak, newStreak),
+            lastActive: afterData.finishedAt
+          }, { merge: true });
+        });
+        
+        console.log(`Successfully updated streak for user ${uid} on session completion`);
+
+      } catch (error) {
+        console.error(`Error updating streak for user ${uid}:`, error);
+        // Don't throw the error - let the function complete gracefully
+        // The session will still be updated even if streak calculation fails
+      }
+    } else {
+      console.log(`Session ${ctx.params.sid} updated but not completed (no finishedAt added)`);
     }
   });
 

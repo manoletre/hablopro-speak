@@ -27,7 +27,6 @@ export default function StreakDisplay({ onClose }: StreakDisplayProps) {
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [longestStreak, setLongestStreak] = useState(0);
-  const [nextMilestone, setNextMilestone] = useState(10);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const tooltipRef = useRef<HTMLDivElement>(null);
 
@@ -102,10 +101,6 @@ export default function StreakDisplay({ onClose }: StreakDisplayProps) {
           const userData = userDoc.data();
           setCurrentStreak(userData.currentStreak || 0);
           setLongestStreak(userData.longestStreak || 0);
-          
-          // Calculate next milestone based on total session days
-          const totalSessionDays = Object.keys(data).filter(d => data[d] > 0).length;
-          setNextMilestone(Math.ceil((totalSessionDays + 1) / 10) * 10);
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -184,33 +179,6 @@ export default function StreakDisplay({ onClose }: StreakDisplayProps) {
     return Math.min(Math.ceil(count / 2), 4) as Level;
   };
 
-  // Determine if a day is the next milestone day
-  const isMilestoneDay = (date: string) => {
-    if (!user || currentStreak === 0) return false;
-    
-    // Convert the current date string to a Date object
-    const checkDate = new Date(date);
-    
-    // Get today's date
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Calculate days remaining to reach the milestone (subtract 1 to get the exact day)
-    const daysRemaining = (nextMilestone - currentStreak);
-    
-    // If we've already reached the milestone, there's no next milestone day
-    if (daysRemaining <= 0) return false;
-    
-    // Calculate the future date when we'll reach the milestone
-    const milestoneDate = new Date(today);
-    milestoneDate.setDate(today.getDate() + daysRemaining - 1); // Subtract 1 to get the correct day
-    
-    // Check if this date is the milestone date
-    return checkDate.getFullYear() === milestoneDate.getFullYear() &&
-           checkDate.getMonth() === milestoneDate.getMonth() &&
-           checkDate.getDate() === milestoneDate.getDate();
-  };
-
   // Get color for activity level
   const getColorForLevel = (level: Level) => {
     const colors = ['#eee', '#FEF3C7', '#FDE68A', '#F59E0B', '#D97706'];
@@ -273,7 +241,6 @@ export default function StreakDisplay({ onClose }: StreakDisplayProps) {
                     w-full h-full flex items-center justify-center rounded-md
                     relative
                     ${day.hasSession ? '' : 'text-gray-400'}
-                    ${isMilestoneDay(day.date || '') ? 'border-2 border-dashed border-amber-400' : ''}
                   `}
                   style={{
                     backgroundColor: day.hasSession
@@ -300,16 +267,7 @@ export default function StreakDisplay({ onClose }: StreakDisplayProps) {
                       </span>
                     </div>
                   ) : (
-                    isMilestoneDay(day.date || '') ? (
-                      <span 
-                        className="font-medium text-amber-700 cursor-help" 
-                        title={`${t('home.nextMilestone')}: ${nextMilestone} ${t('home.days')}`}
-                      >
-                        {day.day}
-                      </span>
-                    ) : (
-                      day.day
-                    )
+                    day.day
                   )}
                 </div>
               )}
@@ -360,10 +318,6 @@ export default function StreakDisplay({ onClose }: StreakDisplayProps) {
           <div className="bg-amber-50 rounded-lg p-4 flex-1 min-w-[120px]">
             <p className="text-[#422006]/70 text-sm">{t('home.longestStreakTitle')}</p>
             <p className="text-2xl font-bold text-[#422006]">{longestStreak} {t('home.days')}</p>
-          </div>
-          <div className="bg-amber-50 rounded-lg p-4 flex-1 min-w-[120px]">
-            <p className="text-[#422006]/70 text-sm">{t('home.nextMilestone')}</p>
-            <p className="text-2xl font-bold text-[#422006]">{nextMilestone} {t('home.days')}</p>
           </div>
         </div>
 

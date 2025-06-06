@@ -5,7 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import type { TranslationKey } from '../context/LanguageContext';
 import VocabularyCard from './VocabularyCard';
 import { getAuth } from 'firebase/auth';
-import { doc, getFirestore, onSnapshot, collection, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getFirestore, onSnapshot, collection, addDoc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import Image from 'next/image';
 import { pinyin } from 'pinyin-pro';
 
@@ -462,7 +462,10 @@ export default function SessionResults({ conversationHistory, onClose, language,
         const auth = getAuth();
         const user = auth.currentUser;
         
-        if (!user) return;
+        if (!user || !sessionId) {
+          console.log('No user or sessionId, skipping streak check');
+          return;
+        }
         
         const db = getFirestore();
         
@@ -474,7 +477,7 @@ export default function SessionResults({ conversationHistory, onClose, language,
         const localDate = new Date(today.getTime() - (timezoneOffsetMinutes * 60 * 1000));
         const todayString = localDate.toISOString().substring(0, 10); // YYYY-MM-DD format
         
-        console.log('Checking streak for local date:', todayString);
+        console.log('Setting up streak listeners for date:', todayString);
         
         // Set up real-time listeners for both user and day documents
         const userRef = doc(db, 'users', user.uid);
@@ -483,60 +486,103 @@ export default function SessionResults({ conversationHistory, onClose, language,
         let userUnsubscribe: (() => void) | null = null;
         let dayUnsubscribe: (() => void) | null = null;
         let hasShownDialog = false;
+        let initialDayCount: number | null = null;
         
-        // Listen for changes to the day document
-        dayUnsubscribe = onSnapshot(dayRef, (daySnap) => {
-          if (hasShownDialog) return;
+        // First, get the initial day count and user data to check if this is already the first session
+        const [initialDaySnap, initialUserSnap] = await Promise.all([
+          getDoc(dayRef),
+          getDoc(userRef)
+        ]);
+        
+        initialDayCount = initialDaySnap.data()?.count || 0;
+        const userData = initialUserSnap.data();
+        const currentStreak = userData?.currentStreak || 0;
+        const lastActive = userData?.lastActive;
+        
+        console.log('Initial check - day count:', initialDayCount, 'streak:', currentStreak);
+        
+        // Check if this is already a completed first session of the day
+        if (initialDayCount === 1 && currentStreak > 0 && lastActive) {
+          const lastActiveTime = lastActive.toDate();
+          const now = new Date();
+          const timeDiff = now.getTime() - lastActiveTime.getTime();
           
-          const dayData = daySnap.data();
-          const sessionCount = dayData?.count || 0;
-          
-          console.log(`Day document updated: count = ${sessionCount}`);
-          
-          // If this is the first session of the day, set up user listener for streak
-          if (sessionCount === 1) {
-            console.log('First session detected, setting up user listener for streak update');
-            
-            // Listen for changes to the user document to get the updated streak
-            userUnsubscribe = onSnapshot(userRef, (userSnap) => {
-              if (hasShownDialog) return;
-              
-              const userData = userSnap.data();
-              const currentStreak = userData?.currentStreak || 0;
-              const lastActive = userData?.lastActive;
-              
-              // Verify the lastActive timestamp is recent (within last 30 seconds)
-              // This ensures we're showing the dialog for the current session
-              if (lastActive) {
-                const lastActiveTime = lastActive.toDate();
-                const now = new Date();
-                const timeDiff = now.getTime() - lastActiveTime.getTime();
-                
-                console.log(`User document updated: streak = ${currentStreak}, time diff = ${timeDiff}ms`);
-                
-                // Show dialog if streak was updated recently (within 30 seconds)
-                if (timeDiff < 30000 && currentStreak > 0) {
-                  console.log('Showing streak dialog immediately after Firebase function completion');
-                  hasShownDialog = true;
-                  setStreakCount(currentStreak);
-                  setRandomStreakImage(getRandomStreakImage());
-                  setShowStreakDialog(true);
-                  
-                  // Clean up listeners
-                  if (userUnsubscribe) userUnsubscribe();
-                  if (dayUnsubscribe) dayUnsubscribe();
-                }
-              }
-            });
+          // If the streak was updated recently (within last 5 minutes), show dialog immediately
+          if (timeDiff < 300000) { // 5 minutes
+            console.log('Detected completed first session of day from initial check - showing streak dialog immediately');
+            hasShownDialog = true;
+            setStreakCount(currentStreak);
+            setRandomStreakImage(getRandomStreakImage());
+            setShowStreakDialog(true);
+            return; // Don't set up listeners, we're done
           }
-        });
+        }
         
-        // Clean up listeners after 10 seconds to prevent memory leaks
+        // If we haven't shown the dialog yet, set up listeners for future changes
+        if (!hasShownDialog) {
+          console.log('Setting up real-time listeners for streak changes');
+          
+          // Listen for changes to the day document to detect when count goes from 0 to 1
+          dayUnsubscribe = onSnapshot(dayRef, (daySnap) => {
+            if (hasShownDialog) return;
+            
+            const dayData = daySnap.data();
+            const currentCount = dayData?.count || 0;
+            
+            console.log(`Day document updated: count = ${currentCount}, initial = ${initialDayCount}`);
+            
+            // Check if this is the transition from 0 to 1 (first session of the day)
+            const isFirstSessionOfDay = initialDayCount === 0 && currentCount === 1;
+            
+            if (isFirstSessionOfDay) {
+              console.log('First session of day detected, setting up user listener for streak update');
+              
+              // Listen for changes to the user document to get the updated streak
+              userUnsubscribe = onSnapshot(userRef, (userSnap) => {
+                if (hasShownDialog) return;
+                
+                const userData = userSnap.data();
+                const currentStreak = userData?.currentStreak || 0;
+                const lastActive = userData?.lastActive;
+                
+                // Verify the lastActive timestamp is recent (within last 60 seconds)
+                // This ensures we're showing the dialog for the current session
+                if (lastActive && currentStreak > 0) {
+                  const lastActiveTime = lastActive.toDate();
+                  const now = new Date();
+                  const timeDiff = now.getTime() - lastActiveTime.getTime();
+                  
+                  console.log(`User document updated: streak = ${currentStreak}, time diff = ${timeDiff}ms`);
+                  
+                  // Show dialog if streak was updated recently (within 60 seconds)
+                  if (timeDiff < 60000) {
+                    console.log('Showing streak dialog for first session of the day');
+                    hasShownDialog = true;
+                    setStreakCount(currentStreak);
+                    setRandomStreakImage(getRandomStreakImage());
+                    setShowStreakDialog(true);
+                    
+                    // Clean up listeners
+                    if (userUnsubscribe) userUnsubscribe();
+                    if (dayUnsubscribe) dayUnsubscribe();
+                  }
+                }
+              });
+            }
+            
+            // Update initial count for future comparisons
+            if (initialDayCount !== null) {
+              initialDayCount = currentCount;
+            }
+          });
+        }
+        
+        // Clean up listeners after 2 minutes to prevent memory leaks
         const cleanup = setTimeout(() => {
           console.log('Cleaning up streak listeners after timeout');
           if (userUnsubscribe) userUnsubscribe();
           if (dayUnsubscribe) dayUnsubscribe();
-        }, 10000);
+        }, 120000); // 2 minutes
         
         // Return cleanup function
         return () => {
@@ -550,8 +596,9 @@ export default function SessionResults({ conversationHistory, onClose, language,
       }
     };
     
-    // Only start checking after the session analysis is complete
-    if (!loading && !error) {
+    // Start checking immediately when component mounts, not waiting for feedback
+    if (sessionId) {
+      console.log('Starting streak detection immediately on mount');
       const cleanup = checkUserStreak();
       
       // Return cleanup function
@@ -561,7 +608,7 @@ export default function SessionResults({ conversationHistory, onClose, language,
         }
       };
     }
-  }, [loading, error]);
+  }, [sessionId]); // Only depend on sessionId, not loading/error state
 
   // Get language code mapping
   const getLanguageCode = (lang: string) => {
@@ -723,6 +770,7 @@ export default function SessionResults({ conversationHistory, onClose, language,
         
         const feedbackData: FeedbackData = await response.json();
         console.log('Received feedback data:', feedbackData);
+        console.log('✅ Feedback API completed - streak dialog should appear soon if this is first session of day');
         
         setKeyTakeaway(feedbackData.keyTakeaway || '');
         setGrammarCorrections(feedbackData.grammar || []);
@@ -753,7 +801,7 @@ export default function SessionResults({ conversationHistory, onClose, language,
     return () => {
       console.log('SessionResults unmounting');
     };
-  }, [processedConversationHistory, language, languageContext, saveFeedbackToFirebase, transcript]);  
+  }, [processedConversationHistory, language, languageContext, saveFeedbackToFirebase, transcript]);
 
   return (
     <div className="absolute inset-0 bg-[#fffaed] font-poppins overflow-y-auto">
