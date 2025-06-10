@@ -49,10 +49,10 @@ export default function TermsOfServiceDialog({ isOpen, onClose, onOpenPrivacyPol
               hablo.pro enables users to converse with an AI-powered tutor designed to help you learn a new language through interactive spoken sessions. We offer:
             </p>
             <ul className="text-gray-600 dark:text-gray-300 mb-6 list-disc pl-5 space-y-2">
-              <li><strong>A free trial:</strong> up to 3 sessions or 15 minutes of total conversation, whichever comes first.</li>
-              <li><strong>Monthly subscription:</strong> $15 USD/month for up to 500 minutes of conversation (unused minutes roll over to the following month).</li>
-              <li><strong>Add‑on packs:</strong> one‑time purchase of 250 extra minutes (no expiration) for $10 USD.</li>
-              <li><strong>Annual subscription:</strong> $150 USD/year (equivalent to two months free) for up to 6,000 minutes per year.</li>
+              <li><strong>A free trial:</strong> up to 10 minutes of total conversation.</li>
+              <li><strong>Monthly subscription:</strong> $12 USD/month for up to 250 minutes of conversation (unused minutes roll over to the following month).</li>
+              <li><strong>Pay as you go:</strong> one‑time purchase of 150 extra minutes (no expiration) for $8 USD.</li>
+              <li><strong>Annual subscription:</strong> $120 USD/year for up to 3,000 minutes per year.</li>
             </ul>
             
             <h3 className="text-lg font-semibold text-[#422006] dark:text-amber-200 mb-3">

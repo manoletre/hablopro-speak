@@ -12,6 +12,9 @@ import { db } from '../lib/firebase';
 import { usePostHog } from 'posthog-js/react';
 import { trackSessionCompleted, trackSessionStarted } from '../lib/analytics';
 import { pinyin } from 'pinyin-pro';
+import { useBilling } from '../hooks/useBilling';
+import InsufficientMinutesDialog from './InsufficientMinutesDialog';
+import { formatSecondsToMinutesAndSeconds } from '../lib/timeUtils';
 
 // Enhanced interface to handle different event types
 interface RealtimeEvent {
@@ -116,17 +119,34 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
 
   const { user, loading } = useAuth();
   const { t, language: uiLanguage } = useLanguage();
+  const { billing, hasEnoughMinutes, refreshBilling } = useBilling();
   const [isListening, setIsListening] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  
+  // Debug logging for isConnected changes
+  useEffect(() => {
+    console.log('🔌 isConnected state changed:', isConnected);
+  }, [isConnected]);
   const [aiTranscript, setAiTranscript] = useState<string>('');
   const [subtitleBuffer, setSubtitleBuffer] = useState<string>('');
   const [aiSpeaking, setAiSpeaking] = useState(false);
   
-  // Session timer state
-  const [timeRemaining, setTimeRemaining] = useState(5 * 60); // 5 minutes in seconds
+  // Session timer state - will be adjusted based on available minutes
+  const [timeRemaining, setTimeRemaining] = useState(5 * 60); // Default 5 minutes, adjusted below
+  const [maxSessionTime, setMaxSessionTime] = useState(0); // Track the actual session limit - start at 0 until billing data loads
   const [isWrappingUp, setIsWrappingUp] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false); // Track when session is being finished
+  
+  // Add session tracking for second-by-second billing
+  const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
+  const [totalSessionDuration, setTotalSessionDuration] = useState(0); // Total duration in seconds
+  const [showInsufficientMinutesDialog, setShowInsufficientMinutesDialog] = useState(false);
+  
+  // Batched billing state
+  const [lastBillingUpdate, setLastBillingUpdate] = useState<number | null>(null);
+  const [pendingSecondsToDeduct, setPendingSecondsToDeduct] = useState(0);
+  const batchUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // Update the conversation history initialization to avoid hardcoded messages
   const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([]);
@@ -184,6 +204,14 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
 
   // State for pinyin visibility toggle
   const [showPinyin, setShowPinyin] = useState(false);
+  
+  // Track billing status
+  const [billingHandled, setBillingHandled] = useState<boolean>(false);
+  
+  // Debug logging for billingHandled changes
+  useEffect(() => {
+    console.log('💰 billingHandled state changed:', billingHandled);
+  }, [billingHandled]);
 
   // Add state for audio device management (for future use)
   // const [currentAudioDevice, setCurrentAudioDevice] = useState<string | null>(null);
@@ -417,7 +445,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     return () => document.removeEventListener('click', handleDocumentClick);
   }, [tooltipPosition]);
 
-  // Enhanced cleanup function with audio context cleanup
+  // Enhanced cleanup function with audio context and billing cleanup
   const cleanupAudioResources = useCallback(() => {
     console.log('Cleaning up all audio resources');
     
@@ -431,6 +459,12 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     setIsWrappingUp(false);
     setWrapUpMessageSent(false);
     setIsFinishing(false); // Reset finishing state
+    
+    // Clear billing intervals
+    if (batchUpdateIntervalRef.current) {
+      clearInterval(batchUpdateIntervalRef.current);
+      batchUpdateIntervalRef.current = null;
+    }
     
     // Clean up WebRTC peer connection
     if (peerConnectionRef.current) {
@@ -495,7 +529,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
         setTimeRemaining(prev => {
           const newTime = prev - 1;
           if (newTime <= 0) {
-            console.log('Timer reached zero, wrapping up conversation');
+            console.log('⏰ Timer reached zero, wrapping up conversation');
             // Clear interval and trigger wrap-up
             clearInterval(timerIntervalRef.current!);
             setIsWrappingUp(true);
@@ -927,19 +961,75 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     
     try {
       // Get ephemeral token
-      console.log('Fetching session token');
+      const calculatedMaxSessionMinutes = Math.ceil(maxSessionTime / 60);
+      
+      const sessionParams = {
+        difficultyLevel,
+        language,
+        userId: user?.uid, // Include userId to fetch previous questions
+        maxSessionMinutes: calculatedMaxSessionMinutes // Send the session limit
+      };
+      
+      console.log('Fetching session token with params:', sessionParams);
+      console.log('User billing info:', { 
+        secondsRemaining: billing?.secondsRemaining,
+        minutesRemaining: billing ? Math.floor(billing.secondsRemaining / 60) : 0,
+        maxSessionTime: maxSessionTime,
+        maxSessionMinutes: calculatedMaxSessionMinutes,
+        calculationBreakdown: `Math.ceil(${maxSessionTime} / 60) = ${calculatedMaxSessionMinutes}`
+      });
+      
+      // Extra validation to catch any issues
+      if (calculatedMaxSessionMinutes > 5) {
+        console.error('WARNING: Calculated session minutes exceeds 5!', {
+          maxSessionTime,
+          calculatedMaxSessionMinutes,
+          billing: billing?.secondsRemaining
+        });
+      }
+      
       const tokenResponse = await fetch('/api/session', { 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          difficultyLevel,
-          language,
-          userId: user?.uid // Include userId to fetch previous questions
-        })
+        body: JSON.stringify(sessionParams)
       });
+      
+      if (!tokenResponse.ok) {
+        console.error('Session API failed with status:', tokenResponse.status);
+        let errorData;
+        try {
+          errorData = await tokenResponse.json();
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+          errorData = { error: 'Failed to parse error response' };
+        }
+        console.error('Session API error data:', errorData);
+        console.error('Response headers:', Object.fromEntries(tokenResponse.headers.entries()));
+        
+        if (tokenResponse.status === 402) {
+          // Insufficient minutes - show dialog
+          console.log('User has insufficient minutes according to server');
+          console.log('Billing check details:', {
+            remainingMinutes: errorData.remainingMinutes,
+            remainingSeconds: errorData.remainingSeconds,
+            requiredMinutes: errorData.requiredMinutes
+          });
+          setShowInsufficientMinutesDialog(true);
+          return;
+        }
+        
+        throw new Error(errorData.error || `HTTP ${tokenResponse.status}: Failed to create session`);
+      }
+      
       const data = await tokenResponse.json();
+      
+      if (!data.client_secret?.value) {
+        console.error('Invalid session response:', data);
+        throw new Error('Invalid session token received');
+      }
+      
       const EPHEMERAL_KEY = data.client_secret.value;
       
       // Create peer connection
@@ -1052,7 +1142,10 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
       console.log('WebRTC connection established successfully');
       // Only update state if component is still mounted
       if (mountedRef.current) {
+        console.log('🔌 Setting isConnected to true');
         setIsConnected(true);
+      } else {
+        console.log('🔌 Component unmounted, not setting isConnected');
       }
     } catch (error) {
       console.error('Error initializing WebRTC:', error);
@@ -1071,28 +1164,68 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
   }, [handleDataChannelEvent, cleanupAudioResources, difficultyLevel, language, isCJK, user?.uid, sessionKey, isConnected, isFinishing, showResults, getOptimalAudioConstraints, isMobile]);
 
    // Function to stop the conversation
-  const stopConversation = () => {
+  const stopConversation = async () => {
     if (isConnected) {
       // If we're already connected, check session duration
-      console.log('Stopping active conversation');
+      console.log('🛑 Stopping active conversation');
+      console.log('🛑 Session context:', {
+        totalSessionDuration: totalSessionDuration,
+        sessionStartTime: sessionStartTime,
+        calculatedDuration: sessionStartTime ? Math.floor((Date.now() - sessionStartTime) / 1000) : null
+      });
       
-      // If session was longer than 1 minute, show results
-      if (5 * 60 - timeRemaining > 60) {
-        console.log('Session longer than 1 minute, showing results');
+      // If session was longer than 30 seconds, show results and deduct minutes
+      if (totalSessionDuration > 30) {
+        console.log('🛑 Session longer than 30 seconds, showing results');
         finishSessionRef.current();
-      } else {
-        // Just close without showing results if session was shorter than 1 minute
-        console.log('Session shorter than 1 minute, closing without results');
-        cleanupAudioResources();
-        
-        // Ensure timers are cleared
-        if (timerIntervalRef.current) {
-          clearInterval(timerIntervalRef.current);
-          timerIntervalRef.current = null;
+              } else {
+          // For short sessions, still process billing but don't show results screen
+          console.log('🛑 Session shorter than 30 seconds, processing billing and closing');
+          
+          // Process final billing for short sessions
+          if (user && sessionStartTime) {
+            try {
+              // Calculate actual session duration at billing time
+              const currentTime = Date.now();
+              const actualSessionDuration = Math.floor((currentTime - sessionStartTime) / 1000);
+              
+              console.log(`Final billing for short session: ${actualSessionDuration} seconds (closure: ${totalSessionDuration}s)`);
+              
+              if (actualSessionDuration >= 5) {
+                const response = await fetch('/api/session/end', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    userId: user.uid,
+                    sessionDuration: actualSessionDuration
+                  })
+                });
+                
+                if (response.ok) {
+                  const result = await response.json();
+                  console.log(`Successfully deducted ${result.secondsUsed} seconds for short session`);
+                  await refreshBilling();
+                }
+              } else {
+                console.log(`Short session too brief (${actualSessionDuration}s), not billing`);
+              }
+            } catch (error) {
+              console.error('Error billing short session:', error);
+            }
+          }
+          
+          cleanupAudioResources();
+          
+          // Ensure timers are cleared
+          if (timerIntervalRef.current) {
+            clearInterval(timerIntervalRef.current);
+            timerIntervalRef.current = null;
+          }
+          
+          if (onClose) onClose();
         }
-        
-        if (onClose) onClose();
-      }
     } else {
       // Just close without showing results if never connected
       console.log('Closing chat without results (never connected)');
@@ -1152,19 +1285,189 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     };
   }, [cleanupAudioResources]);
 
-  // Enhanced conversation start with mobile user interaction handling
+  // Set session time limit based on available seconds
   useEffect(() => {
-    // Only trigger once when component mounts and user is available
+    if (billing) {
+      // Calculate max session time based on available time
+      // If user has less than 5 minutes (300 seconds), limit session to their available time
+      const availableSeconds = billing.secondsRemaining;
+      const maxSessionSeconds = Math.min(300, availableSeconds); // Cap at 5 minutes or user's available time
+      const maxTimeInSeconds = Math.max(60, maxSessionSeconds); // Minimum 1 minute
+      
+      console.log(`Setting session limit: ${maxTimeInSeconds} seconds (${Math.floor(maxTimeInSeconds / 60)}m ${maxTimeInSeconds % 60}s) based on ${availableSeconds} available seconds`);
+      console.log('Billing data:', billing);
+      
+      setMaxSessionTime(maxTimeInSeconds);
+      setTimeRemaining(maxTimeInSeconds);
+    } else {
+      console.log('No billing data available yet');
+    }
+  }, [billing]);
+
+  // Add effect to track session duration for billing with batched updates
+  useEffect(() => {
+    if (isConnected && sessionStartTime) {
+      const interval = setInterval(() => {
+        const currentDuration = Math.floor((Date.now() - sessionStartTime) / 1000);
+        setTotalSessionDuration(currentDuration);
+        
+        // Update pending seconds to deduct - track time since last billing update
+        if (lastBillingUpdate !== null) {
+          const timeSinceLastBilling = Math.floor((Date.now() - lastBillingUpdate) / 1000);
+          setPendingSecondsToDeduct(timeSinceLastBilling);
+        } else {
+          // Fallback: if no lastBillingUpdate set, use total duration
+          setPendingSecondsToDeduct(currentDuration);
+        }
+      }, 1000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [isConnected, sessionStartTime, lastBillingUpdate]);
+
+  // Disabled batched billing - we'll bill the full session duration at the end
+  // This ensures accurate billing and prevents double-charging issues
+  // useEffect(() => {
+  //   if (isConnected && user && pendingSecondsToDeduct > 0) {
+  //     if (batchUpdateIntervalRef.current) {
+  //       clearInterval(batchUpdateIntervalRef.current);
+  //     }
+  //     
+  //     batchUpdateIntervalRef.current = setInterval(async () => {
+  //       if (pendingSecondsToDeduct >= 15) { // Update every 15 seconds to capture shorter sessions better
+  //         try {
+  //           console.log(`Batched billing update: deducting ${pendingSecondsToDeduct} seconds`);
+  //           const response = await fetch('/api/session/billing-update', {
+  //             method: 'POST',
+  //             headers: {
+  //               'Content-Type': 'application/json',
+  //             },
+  //             body: JSON.stringify({
+  //               userId: user.uid,
+  //               secondsUsed: pendingSecondsToDeduct
+  //             })
+  //           });
+  //           
+  //           if (response.ok) {
+  //             const result = await response.json();
+  //             console.log(`Successfully deducted ${result.secondsUsed} seconds. Remaining: ${result.remainingSeconds}`);
+  //             
+  //             // Reset pending seconds and update last billing time
+  //             setPendingSecondsToDeduct(0);
+  //             setLastBillingUpdate(Date.now());
+  //             
+  //             // Refresh billing data to reflect the changes
+  //             await refreshBilling();
+  //           } else {
+  //             console.error('Failed to update billing:', await response.text());
+  //           }
+  //         } catch (error) {
+  //           console.error('Error updating billing:', error);
+  //         }
+  //       }
+  //     }, 15000); // Every 15 seconds
+  //     
+  //     return () => {
+  //       if (batchUpdateIntervalRef.current) {
+  //         clearInterval(batchUpdateIntervalRef.current);
+  //       }
+  //     };
+  //   }
+  // }, [isConnected, user, pendingSecondsToDeduct, refreshBilling]);
+
+  // Handle page unload/refresh/close to save session duration
+  useEffect(() => {
+    const handleBeforeUnload = async () => {
+      if (user && sessionStartTime && totalSessionDuration >= 5) {
+        // Calculate current session duration in case totalSessionDuration isn't up to date
+        const currentDuration = Math.floor((Date.now() - sessionStartTime) / 1000);
+        
+        // Use sendBeacon for reliable delivery during page unload
+        const data = JSON.stringify({
+          userId: user.uid,
+          sessionDuration: currentDuration
+        });
+        
+        navigator.sendBeacon('/api/session/end', data);
+        console.log(`Emergency billing update: ${currentDuration} seconds via sendBeacon`);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [user, sessionStartTime, totalSessionDuration]);
+
+  // Check minutes before starting session
+  const checkMinutesBeforeSession = useCallback(async () => {
+    console.log('checkMinutesBeforeSession called with:', {
+      user: !!user,
+      billing: billing,
+      hasEnoughMinutes: typeof hasEnoughMinutes,
+      hasEnoughMinutes1: user && billing ? hasEnoughMinutes(1) : 'no user/billing'
+    });
+    
+    if (!user || !billing) {
+      console.log('No user or billing data available');
+      return false;
+    }
+    
+    // Check if user has at least 1 minute available
+    if (!hasEnoughMinutes(1)) {
+      console.log('User has insufficient minutes for conversation', {
+        secondsRemaining: billing.secondsRemaining,
+        minutesRemaining: Math.floor(billing.secondsRemaining / 60),
+        hasEnoughMinutes1: hasEnoughMinutes(1)
+      });
+      setShowInsufficientMinutesDialog(true);
+      return false;
+    }
+    
+    console.log('User has enough minutes, proceeding with session');
+    return true;
+  }, [user, billing, hasEnoughMinutes]);
+
+  // Modified conversation start with minute checking
+  useEffect(() => {
+    console.log('🔄 Auto-start useEffect triggered');
+    // Only trigger once when component mounts and ALL prerequisites are available
     // IMPORTANT: Do not start WebRTC when showing results or finishing
-    if (user && mountedRef.current && !isConnected && !peerConnectionRef.current && !initializingRef.current && !showResults && !isFinishing) {
-      console.log('Auto-starting conversation on mount');
+    // Wait for billing data and maxSessionTime to be properly set
+    if (user && billing && maxSessionTime > 0 && mountedRef.current && !isConnected && !peerConnectionRef.current && !initializingRef.current && !showResults && !isFinishing) {
+      console.log('🚀 Auto-starting conversation on mount - all prerequisites ready (user, billing, session limits)');
+      console.log('🚀 Auto-start state check:', {
+        user: !!user,
+        billing: !!billing,
+        maxSessionTime: maxSessionTime,
+        mounted: mountedRef.current,
+        isConnected: isConnected,
+        peerConnection: !!peerConnectionRef.current,
+        initializing: initializingRef.current,
+        showResults: showResults,
+        isFinishing: isFinishing,
+        billingHandled: billingHandled
+      });
       
       // For mobile devices, we need a user gesture to initialize audio properly
       const startConversation = async () => {
         // Double-check conditions before starting to prevent race conditions
         // IMPORTANT: Also check showResults and isFinishing to prevent starting during results display or finishing
         if (mountedRef.current && !peerConnectionRef.current && !isConnected && !initializingRef.current && !showResults && !isFinishing) {
-          console.log('Starting conversation from delayed useEffect');
+          console.log('Starting conversation from delayed useEffect - checking minutes');
+          
+          // Check if user has enough minutes before starting
+          console.log('About to check minutes before session, current state:', {
+            billing: billing,
+            maxSessionTime: maxSessionTime,
+            hasEnoughMinutes: typeof hasEnoughMinutes
+          });
+          
+          const canStart = await checkMinutesBeforeSession();
+          if (!canStart) {
+            console.log('Cannot start session - insufficient minutes from checkMinutesBeforeSession');
+            return;
+          }
+          
+          console.log('checkMinutesBeforeSession passed, proceeding with session start');
           
           // Initialize audio context with user gesture (required for mobile)
           if (isMobile && audioContextRef.current?.state === 'suspended') {
@@ -1176,6 +1479,14 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
             }
           }
           
+          // Set session start time for billing tracking
+          const startTime = Date.now();
+          setSessionStartTime(startTime);
+          setLastBillingUpdate(startTime); // Initialize billing update timestamp
+          
+          // Reset billing status for new session
+          setBillingHandled(false);
+          
           setIsListening(true);
           initWebRTC();
         } else {
@@ -1186,8 +1497,21 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
       const timer = setTimeout(startConversation, 100);
       
       return () => clearTimeout(timer);
+    } else if (user && mountedRef.current && !isConnected && !peerConnectionRef.current && !initializingRef.current && !showResults && !isFinishing) {
+      // Log why we're not starting yet
+      console.log('Auto-start conditions not met yet:', {
+        user: !!user,
+        billing: !!billing,
+        maxSessionTime: maxSessionTime,
+        mounted: mountedRef.current,
+        connected: isConnected,
+        peerConnection: !!peerConnectionRef.current,
+        initializing: initializingRef.current,
+        showResults: showResults,
+        isFinishing: isFinishing
+      });
     }
-  }, [user, initWebRTC, isConnected, showResults, isFinishing, isMobile]); // Add isMobile to dependencies
+  }, [user, billing, maxSessionTime, isConnected, showResults, isFinishing, isMobile, checkMinutesBeforeSession]); // Removed initWebRTC from dependencies to prevent re-creation loops
 
   // Effect to track session start
   useEffect(() => {
@@ -1199,11 +1523,18 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
         difficulty_level: difficultyLevel
       }
     );
-  }, [user, language, difficultyLevel, initWebRTC, isConnected]);
+  }, [user, language, difficultyLevel]); // Removed isConnected and initWebRTC to prevent re-triggering
 
   // Function to finish session and show results
   const finishSession = useCallback(async () => {
-    console.log('Finishing session - cleaning up and preparing results');
+    console.log('🏁 Finishing session - cleaning up and preparing results');
+    console.log('🏁 Session context:', {
+      user: !!user,
+      sessionStartTime: sessionStartTime,
+      totalSessionDuration: totalSessionDuration,
+      isWrappingUp: isWrappingUp,
+      wrapUpMessageSent: wrapUpMessageSent
+    });
     
     // Immediately set finishing state to prevent any WebRTC re-initialization
     setIsFinishing(true);
@@ -1230,6 +1561,57 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     
     // Debug log the final conversation history
     console.log('Final conversation history:', finalConversationHistory);
+
+    // Process final billing - calculate current session duration to ensure accuracy
+    if (user && sessionStartTime) {
+      try {
+        // Stop batched billing
+        if (batchUpdateIntervalRef.current) {
+          clearInterval(batchUpdateIntervalRef.current);
+          batchUpdateIntervalRef.current = null;
+        }
+        
+        // Calculate session duration at the time of billing to avoid closure issues
+        const currentTime = Date.now();
+        const actualSessionDuration = Math.floor((currentTime - sessionStartTime) / 1000);
+        
+        console.log(`💰 Final billing for session - Calculated duration: ${actualSessionDuration}s, Closure duration: ${totalSessionDuration}s`);
+        
+        // Only bill if session was at least 5 seconds
+        if (actualSessionDuration >= 5) {
+          console.log(`💰 Attempting to bill ${actualSessionDuration} seconds for user ${user.uid}`);
+          
+          // Update totalSessionDuration to match what we're billing
+          setTotalSessionDuration(actualSessionDuration);
+          const response = await fetch('/api/session/end', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userId: user.uid,
+              sessionDuration: actualSessionDuration
+            })
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            console.log(`💰 ✅ Successfully deducted ${result.secondsUsed} seconds (${result.minutesUsed} minutes). Remaining: ${result.remainingSeconds} seconds`);
+            setBillingHandled(true); // Mark billing as successful
+            // Refresh billing data to reflect the changes
+            await refreshBilling();
+          } else {
+            const errorText = await response.text();
+            console.error(`💰 ❌ Failed to deduct time (${response.status}):`, errorText);
+            setBillingHandled(false); // Mark billing as failed
+          }
+        } else {
+          console.log(`💰 ⏭️ Session too short (${actualSessionDuration}s), not billing`);
+        }
+      } catch (error) {
+        console.error('Error deducting time:', error);
+      }
+    }
 
     // Save session to Firestore if user is logged in
     if (user) {
@@ -1264,7 +1646,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
             language,
             difficulty_level: difficultyLevel,
             conversation_length: finalConversationHistory.length,
-            duration_minutes: 5 - Math.floor(timeRemaining / 60)
+            duration_minutes: Math.ceil(totalSessionDuration / 60) // Use actual session duration
           },
           {
             email: user.email || undefined,
@@ -1282,7 +1664,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
           language,
           difficulty_level: difficultyLevel,
           conversation_length: finalConversationHistory.length,
-          duration_minutes: 5 - Math.floor(timeRemaining / 60)
+          duration_minutes: Math.ceil(totalSessionDuration / 60) // Use actual session duration
         }
       );
     }
@@ -1302,7 +1684,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     setShowResults(true);
     
     console.log('Session finished and results shown immediately');
-  }, [conversationHistory, aiTranscript, cleanupAudioResources, user, language, difficultyLevel, timeRemaining, sessionId]);
+  }, [conversationHistory, aiTranscript, cleanupAudioResources, user, language, difficultyLevel, timeRemaining, sessionId, sessionStartTime, totalSessionDuration, refreshBilling, maxSessionTime, pendingSecondsToDeduct]);
 
   // Update the reference after definition
   useEffect(() => {
@@ -1312,7 +1694,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
   // Function to send a wrapping up message through the data channel
   const sendWrappingUpMessage = useCallback(() => {
     if (dataChannelRef.current && dataChannelRef.current.readyState === 'open' && !wrapUpMessageSent) {
-      console.log('Sending wrapping up message');
+      console.log('⏰ Sending wrapping up message to AI');
       
       // Mark that we've sent the wrap-up message to prevent duplicates
       setWrapUpMessageSent(true);
@@ -1349,9 +1731,9 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
       // Set a timer to finish the session regardless of AI response, but make it longer
       // to give the AI time to generate and say the goodbye message
       setTimeout(() => {
-        console.log('Finishing session after wrap-up message sent (timeout)');
+        console.log('⏰ Finishing session after wrap-up message sent (timeout - 4 seconds elapsed)');
         finishSessionRef.current();
-      }, 4000); // Give AI 10 seconds to respond
+      }, 4000); // Give AI 4 seconds to respond
     } else if (wrapUpMessageSent) {
       console.log('Wrap-up message already sent, skipping duplicate');
     }
@@ -1361,12 +1743,13 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
   useEffect(() => {
     // Only run this effect if we're wrapping up and the wrap-up message has been sent
     if (isWrappingUp && wrapUpMessageSent) {
+      console.log(`⏰ Wrap-up active: aiSpeaking=${aiSpeaking}`);
       // If AI has stopped speaking after the wrap-up message was sent,
       // we can finish the session more quickly
       if (!aiSpeaking) {
         // Give a short delay to make sure AI is really done (not just a pause)
         const quickFinishTimer = setTimeout(() => {
-          console.log('AI stopped speaking during wrap-up, finishing session');
+          console.log('⏰ AI stopped speaking during wrap-up, finishing session');
           finishSessionRef.current();
         }, 2000); // Slightly longer delay to ensure AI is really done
         
@@ -1378,7 +1761,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
   // Simplified useEffect to trigger the wrap-up message when isWrappingUp changes
   useEffect(() => {
     if (isWrappingUp && !wrapUpMessageSent) {
-      console.log('Starting wrap-up process');
+      console.log('⏰ Starting wrap-up process (isWrappingUp=true, wrapUpMessageSent=false)');
       sendWrappingUpMessage();
     }
   }, [isWrappingUp, sendWrappingUpMessage, wrapUpMessageSent]);
@@ -1451,11 +1834,24 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
               <h2 className="text-lg font-medium text-[#422006]">{t('voiceChat.title')}</h2>
             </div>
             
-            {/* Timer display */}
+            {/* Timer and Minutes Display */}
+            <div className="flex items-center space-x-3">
+              {/* Session Timer */}
             <div className={`px-4 py-2 rounded-lg ${isWrappingUp ? 'bg-amber-400' : 'bg-amber-50'} border border-amber-800/20 flex items-center justify-center`}>
               <span className="text-[#422006] font-medium">
                 {isWrappingUp ? t('voiceChat.wrappingUp') : formatTimeRemaining()}
               </span>
+              </div>
+              
+              {/* Total Minutes Available */}
+              {billing && (
+                <div className="px-3 py-2 rounded-lg bg-white border border-amber-200 flex items-center space-x-2">
+                  <span className="text-sm">⏰</span>
+                                     <span className="text-sm text-[#422006] font-medium">
+                     {formatSecondsToMinutesAndSeconds(billing.secondsRemaining)} total
+                   </span>
+                </div>
+              )}
             </div>
           </div>
           
@@ -1648,8 +2044,20 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
           sessionId={sessionId}
           difficultyLevel={difficultyLevel}
           clickedWords={clickedWords}
+          sessionDuration={totalSessionDuration}
+          sessionStartTime={sessionStartTime ?? undefined}
+          billingHandled={billingHandled}
         />
       )}
+
+      {/* Insufficient Minutes Dialog */}
+      <InsufficientMinutesDialog
+        isOpen={showInsufficientMinutesDialog}
+        onClose={() => {
+          setShowInsufficientMinutesDialog(false);
+          if (onClose) onClose();
+        }}
+      />
     </div>
   );
 } 

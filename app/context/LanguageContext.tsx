@@ -105,7 +105,48 @@ export type TranslationKey =
   | 'voiceChat.gettingDefinition'
   | 'voiceChat.canSpeak'
   | 'voiceChat.canSpeakNative'
-  | 'home.lostStreak';
+  | 'home.lostStreak'
+  | 'billing.speakingTime'
+  | 'billing.monthly'
+  | 'billing.annual'
+  | 'billing.outOfTime'
+  | 'billing.runningLow'
+  | 'billing.getMoreTime'
+  | 'billing.getMoreMins'
+  | 'billing.upgradePlan'
+  | 'billing.managePlan'
+  | 'billing.renews'
+  | 'billing.of'
+  | 'home.onlyMinsLeft'
+  | 'home.getMoreMins'
+  | 'upgrade.title'
+  | 'upgrade.description'
+  | 'upgrade.subscriptionPlans'
+  | 'upgrade.activeSubscription'
+  | 'upgrade.popular'
+  | 'upgrade.regularLearners'
+  | 'upgrade.perMonth'
+  | 'upgrade.minutes'
+  | 'upgrade.subscribe'
+  | 'upgrade.processing'
+  | 'upgrade.alreadySubscribed'
+  | 'upgrade.bestValue'
+  | 'upgrade.committedLearners'
+  | 'upgrade.saveVsMonthly'
+  | 'upgrade.perYear'
+  | 'upgrade.orPayOnce'
+  | 'upgrade.occasionalUse'
+  | 'upgrade.speakingTime'
+  | 'upgrade.buyNow'
+  | 'upgrade.creditsNeverExpire'
+  | 'upgrade.useAcrossLanguages'
+  | 'upgrade.cancelAnytime'
+  | 'upgrade.paddleDisclaimer'
+  | 'upgrade.payAsYouGo'
+  | 'upgrade.monthlySubscription'
+  | 'upgrade.annualSubscription'
+  | 'upgrade.perMonthText'
+  | 'upgrade.perYearText';
 
 interface LanguageContextType {
   language: Language;
@@ -211,6 +252,47 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'voiceChat.canSpeak': 'I\'m listening - you can speak!',
     'voiceChat.canSpeakNative': 'You can also speak in english - I understand!',
     'home.lostStreak': 'you lost your streak',
+    'billing.speakingTime': 'Speaking Time',
+    'billing.monthly': 'Monthly',
+    'billing.annual': 'Annual',
+    'billing.outOfTime': 'You\'ve used all your speaking time. Upgrade to continue!',
+    'billing.runningLow': 'Running low on speaking time. Consider upgrading.',
+    'billing.getMoreTime': 'Get More Time',
+    'billing.getMoreMins': 'Get More Mins',
+    'billing.upgradePlan': 'Upgrade Plan',
+    'billing.managePlan': 'Manage Plan',
+    'billing.renews': 'Renews {date}',
+    'billing.of': 'of',
+    'home.onlyMinsLeft': 'only {mins} mins left.',
+    'home.getMoreMins': 'get more mins',
+    'upgrade.title': 'Upgrade Your Plan',
+    'upgrade.description': 'You have {minutes} minutes remaining. Choose a plan to get more speaking time.',
+    'upgrade.subscriptionPlans': 'Subscription Plans',
+    'upgrade.activeSubscription': '(You have an active subscription)',
+    'upgrade.popular': 'Popular',
+    'upgrade.regularLearners': 'Great for regular learners',
+    'upgrade.perMonth': '/month',
+    'upgrade.minutes': 'minutes',
+    'upgrade.subscribe': 'Subscribe',
+    'upgrade.processing': 'Processing...',
+    'upgrade.alreadySubscribed': 'Already Subscribed',
+    'upgrade.bestValue': 'Best Value',
+    'upgrade.committedLearners': 'Best value for committed learners',
+    'upgrade.saveVsMonthly': 'Save {amount} vs monthly',
+    'upgrade.perYear': '/year',
+    'upgrade.orPayOnce': 'or pay only once:',
+    'upgrade.occasionalUse': 'Perfect for occasional use',
+    'upgrade.speakingTime': 'of speaking time',
+    'upgrade.buyNow': 'Buy Now',
+    'upgrade.creditsNeverExpire': '✓ Credits never expire',
+    'upgrade.useAcrossLanguages': '✓ Use across all languages and difficulty levels',
+    'upgrade.cancelAnytime': '✓ Cancel subscription anytime',
+    'upgrade.paddleDisclaimer': 'Payments are processed securely by Paddle. The checkout will open as an overlay.',
+    'upgrade.payAsYouGo': 'Pay as you go',
+    'upgrade.monthlySubscription': 'Monthly Subscription',
+    'upgrade.annualSubscription': 'Annual Subscription',
+    'upgrade.perMonthText': 'per month',
+    'upgrade.perYearText': 'per year',
   },
   español: {
     'home.title': 'aprende hablando.',
@@ -308,6 +390,47 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'voiceChat.canSpeak': 'Te escucho - ¡puedes hablar!',
     'voiceChat.canSpeakNative': '¡También puedes hablar en español - te entiendo!',
     'home.lostStreak': 'perdiste tu racha',
+    'billing.speakingTime': 'Tiempo de Conversación',
+    'billing.monthly': 'Mensual',
+    'billing.annual': 'Anual',
+    'billing.outOfTime': '¡Has usado todo tu tiempo de conversación. ¡Actualiza para continuar!',
+    'billing.runningLow': 'Te queda poco tiempo de conversación. Considera actualizar.',
+    'billing.getMoreTime': 'Obtener Más Tiempo',
+    'billing.getMoreMins': 'Obtener Más Mins',
+    'billing.upgradePlan': 'Actualizar Plan',
+    'billing.managePlan': 'Administrar Plan',
+    'billing.renews': 'Se renueva {date}',
+    'billing.of': 'de',
+    'home.onlyMinsLeft': 'solo {mins} mins restantes.',
+    'home.getMoreMins': 'obtener más mins',
+    'upgrade.title': 'Actualiza Tu Plan',
+    'upgrade.description': 'Te quedan {minutes} minutos. Elige un plan para obtener más tiempo de conversación.',
+    'upgrade.subscriptionPlans': 'Planes de Suscripción',
+    'upgrade.activeSubscription': '(Tienes una suscripción activa)',
+    'upgrade.popular': 'Popular',
+    'upgrade.regularLearners': 'Ideal para estudiantes regulares',
+    'upgrade.perMonth': '/mes',
+    'upgrade.minutes': 'minutos',
+    'upgrade.subscribe': 'Suscribirse',
+    'upgrade.processing': 'Procesando...',
+    'upgrade.alreadySubscribed': 'Ya Suscrito',
+    'upgrade.bestValue': 'Mejor Valor',
+    'upgrade.committedLearners': 'El mejor valor para estudiantes comprometidos',
+    'upgrade.saveVsMonthly': 'Ahorra {amount} vs mensual',
+    'upgrade.perYear': '/año',
+    'upgrade.orPayOnce': 'o paga solo una vez:',
+    'upgrade.occasionalUse': 'Perfecto para uso ocasional',
+    'upgrade.speakingTime': 'de tiempo de conversación',
+    'upgrade.buyNow': 'Comprar Ahora',
+    'upgrade.creditsNeverExpire': '✓ Los créditos nunca expiran',
+    'upgrade.useAcrossLanguages': '✓ Úsalos en todos los idiomas y niveles de dificultad',
+    'upgrade.cancelAnytime': '✓ Cancela la suscripción en cualquier momento',
+    'upgrade.paddleDisclaimer': 'Los pagos son procesados de forma segura por Paddle. El checkout se abrirá como una ventana superpuesta.',
+    'upgrade.payAsYouGo': 'Pago por uso',
+    'upgrade.monthlySubscription': 'Suscripción Mensual',
+    'upgrade.annualSubscription': 'Suscripción Anual',
+    'upgrade.perMonthText': 'por mes',
+    'upgrade.perYearText': 'por año',
   },
 };
 

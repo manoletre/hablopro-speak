@@ -8,6 +8,8 @@ import { getAuth } from 'firebase/auth';
 import { doc, getFirestore, onSnapshot, collection, addDoc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import Image from 'next/image';
 import { pinyin } from 'pinyin-pro';
+import { useBilling } from '../hooks/useBilling';
+import UpgradeModal from './UpgradeModal';
 
 // Helper function to detect Chinese language specifically
 const isChineseLanguage = (language: string): boolean => {
@@ -96,6 +98,12 @@ interface SessionResultsProps {
     context: string;
     timestamp: number;
   }>;
+  // Add session duration for backup billing
+  sessionDuration?: number;
+  // Add session start time for billing calculations
+  sessionStartTime?: number;
+  // Add flag to indicate if billing was already handled
+  billingHandled?: boolean;
 }
 
 // Define the feedback data interface
@@ -370,8 +378,9 @@ const getRelevantContext = (word: string, fullContext: string, maxLength: number
   return relevantContext;
 };
 
-export default function SessionResults({ conversationHistory, onClose, language, transcript, sessionId, clickedWords }: SessionResultsProps) {
+export default function SessionResults({ conversationHistory, onClose, language, transcript, sessionId, clickedWords, sessionDuration, sessionStartTime, billingHandled }: SessionResultsProps) {
   const { t, language: languageContext } = useLanguage();
+  const { billing } = useBilling();
   const [keyTakeaway, setKeyTakeaway] = useState<string>('');
   const [grammarCorrections, setGrammarCorrections] = useState<GrammarCorrection[]>([]);
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
@@ -381,6 +390,7 @@ export default function SessionResults({ conversationHistory, onClose, language,
   const [showStreakDialog, setShowStreakDialog] = useState<boolean>(false);
   const [streakCount, setStreakCount] = useState<number>(0);
   const [randomStreakImage, setRandomStreakImage] = useState<string>('');
+  const [showUpgradeModal, setShowUpgradeModal] = useState<boolean>(false);
   
   // State for pinyin visibility toggle
   const [showPinyin, setShowPinyin] = useState(false);
@@ -703,6 +713,66 @@ export default function SessionResults({ conversationHistory, onClose, language,
     }
   }, [sessionId, t, clickedWords]);
 
+  // Add backup billing logic to ensure session time is deducted (only if primary billing failed)
+  useEffect(() => {
+    const handleBackupBilling = async () => {
+      // Only run backup billing if primary billing wasn't handled
+      if (billingHandled === true) {
+        console.log('💰 Primary billing was handled successfully, skipping backup billing');
+        return;
+      }
+      
+      const auth = getAuth();
+      const user = auth.currentUser;
+      
+      if (!user || !sessionStartTime) {
+        console.log('💰 No user or sessionStartTime for backup billing');
+        return;
+      }
+      
+      try {
+        // Calculate session duration if not provided
+        let actualSessionDuration = sessionDuration;
+        if (!actualSessionDuration && sessionStartTime) {
+          actualSessionDuration = Math.floor((Date.now() - sessionStartTime) / 1000);
+        }
+        
+        if (!actualSessionDuration || actualSessionDuration < 5) {
+          console.log('💰 Session too short for backup billing:', actualSessionDuration);
+          return;
+        }
+        
+        console.log(`💰 🔄 SessionResults: Running backup billing for ${actualSessionDuration} seconds (primary billing failed or uncertain)`);
+        
+        // Call session/end API to ensure billing happens
+        const response = await fetch('/api/session/end', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: user.uid,
+            sessionDuration: actualSessionDuration
+          })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log(`💰 🔄 ✅ SessionResults backup billing: ${result.secondsUsed} seconds deducted. Remaining: ${result.remainingSeconds} seconds`);
+        } else {
+          const errorText = await response.text();
+          console.error(`💰 🔄 ❌ SessionResults backup billing failed (${response.status}):`, errorText);
+        }
+      } catch (error) {
+        console.error('💰 🔄 ❌ Error in SessionResults backup billing:', error);
+      }
+    };
+    
+    // Run backup billing when component mounts with a small delay to allow primary billing to complete
+    const timer = setTimeout(handleBackupBilling, 1000);
+    return () => clearTimeout(timer);
+  }, [sessionStartTime, sessionDuration, billingHandled]); // Include billingHandled in dependencies
+
   useEffect(() => {
     const fetchFeedback = async () => {
       // Only call the API once using ref to prevent issues with React Strict Mode
@@ -879,6 +949,33 @@ export default function SessionResults({ conversationHistory, onClose, language,
           
           {/* Content */}
           <div className="px-6 pb-6">
+            {/* Minutes Status */}
+            {billing && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between p-4 bg-amber-50/50 rounded-lg border border-amber-200">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                      <span className="text-lg">⏰</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-[#422006]">Speaking Time Remaining</p>
+                      <p className="text-lg font-semibold text-[#422006]">{Math.floor(billing.secondsRemaining / 60)} minutes</p>
+                    </div>
+                  </div>
+                  
+                  {/* Upgrade button - show if low on minutes */}
+                  {Math.floor(billing.secondsRemaining / 60) <= 5 && (
+                    <button
+                      onClick={() => setShowUpgradeModal(true)}
+                      className="px-4 py-2 bg-[#422006] text-white text-sm rounded-lg hover:bg-[#5a3108] transition-colors font-medium"
+                    >
+                      Get More Time
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Key Takeaway */}
             {keyTakeaway && (
               <div className="mb-8">
@@ -1031,6 +1128,14 @@ export default function SessionResults({ conversationHistory, onClose, language,
             </div>
           </div>
         </div>
+      )}
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && billing && (
+        <UpgradeModal
+          currentBilling={billing}
+          onClose={() => setShowUpgradeModal(false)}
+        />
       )}
     </div>
   );

@@ -3,6 +3,7 @@ import "./globals.css";
 import "flag-icons/css/flag-icons.min.css";
 import { AuthProvider } from "./context/AuthContext";
 import { LanguageProvider } from './context/LanguageContext';
+import { BillingProvider } from './context/BillingContext';
 import { PostHogProvider } from "./components/PostHogProvider";
 import { Outfit, Poppins, Mynerve, Indie_Flower } from 'next/font/google';
 
@@ -102,10 +103,41 @@ export default function RootLayout({
         <PostHogProvider>
           <LanguageProvider>
             <AuthProvider>
-              {children}
+              <BillingProvider>
+                {children}
+              </BillingProvider>
             </AuthProvider>
           </LanguageProvider>
         </PostHogProvider>
+        
+        {/* Paddle.js Script for Checkout Overlays */}
+        <script src="https://cdn.paddle.com/paddle/v2/paddle.js" defer></script>
+        <script 
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.addEventListener('load', function() {
+                if (window.Paddle) {
+                  // Set environment first
+                  if ('${process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT || 'sandbox'}' === 'sandbox') {
+                    window.Paddle.Environment.set('sandbox');
+                  }
+                  
+                  // Initialize with client token
+                  window.Paddle.Initialize({ 
+                    token: '${process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || ''}',
+                    checkout: {
+                      settings: {
+                        allowedPaymentMethods: ['card', 'paypal', 'apple_pay', 'google_pay'],
+                        successUrl: window.location.origin + '/dashboard?checkout=success',
+                        locale: 'en'
+                      }
+                    }
+                  });
+                }
+              });
+            `
+          }}
+        />
       </body>
     </html>
   );

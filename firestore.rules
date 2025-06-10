@@ -62,6 +62,29 @@ service cloud.firestore {
         allow read: if request.auth != null && request.auth.uid == uid;
         // Days collection should only be written by Cloud Functions
       }
+      
+      // Billing collection - allow server-side operations only
+      match /billing/{billingDoc} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        // Billing should only be modified by server-side code, but we need to allow it for now
+        allow write: if request.auth != null && request.auth.uid == uid;
+      }
+      
+      // Usage collection - allow server-side operations to track usage
+      match /usage/{usageId} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        // Usage should only be created by server-side code, but we need to allow it for now
+        allow create: if request.auth != null && request.auth.uid == uid;
+        allow update, delete: if false; // Usage records should be immutable
+      }
+      
+      // Purchases collection - allow server-side operations to track purchases
+      match /purchases/{purchaseId} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        // Purchases should only be created by server-side code, but we need to allow it for now
+        allow create: if request.auth != null && request.auth.uid == uid;
+        allow update, delete: if false; // Purchase records should be immutable
+      }
     }
     
     // Deny access to all other collections by default

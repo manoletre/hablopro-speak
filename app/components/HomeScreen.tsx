@@ -7,9 +7,13 @@ import { useLanguage } from '../context/LanguageContext';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import StreakDisplay from './StreakDisplay';
+import BillingWidget from './BillingWidget';
 import { trackSessionStarted } from '../lib/analytics';
 import { usePostHog } from 'posthog-js/react';
 import Link from 'next/link';
+import { useBilling } from '../hooks/useBilling';
+import InsufficientMinutesDialog from './InsufficientMinutesDialog';
+import UpgradeModal from './UpgradeModal';
 
 interface HomeScreenProps {
   onStartSession: (level: number, language: string) => void;
@@ -55,6 +59,7 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
 
   const { user, signOut } = useAuth();
   const { language: uiLanguage, setLanguage: setUiLanguage, t } = useLanguage();
+  const { hasEnoughMinutes, billing } = useBilling();
   const [showSidebar, setShowSidebar] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('french');
@@ -65,6 +70,8 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
   const [showLostStreakDialog, setShowLostStreakDialog] = useState(false);
   const [showDifficultyTooltip, setShowDifficultyTooltip] = useState(false);
   const [lostStreakDays, setLostStreakDays] = useState(0);
+  const [showInsufficientMinutesDialog, setShowInsufficientMinutesDialog] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -203,8 +210,15 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
     }
   };
 
-  // Wrap the onStartSession callback to include analytics
+  // Wrap the onStartSession callback to include analytics and minute checking
   const handleStartSession = (level: number, language: string) => {
+    // Check if user has enough minutes before starting session  
+    if (user && !hasEnoughMinutes(1)) {
+      console.log('User has insufficient minutes for conversation');
+      setShowInsufficientMinutesDialog(true);
+      return;
+    }
+    
     // Track session start
     trackSessionStarted(
       user?.uid || null,
@@ -244,9 +258,9 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
               </button>
             </div>
             
-            {/* Navigation links */}
+            {/* Billing Widget */}
             <div className="p-4">
-              {/* No navigation links - bookmarks removed */}
+              <BillingWidget />
             </div>
             
             {/* Empty top area */}
@@ -578,6 +592,19 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
           >
             {t('home.beginSession')}
           </button>
+          
+          {/* Low Minutes Warning */}
+          {user && billing && billing.secondsRemaining <= 600 && (
+            <div className="mt-2 text-center text-sm text-[#422006]/80">
+              {t('home.onlyMinsLeft', { mins: Math.floor(billing.secondsRemaining / 60) })}{' '}
+              <button
+                onClick={() => setShowUpgradeModal(true)}
+                className="underline hover:text-[#422006] transition-colors"
+              >
+                {t('home.getMoreMins')}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -622,6 +649,20 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Insufficient Minutes Dialog */}
+      <InsufficientMinutesDialog
+        isOpen={showInsufficientMinutesDialog}
+        onClose={() => setShowInsufficientMinutesDialog(false)}
+      />
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && billing && (
+        <UpgradeModal
+          currentBilling={billing}
+          onClose={() => setShowUpgradeModal(false)}
+        />
       )}
     </div>
   );

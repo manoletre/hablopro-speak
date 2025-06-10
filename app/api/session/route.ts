@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { db } from '../../lib/firebase-admin';
+import { BillingService } from '../../lib/billing';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -155,7 +156,53 @@ const languageCodes: Record<string, string> = {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { difficultyLevel = 3, language = 'english', userId } = body;
+    const { difficultyLevel = 3, language = 'english', userId, maxSessionMinutes } = body;
+    
+    // Check billing - require userId for billing checks
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'User authentication required' },
+        { status: 401 }
+      );
+    }
+    
+    // Check if user has enough minutes for the requested session length
+    // Use the provided maxSessionMinutes or default to 1 minute minimum
+    const requiredMinutes = maxSessionMinutes || 1;
+    console.log(`Checking if user has ${requiredMinutes} minutes for session`);
+    console.log('Request body:', body);
+    
+    try {
+      const hasMinutes = await BillingService.hasEnoughMinutes(userId, requiredMinutes);
+      console.log(`User billing check result: ${hasMinutes}`);
+      
+      if (!hasMinutes) {
+        const billing = await BillingService.getUserBilling(userId);
+        const remainingMinutes = Math.floor(billing.secondsRemaining / 60);
+        console.log(`User has ${billing.secondsRemaining} seconds (${remainingMinutes} minutes), needs ${requiredMinutes} minutes`);
+        return NextResponse.json(
+          { 
+            error: 'Insufficient speaking time',
+            remainingMinutes: remainingMinutes,
+            remainingSeconds: billing.secondsRemaining,
+            requiredMinutes: requiredMinutes,
+            requiresUpgrade: true
+          },
+          { status: 402 } // Payment Required
+        );
+      }
+      
+      console.log(`User has sufficient minutes (${requiredMinutes} required), proceeding with session creation`);
+    } catch (billingError) {
+      console.error('Error checking user billing:', billingError);
+      return NextResponse.json(
+        { 
+          error: 'Failed to verify billing status',
+          details: billingError instanceof Error ? billingError.message : 'Unknown error'
+        },
+        { status: 500 }
+      );
+    }
     
     let prompt = promptTemplates[difficultyLevel as keyof typeof promptTemplates] || promptTemplates[3];
     
