@@ -3,9 +3,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
 import LanguageTypingAnimation from '../components/LanguageTypingAnimation';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 import TermsOfServiceDialog from '../components/TermsOfServiceDialog';
 import PrivacyPolicyDialog from '../components/PrivacyPolicyDialog';
 import RefundPolicyDialog from '../components/RefundPolicyDialog';
@@ -33,8 +33,8 @@ const jsonLd = {
 };
 
 export default function LandingPage() {
-  const { user } = useAuth();
   const { setLanguage } = useLanguage();
+  const { user } = useAuth();
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showRefund, setShowRefund] = useState(false);
@@ -69,7 +69,7 @@ export default function LandingPage() {
   // Scroll spy functionality
   useEffect(() => {
     const handleScroll = () => {
-      const sections = ['como-funciona', 'capturas', 'idiomas', 'precios'];
+      const sections = ['como-funciona', 'idiomas', 'precios']; // removed 'capturas'
       const scrollPosition = window.scrollY + 100;
 
       for (const section of sections) {
@@ -109,7 +109,7 @@ export default function LandingPage() {
         setLanguage('español');
       }}
     >
-      Comenzar gratis
+      {user ? 'Continuar hablando' : 'Comenzar gratis'}
     </Link>
   );
 
@@ -175,14 +175,14 @@ export default function LandingPage() {
               >
                 Cómo funciona
               </button>
-              <button
+              {/* <button
                 onClick={() => smoothScrollTo('capturas')}
                 className={`text-amber-800 hover:text-amber-900 font-medium transition-all duration-300 cursor-pointer transform hover:scale-105 hover:-translate-y-0.5 ${
                   activeSection === 'capturas' ? 'border-b-2 border-amber-800' : ''
                 }`}
               >
                 Demo
-              </button>
+              </button> */}
               <button
                 onClick={() => smoothScrollTo('idiomas')}
                 className={`text-amber-800 hover:text-amber-900 font-medium transition-all duration-300 cursor-pointer transform hover:scale-105 hover:-translate-y-0.5 ${
@@ -313,7 +313,7 @@ export default function LandingPage() {
         </section>
 
         {/* Screenshots Section */}
-        <section id="capturas" className="w-full py-12 px-4 bg-amber-50">
+        {/* <section id="capturas" className="w-full py-12 px-4 bg-amber-50">
           <div className="max-w-6xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-amber-900 mb-8">
               Míralo en acción
@@ -330,7 +330,7 @@ export default function LandingPage() {
             </div>
             <CTAButton />
           </div>
-        </section>
+        </section> */}
 
         {/* Languages Section */}
         <section id="idiomas" className="w-full py-12 px-4 bg-white">
@@ -503,16 +503,36 @@ export default function LandingPage() {
             setShowTerms(false);
             setShowPrivacy(true);
           }}
+          onOpenRefundPolicy={() => {
+            setShowTerms(false);
+            setShowRefund(true);
+          }}
           isSpanish={true}
         />
         <PrivacyPolicyDialog 
           isOpen={showPrivacy} 
           onClose={() => setShowPrivacy(false)}
+          onOpenTermsOfService={() => {
+            setShowPrivacy(false);
+            setShowTerms(true);
+          }}
+          onOpenRefundPolicy={() => {
+            setShowPrivacy(false);
+            setShowRefund(true);
+          }}
           isSpanish={true}
         />
         <RefundPolicyDialog 
           isOpen={showRefund} 
-          onClose={() => setShowRefund(false)} 
+          onClose={() => setShowRefund(false)}
+          onOpenTermsOfService={() => {
+            setShowRefund(false);
+            setShowTerms(true);
+          }}
+          onOpenPrivacyPolicy={() => {
+            setShowRefund(false);
+            setShowPrivacy(true);
+          }}
           isSpanish={true}
         />
       </main>

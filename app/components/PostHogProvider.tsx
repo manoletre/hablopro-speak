@@ -22,7 +22,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
         capture_pageview: false, // We capture pageviews manually
         capture_pageleave: true, // Enable pageleave capture
         debug: process.env.NODE_ENV === "development",
-        loaded: (posthog) => {
+        loaded: () => {
           console.log('PostHog loaded successfully')
         },
         // Add error handling for failed requests

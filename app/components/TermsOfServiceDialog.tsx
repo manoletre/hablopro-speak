@@ -1,21 +1,37 @@
 'use client';
 
+import { useLanguage } from '../context/LanguageContext';
+
 interface TermsOfServiceDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenPrivacyPolicy?: () => void;
+  onOpenRefundPolicy?: () => void;
   isSpanish?: boolean;
 }
 
-export default function TermsOfServiceDialog({ isOpen, onClose, onOpenPrivacyPolicy, isSpanish = false }: TermsOfServiceDialogProps) {
+export default function TermsOfServiceDialog({ isOpen, onClose, onOpenPrivacyPolicy, onOpenRefundPolicy, isSpanish: propIsSpanish }: TermsOfServiceDialogProps) {
+  const { language, setLanguage } = useLanguage();
+  
   if (!isOpen) return null;
 
-  const content = isSpanish ? {
+  // Use context language if propIsSpanish is not provided, otherwise use prop
+  const isSpanish = propIsSpanish !== undefined ? propIsSpanish : language === 'español';
+
+  const handleLanguageSwitch = () => {
+    const newLanguage = isSpanish ? 'english' : 'español';
+    setLanguage(newLanguage);
+    // Also save to localStorage
+    localStorage.setItem('uiLanguage', newLanguage);
+  };
+
+      const content = isSpanish ? {
     title: "Términos y Condiciones",
     availableIn: "También disponible en inglés en nuestro sitio web principal.",
     effectiveDate: "Fecha de vigencia:",
     close: "Cerrar",
     privacyPolicy: "Política de Privacidad",
+    refundPolicy: "Política de Reembolso",
     sections: {
       acceptance: {
         title: "1. Aceptación de los Términos",
@@ -29,7 +45,8 @@ export default function TermsOfServiceDialog({ isOpen, onClose, onOpenPrivacyPol
           "Suscripción mensual: $12 USD/mes por 250 minutos de conversación (los minutos no utilizados se acumulan al mes siguiente), con conversaciones de hasta 15 minutos.",
           "Suscripción anual: $120 USD/año (ahorra $24) por 3,000 minutos por año, con conversaciones de hasta 15 minutos.",
           "Pago por uso: compra única de 150 minutos (nunca expiran) por $8 USD, perfecto para uso ocasional sin compromiso mensual."
-        ]
+        ],
+        refundNote: "Para más detalles sobre reembolsos, consulte nuestra {refundPolicy}."
       },
       accounts: {
         title: "3. Cuentas de Usuario",
@@ -56,18 +73,18 @@ export default function TermsOfServiceDialog({ isOpen, onClose, onOpenPrivacyPol
       },
       privacy: {
         title: "6. Privacidad",
-        content: "Su uso del Servicio también se rige por nuestra {privacyPolicy}, que se incorpora por referencia y se puede encontrar en: https://hablo.pro/privacy-policy. Revísela para entender cómo recopilamos, usamos y compartimos sus datos personales."
+        content: "Su uso del Servicio también se rige por nuestra {privacyPolicy}, que se incorpora por referencia. Revísela para entender cómo recopilamos, usamos y compartimos sus datos personales."
       },
       liability: {
         title: "7. Limitación de Responsabilidad",
-        content1: "EL SERVICIO SE PROPORCIONA \"TAL COMO ESTÁ\" Y \"SEGÚN DISPONIBILIDAD\" SIN GARANTÍAS DE NINGÚN TIPO.",
-        content2: "EN LA MÁXIMA MEDIDA PERMITIDA POR LA LEY, EN NINGÚN CASO hablo.pro SERÁ RESPONSABLE DE DAÑOS INDIRECTOS, INCIDENTALES, ESPECIALES O CONSECUENCIALES QUE SURJAN DE SU USO DEL SERVICIO.",
-        content3: "NUESTRA RESPONSABILIDAD AGREGADA POR RECLAMOS QUE SURJAN DE O SE RELACIONEN CON ESTOS TÉRMINOS O EL SERVICIO NO EXCEDERÁ LOS MONTOS TOTALES PAGADOS POR USTED A hablo.pro EN LOS SEIS (6) MESES ANTERIORES AL RECLAMO."
+        content1: "El Servicio se proporciona \"tal como está\" y \"según disponibilidad\" sin garantías de ningún tipo.",
+        content2: "En la máxima medida permitida por la ley, en ningún caso hablo.pro será responsable de daños indirectos, incidentales, especiales o consecuenciales que surjan de su uso del Servicio.",
+        content3: "Nuestra responsabilidad agregada por reclamos que surjan de o se relacionen con estos Términos o el Servicio no excederá los montos totales pagados por usted a hablo.pro en los seis (6) meses anteriores al reclamo."
       },
       termination: {
         title: "8. Terminación",
         content1: "Podemos suspender o terminar su acceso al Servicio en cualquier momento por incumplimiento de estos Términos o por cualquier otra razón, con o sin aviso.",
-        content2: "Al terminar, su derecho a usar el Servicio cesa inmediatamente. Puede solicitar la eliminación de su cuenta y datos personales como se describe en nuestra Política de Privacidad."
+        content2: "Al terminar, su derecho a usar el Servicio cesa inmediatamente. Puede solicitar la eliminación de su cuenta y datos personales como se describe en nuestra {privacyPolicy}."
       },
       changes: {
         title: "9. Cambios a los Términos",
@@ -85,6 +102,7 @@ export default function TermsOfServiceDialog({ isOpen, onClose, onOpenPrivacyPol
     effectiveDate: "Effective Date:",
     close: "Close",
     privacyPolicy: "Privacy Policy",
+    refundPolicy: "Refund Policy",
     sections: {
       acceptance: {
         title: "1. Acceptance of Terms",
@@ -98,7 +116,8 @@ export default function TermsOfServiceDialog({ isOpen, onClose, onOpenPrivacyPol
           "Monthly subscription: $12 USD/month for 250 minutes of conversation (unused minutes roll over to the following month), with up to 15-minute conversations.",
           "Annual subscription: $120 USD/year (save $24) for 3,000 minutes per year, with up to 15-minute conversations.",
           "Pay-as-you-go: one‑time purchase of 150 minutes (never expire) for $8 USD, perfect for occasional use with no monthly commitment."
-        ]
+        ],
+        refundNote: "For more details on refunds, please see our {refundPolicy}."
       },
       accounts: {
         title: "3. User Accounts",
@@ -125,18 +144,18 @@ export default function TermsOfServiceDialog({ isOpen, onClose, onOpenPrivacyPol
       },
       privacy: {
         title: "6. Privacy",
-        content: "Your use of the Service is also governed by our {privacyPolicy}, which is incorporated by reference and can be found at: https://hablo.pro/privacy-policy. Please review it to understand how we collect, use, and share your personal data."
+        content: "Your use of the Service is also governed by our {privacyPolicy}, which is incorporated by reference. Please review it to understand how we collect, use, and share your personal data."
       },
       liability: {
         title: "7. Limitation of Liability",
-        content1: "THE SERVICE IS PROVIDED \"AS IS\" AND \"AS AVAILABLE\" WITHOUT WARRANTIES OF ANY KIND.",
-        content2: "TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT WILL hablo.pro BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES ARISING OUT OF YOUR USE OF THE SERVICE.",
-        content3: "OUR AGGREGATE LIABILITY FOR CLAIMS ARISING OUT OF OR RELATING TO THESE TERMS OR THE SERVICE WILL NOT EXCEED THE TOTAL AMOUNTS PAID BY YOU TO hablo.pro IN THE SIX (6) MONTHS PRIOR TO THE CLAIM."
+        content1: "The Service is provided \"as is\" and \"as available\" without warranties of any kind.",
+        content2: "To the maximum extent permitted by law, in no event will hablo.pro be liable for any indirect, incidental, special, or consequential damages arising out of your use of the Service.",
+        content3: "Our aggregate liability for claims arising out of or relating to these Terms or the Service will not exceed the total amounts paid by you to hablo.pro in the six (6) months prior to the claim."
       },
       termination: {
         title: "8. Termination",
         content1: "We may suspend or terminate your access to the Service at any time for breach of these Terms or for any other reason, with or without notice.",
-        content2: "Upon termination, your right to use the Service immediately ceases. You may request deletion of your account and personal data as described in our Privacy Policy."
+        content2: "Upon termination, your right to use the Service immediately ceases. You may request deletion of your account and personal data as described in our {privacyPolicy}."
       },
       changes: {
         title: "9. Changes to Terms",
@@ -154,29 +173,56 @@ export default function TermsOfServiceDialog({ isOpen, onClose, onOpenPrivacyPol
     <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <div>
-            <h2 className="text-xl font-semibold text-[#422006] dark:text-amber-200">
-              {content.title}
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {content.availableIn}
-            </p>
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <h2 className="text-lg sm:text-xl font-semibold text-[#422006] dark:text-amber-200 flex-shrink-0">
+            {content.title}
+          </h2>
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-w-0">
+              <button
+                onClick={handleLanguageSwitch}
+                className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 underline transition-colors whitespace-nowrap"
+              >
+                {isSpanish ? "Also in English" : "También en español"}
+              </button>
+              {(onOpenPrivacyPolicy || onOpenRefundPolicy) && (
+                <span className="text-gray-400 hidden sm:inline">•</span>
+              )}
+              {onOpenPrivacyPolicy && (
+                <button
+                  onClick={onOpenPrivacyPolicy}
+                  className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 underline transition-colors whitespace-nowrap hidden sm:inline-block"
+                >
+                  {content.privacyPolicy}
+                </button>
+              )}
+              {onOpenRefundPolicy && onOpenPrivacyPolicy && (
+                <span className="text-gray-400 hidden sm:inline">•</span>
+              )}
+              {onOpenRefundPolicy && (
+                <button
+                  onClick={onOpenRefundPolicy}
+                  className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 underline transition-colors whitespace-nowrap hidden sm:inline-block"
+                >
+                  {content.refundPolicy}
+                </button>
+              )}
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
         </div>
         
         {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1">
-          <div className="prose prose-sm dark:prose-invert max-w-none">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1">
+          <div className="prose prose-xs sm:prose-sm dark:prose-invert max-w-none break-words">
             <p className="text-gray-600 dark:text-gray-300 mb-6">
               <strong>{content.effectiveDate}</strong> {isSpanish ? "1 de julio de 2025" : "July 1, 2025"}
             </p>
@@ -194,11 +240,23 @@ export default function TermsOfServiceDialog({ isOpen, onClose, onOpenPrivacyPol
             <p className="text-gray-600 dark:text-gray-300 mb-4">
               {content.sections.description.content}
             </p>
-            <ul className="text-gray-600 dark:text-gray-300 mb-6 list-disc pl-5 space-y-2">
+            <ul className="text-gray-600 dark:text-gray-300 mb-4 list-disc pl-5 space-y-2">
               {content.sections.description.features.map((feature, index) => (
                 <li key={index}><strong>{feature.split(':')[0]}:</strong> {feature.split(':').slice(1).join(':')}</li>
               ))}
             </ul>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              {content.sections.description.refundNote.split('{refundPolicy}')[0]}
+              {onOpenRefundPolicy && (
+                <button
+                  onClick={onOpenRefundPolicy}
+                  className="text-amber-600 hover:text-amber-700 underline cursor-pointer"
+                >
+                  {content.refundPolicy}
+                </button>
+              )}
+              {content.sections.description.refundNote.split('{refundPolicy}')[1]}
+            </p>
             
             <h3 className="text-lg font-semibold text-[#422006] dark:text-amber-200 mb-3">
               {content.sections.accounts.title}
@@ -235,18 +293,14 @@ export default function TermsOfServiceDialog({ isOpen, onClose, onOpenPrivacyPol
               {content.sections.privacy.title}
             </h3>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              {content.sections.privacy.content.replace('{privacyPolicy}', '')}
-              {onOpenPrivacyPolicy ? (
+              {content.sections.privacy.content.split('{privacyPolicy}')[0]}
+              {onOpenPrivacyPolicy && (
                 <button
                   onClick={onOpenPrivacyPolicy}
                   className="text-amber-600 hover:text-amber-700 underline cursor-pointer"
                 >
                   {content.privacyPolicy}
                 </button>
-              ) : (
-                <a href="/privacy-policy" className="text-amber-600 hover:text-amber-700 underline">
-                  {content.privacyPolicy}
-                </a>
               )}
               {content.sections.privacy.content.split('{privacyPolicy}')[1]}
             </p>
@@ -271,7 +325,16 @@ export default function TermsOfServiceDialog({ isOpen, onClose, onOpenPrivacyPol
               {content.sections.termination.content1}
             </p>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              {content.sections.termination.content2}
+              {content.sections.termination.content2.split('{privacyPolicy}')[0]}
+              {onOpenPrivacyPolicy && (
+                <button
+                  onClick={onOpenPrivacyPolicy}
+                  className="text-amber-600 hover:text-amber-700 underline cursor-pointer"
+                >
+                  {content.privacyPolicy}
+                </button>
+              )}
+              {content.sections.termination.content2.split('{privacyPolicy}')[1]}
             </p>
             
             <h3 className="text-lg font-semibold text-[#422006] dark:text-amber-200 mb-3">
@@ -294,7 +357,7 @@ export default function TermsOfServiceDialog({ isOpen, onClose, onOpenPrivacyPol
         </div>
         
         {/* Footer */}
-        <div className="flex justify-end p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div className="flex justify-end p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
           <button
             onClick={onClose}
             className="px-4 py-2 bg-amber-800 text-white rounded-md hover:bg-amber-700 transition-colors"

@@ -1,19 +1,37 @@
 'use client';
 
+import { useLanguage } from '../context/LanguageContext';
+
 interface RefundPolicyDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenTermsOfService?: () => void;
+  onOpenPrivacyPolicy?: () => void;
   isSpanish?: boolean;
 }
 
-export default function RefundPolicyDialog({ isOpen, onClose, isSpanish = false }: RefundPolicyDialogProps) {
+export default function RefundPolicyDialog({ isOpen, onClose, onOpenTermsOfService, onOpenPrivacyPolicy, isSpanish: propIsSpanish }: RefundPolicyDialogProps) {
+  const { language, setLanguage } = useLanguage();
+  
   if (!isOpen) return null;
+
+  // Use context language if propIsSpanish is not provided, otherwise use prop
+  const isSpanish = propIsSpanish !== undefined ? propIsSpanish : language === 'español';
+
+  const handleLanguageSwitch = () => {
+    const newLanguage = isSpanish ? 'english' : 'español';
+    setLanguage(newLanguage);
+    // Also save to localStorage
+    localStorage.setItem('uiLanguage', newLanguage);
+  };
 
   const content = isSpanish ? {
     title: "Política de Reembolso",
     availableIn: "También disponible en inglés en nuestro sitio web principal.",
     effectiveDate: "Fecha de vigencia:",
     close: "Cerrar",
+    termsOfService: "Términos de Servicio",
+    privacyPolicy: "Política de Privacidad",
     sections: {
       eligibility: {
         title: "1. Elegibilidad para Reembolso",
@@ -55,6 +73,8 @@ export default function RefundPolicyDialog({ isOpen, onClose, isSpanish = false 
     availableIn: "También disponible en español en /es/",
     effectiveDate: "Effective Date:",
     close: "Close",
+    termsOfService: "Terms of Service",
+    privacyPolicy: "Privacy Policy",
     sections: {
       eligibility: {
         title: "1. Refund Eligibility",
@@ -97,29 +117,56 @@ export default function RefundPolicyDialog({ isOpen, onClose, isSpanish = false 
     <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <div>
-            <h2 className="text-xl font-semibold text-[#422006] dark:text-amber-200">
-              {content.title}
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {content.availableIn}
-            </p>
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <h2 className="text-lg sm:text-xl font-semibold text-[#422006] dark:text-amber-200 flex-shrink-0">
+            {content.title}
+          </h2>
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-w-0">
+              <button
+                onClick={handleLanguageSwitch}
+                className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 underline transition-colors whitespace-nowrap"
+              >
+                {isSpanish ? "Also in English" : "También en español"}
+              </button>
+              {(onOpenTermsOfService || onOpenPrivacyPolicy) && (
+                <span className="text-gray-400 hidden sm:inline">•</span>
+              )}
+              {onOpenTermsOfService && (
+                <button
+                  onClick={onOpenTermsOfService}
+                  className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 underline transition-colors whitespace-nowrap hidden sm:inline-block"
+                >
+                  {content.termsOfService}
+                </button>
+              )}
+              {onOpenPrivacyPolicy && onOpenTermsOfService && (
+                <span className="text-gray-400 hidden sm:inline">•</span>
+              )}
+              {onOpenPrivacyPolicy && (
+                <button
+                  onClick={onOpenPrivacyPolicy}
+                  className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 underline transition-colors whitespace-nowrap hidden sm:inline-block"
+                >
+                  {content.privacyPolicy}
+                </button>
+              )}
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
         </div>
         
         {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1">
-          <div className="prose prose-sm dark:prose-invert max-w-none">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1">
+          <div className="prose prose-xs sm:prose-sm dark:prose-invert max-w-none break-words">
             <p className="text-gray-600 dark:text-gray-300 mb-6">
               <strong>{content.effectiveDate}</strong> {isSpanish ? "1 de julio de 2025" : "July 1, 2025"}
             </p>
@@ -159,7 +206,7 @@ export default function RefundPolicyDialog({ isOpen, onClose, isSpanish = false 
               {content.sections.howTo.content1}
             </p>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              <strong>{content.sections.contact.content2}</strong> <a href="mailto:manuel@hablo.pro" className="text-amber-600 hover:text-amber-700 underline">manuel@hablo.pro</a>
+              <strong>{content.sections.contact.content2}</strong> <a href="mailto:contact@hablo.pro" className="text-amber-600 hover:text-amber-700 underline">contact@hablo.pro</a>
             </p>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
               {content.sections.howTo.content2}
@@ -186,13 +233,13 @@ export default function RefundPolicyDialog({ isOpen, onClose, isSpanish = false 
               {content.sections.contact.content1}
             </p>
             <p className="text-gray-600 dark:text-gray-300">
-              {content.sections.contact.content2} <a href="mailto:manuel@hablo.pro" className="text-amber-600 hover:text-amber-700 underline">manuel@hablo.pro</a>
+              {content.sections.contact.content2} <a href="mailto:contact@hablo.pro" className="text-amber-600 hover:text-amber-700 underline">contact@hablo.pro</a>
             </p>
           </div>
         </div>
         
         {/* Footer */}
-        <div className="flex justify-end p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div className="flex justify-end p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
           <button
             onClick={onClose}
             className="px-4 py-2 bg-amber-800 text-white rounded-md hover:bg-amber-700 transition-colors"

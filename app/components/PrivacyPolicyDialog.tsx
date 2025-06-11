@@ -1,19 +1,37 @@
 'use client';
 
+import { useLanguage } from '../context/LanguageContext';
+
 interface PrivacyPolicyDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenTermsOfService?: () => void;
+  onOpenRefundPolicy?: () => void;
   isSpanish?: boolean;
 }
 
-export default function PrivacyPolicyDialog({ isOpen, onClose, isSpanish = false }: PrivacyPolicyDialogProps) {
+export default function PrivacyPolicyDialog({ isOpen, onClose, onOpenTermsOfService, onOpenRefundPolicy, isSpanish: propIsSpanish }: PrivacyPolicyDialogProps) {
+  const { language, setLanguage } = useLanguage();
+  
   if (!isOpen) return null;
 
-  const content = isSpanish ? {
+  // Use context language if propIsSpanish is not provided, otherwise use prop
+  const isSpanish = propIsSpanish !== undefined ? propIsSpanish : language === 'español';
+
+  const handleLanguageSwitch = () => {
+    const newLanguage = isSpanish ? 'english' : 'español';
+    setLanguage(newLanguage);
+    // Also save to localStorage
+    localStorage.setItem('uiLanguage', newLanguage);
+  };
+
+      const content = isSpanish ? {
     title: "Política de Privacidad",
     availableIn: "También disponible en inglés en nuestro sitio web principal.",
     effectiveDate: "Fecha de vigencia:",
     close: "Cerrar",
+    termsOfService: "Términos de Servicio",
+    refundPolicy: "Política de Reembolso",
     intro: "hablo.pro (\"nosotros\", \"nos\", \"nuestro\") respeta su privacidad y se compromete a proteger sus datos personales. Esta Política de Privacidad explica cómo recopilamos, usamos, compartimos y protegemos su información en cumplimiento con las leyes aplicables, incluyendo el Reglamento General de Protección de Datos de la UE (GDPR), la Ley de Privacidad del Consumidor de California (CCPA), la Ley de Protección de la Privacidad Infantil en Línea (COPPA), y la Ley de Protección de la Privacidad en Línea de California (CalOPPA).",
     sections: {
       information: {
@@ -48,7 +66,7 @@ export default function PrivacyPolicyDialog({ isOpen, onClose, isSpanish = false
         title: "3. Servicios de Terceros",
         intro: "Compartimos datos solo según sea necesario con los siguientes proveedores:",
         firebase: "Autenticación, almacenamiento de datos y procesamiento del lado del servidor.",
-        openai: "Voz a texto (Whisper) y retroalimentación de IA (GPT-4).",
+        openai: "Voz, voz a texto y retroalimentación de IA.",
         posthog: "Análisis de comportamiento del usuario y rendimiento.",
         aws: "Entrega de correos electrónicos de bienvenida y notificación.",
         vercel: "Hosting, CDN y optimización de imágenes."
@@ -107,6 +125,8 @@ export default function PrivacyPolicyDialog({ isOpen, onClose, isSpanish = false
     availableIn: "También disponible en español en /es/",
     effectiveDate: "Effective Date:",
     close: "Close",
+    termsOfService: "Terms of Service",
+    refundPolicy: "Refund Policy",
     intro: "hablo.pro (\"we\", \"us\", \"our\") respects your privacy and is committed to protecting your personal data. This Privacy Policy explains how we collect, use, share, and safeguard your information in compliance with applicable laws, including the EU General Data Protection Regulation (GDPR), the California Consumer Privacy Act (CCPA), the Children's Online Privacy Protection Act (COPPA), and the California Online Privacy Protection Act (CalOPPA).",
     sections: {
       information: {
@@ -141,7 +161,7 @@ export default function PrivacyPolicyDialog({ isOpen, onClose, isSpanish = false
         title: "3. Third-Party Services",
         intro: "We share data only as necessary with the following providers:",
         firebase: "Authentication, data storage, and server-side processing.",
-        openai: "Voice-to-text (Whisper) and AI feedback (GPT-4).",
+        openai: "Voice, voice-to-text, and AI feedback.",
         posthog: "User behavior and performance analytics.",
         aws: "Welcome and notification email delivery.",
         vercel: "Hosting, CDN, and image optimization."
@@ -201,29 +221,56 @@ export default function PrivacyPolicyDialog({ isOpen, onClose, isSpanish = false
     <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <div>
-            <h2 className="text-xl font-semibold text-[#422006] dark:text-amber-200">
-              {content.title}
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {content.availableIn}
-            </p>
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <h2 className="text-lg sm:text-xl font-semibold text-[#422006] dark:text-amber-200 flex-shrink-0">
+            {content.title}
+          </h2>
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-w-0">
+              <button
+                onClick={handleLanguageSwitch}
+                className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 underline transition-colors whitespace-nowrap"
+              >
+                {isSpanish ? "Also in English" : "También en español"}
+              </button>
+              {(onOpenTermsOfService || onOpenRefundPolicy) && (
+                <span className="text-gray-400 hidden sm:inline">•</span>
+              )}
+              {onOpenTermsOfService && (
+                <button
+                  onClick={onOpenTermsOfService}
+                  className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 underline transition-colors whitespace-nowrap hidden sm:inline-block"
+                >
+                  {content.termsOfService}
+                </button>
+              )}
+              {onOpenRefundPolicy && onOpenTermsOfService && (
+                <span className="text-gray-400 hidden sm:inline">•</span>
+              )}
+              {onOpenRefundPolicy && (
+                <button
+                  onClick={onOpenRefundPolicy}
+                  className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 underline transition-colors whitespace-nowrap hidden sm:inline-block"
+                >
+                  {content.refundPolicy}
+                </button>
+              )}
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
         </div>
         
         {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1">
-          <div className="prose prose-sm dark:prose-invert max-w-none">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1">
+          <div className="prose prose-xs sm:prose-sm dark:prose-invert max-w-none break-words">
             <p className="text-gray-600 dark:text-gray-300 mb-6">
               <strong>{content.effectiveDate}</strong> {isSpanish ? "1 de julio de 2025" : "July 1, 2025"}
             </p>
@@ -282,26 +329,26 @@ export default function PrivacyPolicyDialog({ isOpen, onClose, isSpanish = false
             <ul className="text-gray-600 dark:text-gray-300 mb-6 list-disc pl-5 space-y-2">
               <li>
                 <strong>Firebase:</strong> {content.sections.thirdParty.firebase}<br/>
-                {isSpanish ? "Privacidad:" : "Privacy:"} <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700 underline">https://firebase.google.com/support/privacy</a><br/>
-                {isSpanish ? "Términos de Procesamiento de Datos:" : "Data Processing Terms:"} <a href="https://firebase.google.com/terms/data-processing-terms" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700 underline">https://firebase.google.com/terms/data-processing-terms</a>
+                {isSpanish ? "Privacidad:" : "Privacy:"} <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700 underline break-all">https://firebase.google.com/support/privacy</a><br/>
+                {isSpanish ? "Términos de Procesamiento de Datos:" : "Data Processing Terms:"} <a href="https://firebase.google.com/terms/data-processing-terms" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700 underline break-all">https://firebase.google.com/terms/data-processing-terms</a>
               </li>
               <li>
                 <strong>OpenAI:</strong> {content.sections.thirdParty.openai}<br/>
-                {isSpanish ? "Privacidad:" : "Privacy:"} <a href="https://openai.com/policies/row-privacy-policy/" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700 underline">https://openai.com/policies/row-privacy-policy/</a><br/>
-                {isSpanish ? "FAQ de Uso de Datos:" : "Data Usage FAQ:"} <a href="https://help.openai.com/articles/7039943-data-usage-for-consumer-services-faq" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700 underline">https://help.openai.com/articles/7039943-data-usage-for-consumer-services-faq</a>
+                {isSpanish ? "Privacidad:" : "Privacy:"} <a href="https://openai.com/policies/row-privacy-policy/" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700 underline break-all">https://openai.com/policies/row-privacy-policy/</a><br/>
+                {isSpanish ? "FAQ de Uso de Datos:" : "Data Usage FAQ:"} <a href="https://help.openai.com/articles/7039943-data-usage-for-consumer-services-faq" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700 underline break-all">https://help.openai.com/articles/7039943-data-usage-for-consumer-services-faq</a>
               </li>
               <li>
                 <strong>PostHog:</strong> {content.sections.thirdParty.posthog}<br/>
-                {isSpanish ? "Privacidad:" : "Privacy:"} <a href="https://posthog.com/privacy" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700 underline">https://posthog.com/privacy</a>
+                {isSpanish ? "Privacidad:" : "Privacy:"} <a href="https://posthog.com/privacy" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700 underline break-all">https://posthog.com/privacy</a>
               </li>
               <li>
                 <strong>AWS (Amazon SES):</strong> {content.sections.thirdParty.aws}<br/>
-                {isSpanish ? "Privacidad:" : "Privacy:"} <a href="https://aws.amazon.com/privacy/" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700 underline">https://aws.amazon.com/privacy/</a>
+                {isSpanish ? "Privacidad:" : "Privacy:"} <a href="https://aws.amazon.com/privacy/" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700 underline break-all">https://aws.amazon.com/privacy/</a>
               </li>
               <li>
                 <strong>Vercel:</strong> {content.sections.thirdParty.vercel}<br/>
-                {isSpanish ? "Privacidad:" : "Privacy:"} <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700 underline">https://vercel.com/legal/privacy-policy</a><br/>
-                {isSpanish ? "Política de Cookies:" : "Cookie Policy:"} <a href="https://vercel.com/legal/cookie-policy" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700 underline">https://vercel.com/legal/cookie-policy</a>
+                {isSpanish ? "Privacidad:" : "Privacy:"} <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700 underline break-all">https://vercel.com/legal/privacy-policy</a><br/>
+                {isSpanish ? "Política de Cookies:" : "Cookie Policy:"} <a href="https://vercel.com/legal/cookie-policy" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700 underline break-all">https://vercel.com/legal/cookie-policy</a>
               </li>
             </ul>
             
@@ -381,7 +428,7 @@ export default function PrivacyPolicyDialog({ isOpen, onClose, isSpanish = false
         </div>
         
         {/* Footer */}
-        <div className="flex justify-end p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div className="flex justify-end p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
           <button
             onClick={onClose}
             className="px-4 py-2 bg-amber-800 text-white rounded-md hover:bg-amber-700 transition-colors"
