@@ -43,6 +43,7 @@ export type TranslationKey =
   | 'auth.and'
   | 'auth.termsOfService'
   | 'auth.privacyPolicy'
+  | 'auth.refundPolicy'
   | 'auth.failedToSignIn'
   | 'bookmarks.title'
   | 'bookmarks.all'
@@ -189,6 +190,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'auth.and': 'and',
     'auth.termsOfService': 'Terms of Service',
     'auth.privacyPolicy': 'Privacy Policy',
+    'auth.refundPolicy': 'Refund Policy',
     'auth.failedToSignIn': 'Failed to sign in with Google. Please try again.',
     'bookmarks.title': 'My Bookmarks',
     'bookmarks.all': 'All',
@@ -327,6 +329,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'auth.and': 'y',
     'auth.termsOfService': 'Términos de Servicio',
     'auth.privacyPolicy': 'Política de Privacidad',
+    'auth.refundPolicy': 'Política de Reembolso',
     'auth.failedToSignIn': 'Error al iniciar sesión con Google. Por favor, inténtalo de nuevo.',
     'bookmarks.title': 'Mis Marcadores',
     'bookmarks.all': 'Todos',

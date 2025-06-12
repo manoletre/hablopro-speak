@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import TermsOfServiceDialog from './TermsOfServiceDialog';
 import PrivacyPolicyDialog from './PrivacyPolicyDialog';
+import RefundPolicyDialog from './RefundPolicyDialog';
 
 export default function AuthDialog() {
   const { signInWithGoogle } = useAuth();
@@ -13,6 +14,7 @@ export default function AuthDialog() {
   const [error, setError] = useState<string | null>(null);
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showRefund, setShowRefund] = useState(false);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -87,12 +89,19 @@ export default function AuthDialog() {
               >
                 {t('auth.termsOfService')}
               </button>
-              {' '}{t('auth.and')}{' '}
+              {', '}
               <button
                 onClick={() => setShowPrivacy(true)}
                 className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 underline font-medium"
               >
                 {t('auth.privacyPolicy')}
+              </button>
+              {', '}{t('auth.and')}{' '}
+              <button
+                onClick={() => setShowRefund(true)}
+                className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 underline font-medium"
+              >
+                {t('auth.refundPolicy')}
               </button>
               .
             </p>
@@ -103,6 +112,7 @@ export default function AuthDialog() {
       {/* Dialog Components */}
       <TermsOfServiceDialog isOpen={showTerms} onClose={() => setShowTerms(false)} />
       <PrivacyPolicyDialog isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
+      <RefundPolicyDialog isOpen={showRefund} onClose={() => setShowRefund(false)} />
     </>
   );
 } 

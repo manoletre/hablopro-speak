@@ -1,5 +1,6 @@
 "use client"
 
+// For development, you might want to try the bundled version to avoid fetch issues
 import posthog from "posthog-js"
 import { PostHogProvider as PHProvider, usePostHog } from "posthog-js/react"
 import { Suspense, useEffect } from "react"
@@ -7,13 +8,31 @@ import { usePathname, useSearchParams } from "next/navigation"
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
-      api_host: "/ingest",
-      ui_host: "https://us.posthog.com",
-      capture_pageview: false, // We capture pageviews manually
-      capture_pageleave: true, // Enable pageleave capture
-      debug: process.env.NODE_ENV === "development",
-    })
+    try {
+      if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+        console.error('PostHog API key is missing')
+        return
+      }
+
+      posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
+        api_host: process.env.NODE_ENV === "development" 
+          ? "https://us.i.posthog.com" 
+          : "/ingest",
+        ui_host: "https://us.posthog.com",
+        capture_pageview: false, // We capture pageviews manually
+        capture_pageleave: true, // Enable pageleave capture
+        debug: process.env.NODE_ENV === "development",
+        loaded: () => {
+          console.log('PostHog loaded successfully')
+        },
+        // Add error handling for failed requests
+        on_request_error: (error) => {
+          console.error('PostHog request error:', error)
+        },
+      })
+    } catch (error) {
+      console.error('Failed to initialize PostHog:', error)
+    }
   }, [])
 
   return (
