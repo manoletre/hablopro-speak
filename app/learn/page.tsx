@@ -47,7 +47,13 @@ export default function LearnPage() {
       }
       // Clean up window variables
       if (typeof window !== 'undefined') {
-        window.$sleek = [];
+        try {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          delete window.$sleek;
+        } catch (_) {
+          /* noop */
+        }
         delete window.SLEEK_PRODUCT_ID;
       }
       return;
@@ -68,21 +74,37 @@ export default function LearnPage() {
       existingScript.remove();
     }
 
-    // Set up Sleekplan
+    // Set up Sleekplan – make sure we never load the SDK twice
     if (typeof window !== 'undefined') {
+      // Remove any previous Sleekplan instance that might still be hanging
+      try {
+        // Deleting the global prevents the SDK from thinking it was already initialised
+        //  (it throws if it finds an existing value)
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore – we need to reach into the window object
+        delete window.$sleek;
+      } catch (_) {
+        /* noop */
+      }
+
+      // Stub expected globals before the script loads
       window.$sleek = [];
       window.SLEEK_PRODUCT_ID = productId;
 
-      const script = document.createElement('script');
-      script.type = 'text/javascript';
-      script.src = 'https://client.sleekplan.com/sdk/e.js';
-      script.async = true;
-      document.getElementsByTagName('head')[0].appendChild(script);
+      // Only add the <script> tag once per page lifecycle
+      if (!document.getElementById('sleek-sdk')) {
+        const script = document.createElement('script');
+        script.id = 'sleek-sdk';
+        script.type = 'text/javascript';
+        script.src = 'https://client.sleekplan.com/sdk/e.js';
+        script.async = true;
+        document.head.appendChild(script);
+      }
     }
 
     // Cleanup function
     return () => {
-      const script = document.querySelector('script[src="https://client.sleekplan.com/sdk/e.js"]');
+      const script = document.getElementById('sleek-sdk');
       if (script) {
         script.remove();
       }
@@ -91,7 +113,13 @@ export default function LearnPage() {
         hideStyle.remove();
       }
       if (typeof window !== 'undefined') {
-        window.$sleek = [];
+        try {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          delete window.$sleek;
+        } catch (_) {
+          /* noop */
+        }
         delete window.SLEEK_PRODUCT_ID;
       }
     };

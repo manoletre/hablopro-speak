@@ -112,30 +112,31 @@ export default function RootLayout({
         
         {/* Paddle.js Script for Checkout Overlays */}
         <script src="https://cdn.paddle.com/paddle/v2/paddle.js" defer></script>
-        <script 
+        <script
           dangerouslySetInnerHTML={{
-            __html: `
-              window.addEventListener('load', function() {
+            __html: `(() => {
+              window.addEventListener('load', () => {
+                const env = ${JSON.stringify(process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT || 'sandbox')};
+                const token = ${JSON.stringify(process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || '')};
+
                 if (window.Paddle) {
-                  // Set environment first
-                  if ('${process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT || 'sandbox'}' === 'sandbox') {
+                  if (env === 'sandbox') {
                     window.Paddle.Environment.set('sandbox');
                   }
-                  
-                  // Initialize with client token
-                  window.Paddle.Initialize({ 
-                    token: '${process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || ''}',
+
+                  window.Paddle.Initialize({
+                    token,
                     checkout: {
                       settings: {
                         allowedPaymentMethods: ['card', 'paypal', 'apple_pay', 'google_pay'],
                         successUrl: window.location.origin + '/dashboard?checkout=success',
-                        locale: 'en'
-                      }
-                    }
+                        locale: 'en',
+                      },
+                    },
                   });
                 }
               });
-            `
+            })();`,
           }}
         />
       </body>

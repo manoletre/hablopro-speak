@@ -97,6 +97,13 @@ export default function AnimatedNacho({ isSpeaking, size = 'md', level = 3 }: An
         src={getNachoImage()}
         alt="Nacho the sloth"
         fill
+        sizes={
+          size === 'sm'
+            ? '96px'
+            : size === 'lg'
+            ? '192px'
+            : '144px' // default for 'md'
+        }
         style={{ objectFit: 'contain' }}
         priority
       />

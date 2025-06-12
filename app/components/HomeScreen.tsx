@@ -407,6 +407,7 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
               src={getNachoImage()}
               alt="Nacho the sloth"
               fill
+              sizes="(max-width: 640px) 128px, (max-width: 768px) 192px, 256px"
               style={{ 
                 objectFit: 'contain' 
               }}

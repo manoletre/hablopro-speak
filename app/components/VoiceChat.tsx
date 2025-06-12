@@ -705,106 +705,50 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
           console.log('completeTranscript:', completeTranscript);
           console.log('==============================');
           
-          // Only process for question storage if we haven't stored the first question yet
-          if (user && !sessionId && !alreadyStoredFirstQuestion) {
-            console.log(`First AI response for session ${sessionKey} - checking if it is a question to store`);
-            
-            // Check if this first response is actually a question
-            const isQuestion = completeTranscript.includes('?') || 
-              /\b(what|how|when|where|why|who|which|do|does|did|are|is|can|could|would|will)\b/i.test(completeTranscript);
-            
-            console.log('=== QUESTION DETECTION DEBUG ===');
-            console.log('completeTranscript includes "?":', completeTranscript.includes('?'));
-            console.log('regex test result:', /\b(what|how|when|where|why|who|which|do|does|did|are|is|can|could|would|will)\b/i.test(completeTranscript));
-            console.log('final isQuestion result:', isQuestion);
-            console.log('================================');
-            
-            if (isQuestion) {
-              console.log('First AI response is a question - creating session and storing ONLY this first question');
-              
-              const createSessionAndStoreFirstQuestion = async () => {
-                try {
-                  console.log('=== FIREBASE WRITE ATTEMPT ===');
-                  console.log('About to create session document...');
-                  
+          // Persist the **very first** assistant message (conversation opener)
+          if (user && !alreadyStoredFirstQuestion) {
+            console.log('Storing first assistant message as conversation opener');
+            // Always ensure there's a session and then store the opener
+            const createSessionAndStoreOpener = async () => {
+              try {
+                // Ensure session exists
+                let activeSessionId = sessionId;
+                if (!activeSessionId) {
                   const sessionsRef = collection(db, `users/${user.uid}/sessions`);
                   const timezoneOffsetMinutes = new Date().getTimezoneOffset();
-                  
-                  // Create session document
+
                   const sessionDoc = await addDoc(sessionsRef, {
                     startedAt: serverTimestamp(),
-                    transcript: '', // Will be updated when session finishes
+                    transcript: '',
                     language,
                     difficultyLevel,
                     timezoneOffsetMinutes
                   });
-                  
-                  console.log(`Session created with ID: ${sessionDoc.id}`);
-                  setSessionId(sessionDoc.id);
-                  
-                  console.log('About to create question document...');
-                  
-                  // Store ONLY the first question - this will never happen again for this session
-                  const questionsRef = collection(db, `users/${user.uid}/questions`);
-                  const questionDoc = await addDoc(questionsRef, {
-                    question: completeTranscript.trim(),
-                    sessionId: sessionDoc.id,
-                    language,
-                    difficultyLevel,
-                    createdAt: serverTimestamp(),
-                    date: new Date().toISOString().substring(0, 10) // YYYY-MM-DD format
-                  });
-                  
-                  console.log(`FIRST QUESTION stored successfully with ID: ${questionDoc.id} for session ${sessionKey} - marking as stored`);
-                  console.log('Question data stored:', {
-                    question: completeTranscript.trim(),
-                    sessionId: sessionDoc.id,
-                    language,
-                    difficultyLevel,
-                    date: new Date().toISOString().substring(0, 10)
-                  });
-                  console.log('===============================');
-                  
-                  markFirstQuestionStored();
-                  
-                } catch (error) {
-                  console.error('=== FIREBASE WRITE ERROR ===');
-                  console.error('Error creating session or storing first question:', error);
-                  console.error('Error details:', error);
-                  console.error('============================');
+
+                  activeSessionId = sessionDoc.id;
+                  setSessionId(activeSessionId);
+                  console.log(`Session created with ID: ${activeSessionId}`);
                 }
-              };
-              
-              createSessionAndStoreFirstQuestion();
-            } else {
-              console.log('First AI response is not a question - creating session without storing anything in questions collection');
-              
-              // Still create the session, but don't store as a question
-              const createSessionOnly = async () => {
-                try {
-                  const sessionsRef = collection(db, `users/${user.uid}/sessions`);
-                  const timezoneOffsetMinutes = new Date().getTimezoneOffset();
-                  
-                  // Create session document
-                  const sessionDoc = await addDoc(sessionsRef, {
-                    startedAt: serverTimestamp(),
-                    transcript: '', // Will be updated when session finishes
-                    language,
-                    difficultyLevel,
-                    timezoneOffsetMinutes
-                  });
-                  
-                  console.log(`Session created with ID: ${sessionDoc.id} (no question stored - first response was not a question)`);
-                  setSessionId(sessionDoc.id);
-                  markFirstQuestionStored(); // Mark as processed so we don't check again
-                  
-                } catch (error) {
-                  console.error('Error creating session:', error);
-                }
-              };
-              
-              createSessionOnly();
-            }
+
+                // Store the opener
+                const questionsRef = collection(db, `users/${user.uid}/questions`);
+                const questionDoc = await addDoc(questionsRef, {
+                  question: completeTranscript.trim(),
+                  sessionId: activeSessionId,
+                  language,
+                  difficultyLevel,
+                  createdAt: serverTimestamp(),
+                  date: new Date().toISOString().substring(0, 10)
+                });
+
+                console.log(`Conversation opener stored (doc ${questionDoc.id}) for session ${sessionKey}`);
+                markFirstQuestionStored();
+              } catch (err) {
+                console.error('Error storing conversation opener:', err);
+              }
+            };
+
+            createSessionAndStoreOpener();
           } else {
             // This session has already stored its first question or this is a subsequent response
             console.log(`Session ${sessionKey} - NOT storing question (already processed: ${alreadyStoredFirstQuestion}, sessionId exists: ${!!sessionId})`);
