@@ -113,7 +113,7 @@ export default function PrivacyPolicyDialog({ isOpen, onClose, onOpenTermsOfServ
       },
       contact: {
         title: "11. Contáctenos",
-        content: "hablo.pro\nAtención: Oficial de Privacidad\nCorreo: privacy@hablo.pro"
+        content: "hablo.pro (Manuel Cardenas Prieto)\nAtención: Oficial de Privacidad\nCorreo: privacy@hablo.pro"
       },
       law: {
         title: "12. Ley Aplicable",
@@ -208,7 +208,7 @@ export default function PrivacyPolicyDialog({ isOpen, onClose, onOpenTermsOfServ
       },
       contact: {
         title: "11. Contact Us",
-        content: "hablo.pro\nAttn: Privacy Officer\nEmail: privacy@hablo.pro"
+        content: "HabloPro (Manuel Cardenas Prieto)\nAttn: Privacy Officer\nEmail: privacy@hablo.pro"
       },
       law: {
         title: "12. Governing Law",
