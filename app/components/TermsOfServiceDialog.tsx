@@ -35,7 +35,7 @@ export default function TermsOfServiceDialog({ isOpen, onClose, onOpenPrivacyPol
     sections: {
       acceptance: {
         title: "1. Aceptación de los Términos",
-        content: "Al acceder o usar hablo.pro (el \"Servicio\"), usted acepta estar sujeto a estos Términos y Condiciones (los \"Términos\"). Si no acepta estos Términos, por favor no use el Servicio."
+        content: "Al acceder o usar hablo.pro (Manuel Cardenas Prieto) (el \"Servicio\"), usted acepta estar sujeto a estos Términos y Condiciones (los \"Términos\"). Si no acepta estos Términos, por favor no use el Servicio."
       },
       description: {
         title: "2. Descripción del Servicio",
@@ -106,7 +106,7 @@ export default function TermsOfServiceDialog({ isOpen, onClose, onOpenPrivacyPol
     sections: {
       acceptance: {
         title: "1. Acceptance of Terms",
-        content: "By accessing or using hablo.pro (the \"Service\"), you agree to be bound by these Terms of Service (the \"Terms\"). If you do not agree to these Terms, please do not use the Service."
+        content: "By accessing or using hablo.pro (Manuel Cardenas Prieto) (the \"Service\"), you agree to be bound by these Terms of Service (the \"Terms\"). If you do not agree to these Terms, please do not use the Service."
       },
       description: {
         title: "2. Description of Service",
