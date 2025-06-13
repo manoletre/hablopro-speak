@@ -92,7 +92,7 @@ export default function TermsOfServiceDialog({ isOpen, onClose, onOpenPrivacyPol
       },
       contact: {
         title: "10. Información de Contacto",
-        content1: "Si tiene alguna pregunta o inquietud sobre estos Términos, contáctenos en:",
+        content1: "Si tiene alguna pregunta o inquietud sobre estos Términos, comuníquese con HabloPro (Manuel Cardenas Prieto) en:",
         content2: "Correo: contact@hablo.pro"
       }
     }
@@ -163,7 +163,7 @@ export default function TermsOfServiceDialog({ isOpen, onClose, onOpenPrivacyPol
       },
       contact: {
         title: "10. Contact Information",
-        content1: "If you have any questions or concerns about these Terms, please contact us at:",
+        content1: "If you have any questions or concerns about these Terms, please contact HabloPro (Manuel Cardenas Prieto) at:",
         content2: "Email: contact@hablo.pro"
       }
     }

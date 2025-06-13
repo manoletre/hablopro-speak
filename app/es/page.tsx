@@ -32,12 +32,17 @@ const jsonLd = {
   },
 };
 
-export default function LandingPage() {
+interface LandingPageProps {
+  initialDialog?: 'terms' | 'privacy' | 'refund';
+  initialSection?: string;
+}
+
+export default function LandingPage({ initialDialog, initialSection }: LandingPageProps = {}) {
   const { setLanguage } = useLanguage();
   const { user } = useAuth();
-  const [showTerms, setShowTerms] = useState(false);
-  const [showPrivacy, setShowPrivacy] = useState(false);
-  const [showRefund, setShowRefund] = useState(false);
+  const [showTerms, setShowTerms] = useState(initialDialog === 'terms');
+  const [showPrivacy, setShowPrivacy] = useState(initialDialog === 'privacy');
+  const [showRefund, setShowRefund] = useState(initialDialog === 'refund');
   const [activeSection, setActiveSection] = useState('');
 
   // Spanish language list for animation
@@ -89,6 +94,18 @@ export default function LandingPage() {
 
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Auto-scroll to section if provided (e.g. 'precios')
+  useEffect(() => {
+    if (initialSection) {
+      setTimeout(() => {
+        const el = document.getElementById(initialSection);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 50);
+    }
+  }, [initialSection]);
 
   const smoothScrollTo = (elementId: string) => {
     const element = document.getElementById(elementId);
@@ -470,6 +487,7 @@ export default function LandingPage() {
                   </a>
                   {' '}desde 🇨🇴
                 </p>
+                <p className="text-amber-100 text-xs mt-1">2025 - Manuel Cardenas Prieto</p>
               </div>
               <div className="flex space-x-6">
                 <button
