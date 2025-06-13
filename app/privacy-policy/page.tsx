@@ -1,7 +1,14 @@
 'use client';
 
-import LandingPage from '../page';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function PrivacyPolicyRoute() {
-  return <LandingPage initialDialog="privacy" />;
+  const router = useRouter();
+  
+  useEffect(() => {
+    router.replace('/?dialog=privacy');
+  }, [router]);
+  
+  return null; // This page will redirect immediately
 } 

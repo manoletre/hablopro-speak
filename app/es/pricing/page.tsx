@@ -1,7 +1,14 @@
 'use client';
 
-import LandingPage from '../page';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function PricingEsRoute() {
-  return <LandingPage initialSection="precios" />;
+  const router = useRouter();
+  
+  useEffect(() => {
+    router.replace('/es?section=precios');
+  }, [router]);
+  
+  return null; // This page will redirect immediately
 } 

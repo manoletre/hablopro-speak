@@ -25,24 +25,14 @@ const jsonLd = {
     price: '0',
     priceCurrency: 'USD',
   },
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '4.8',
-    ratingCount: '1000',
-  },
 };
 
-interface LandingPageProps {
-  initialDialog?: 'terms' | 'privacy' | 'refund';
-  initialSection?: string; // element id to scroll to on mount
-}
-
-export default function LandingPage({ initialDialog, initialSection }: LandingPageProps = {}) {
+export default function LandingPage() {
   const { setLanguage } = useLanguage();
   const { user } = useAuth();
-  const [showTerms, setShowTerms] = useState(initialDialog === 'terms');
-  const [showPrivacy, setShowPrivacy] = useState(initialDialog === 'privacy');
-  const [showRefund, setShowRefund] = useState(initialDialog === 'refund');
+  const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showRefund, setShowRefund] = useState(false);
   const [activeSection, setActiveSection] = useState('');
 
   const languages = [
@@ -82,19 +72,31 @@ export default function LandingPage({ initialDialog, initialSection }: LandingPa
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // If we need to scroll to a specific section when the page loads (e.g. /pricing),
-  // do it after the first paint so the element exists in the DOM.
+  // Handle URL parameters for dialogs and sections
   useEffect(() => {
-    if (initialSection) {
-      // Use a small timeout to ensure the browser has rendered the section element
+    const urlParams = new URLSearchParams(window.location.search);
+    const dialog = urlParams.get('dialog');
+    const section = urlParams.get('section');
+    
+    // Handle dialog parameter
+    if (dialog === 'terms') {
+      setShowTerms(true);
+    } else if (dialog === 'privacy') {
+      setShowPrivacy(true);
+    } else if (dialog === 'refund') {
+      setShowRefund(true);
+    }
+    
+    // Handle section parameter - auto-scroll to section
+    if (section) {
       setTimeout(() => {
-        const el = document.getElementById(initialSection);
+        const el = document.getElementById(section);
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       }, 50);
     }
-  }, [initialSection]);
+  }, []);
 
   const smoothScrollTo = (elementId: string) => {
     const element = document.getElementById(elementId);
