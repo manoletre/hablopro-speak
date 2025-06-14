@@ -1,7 +1,5 @@
-'use client';
-
-import LandingPage from '../page';
+import { redirect } from 'next/navigation';
 
 export default function RefundPolicyEsRoute() {
-  return <LandingPage initialDialog="refund" />;
+  redirect('/es?dialog=refund');
 } 

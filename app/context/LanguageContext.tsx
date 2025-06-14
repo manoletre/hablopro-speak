@@ -147,7 +147,39 @@ export type TranslationKey =
   | 'upgrade.monthlySubscription'
   | 'upgrade.annualSubscription'
   | 'upgrade.perMonthText'
-  | 'upgrade.perYearText';
+  | 'upgrade.perYearText'
+  | 'upgradeSuccess.title'
+  | 'upgradeSuccess.description'
+  | 'upgradeSuccess.currentBalance'
+  | 'upgradeSuccess.minutes'
+  | 'upgradeSuccess.startLearning'
+  | 'upgrade.subscriptionToggle'
+  | 'upgrade.onetimeToggle'
+  | 'upgrade.planColumn'
+  | 'upgrade.priceColumn'
+  | 'upgrade.minutesColumn'
+  | 'upgrade.costPerMinColumn'
+  | 'upgrade.actionColumn'
+  | 'upgrade.annual'
+  | 'upgrade.monthly'
+  | 'upgrade.onetime'
+  | 'upgrade.twoMonthsFree'
+  | 'upgrade.minutesRollover'
+  | 'upgrade.noRollover'
+  | 'upgrade.save33Percent'
+  | 'upgrade.subscribed'
+  | 'upgrade.footerSavings'
+  | 'upgrade.customPlanOffer'
+  | 'upgrade.rolloverFootnote'
+  | 'upgrade.savingsFootnote'
+  | 'upgrade.paddlePayments'
+  | 'getMoreMins.title'
+  | 'getMoreMins.descriptionAnnual'
+  | 'getMoreMins.descriptionMonthly'
+  | 'getMoreMins.addExtraMinutes'
+  | 'getMoreMins.minutesAdded'
+  | 'getMoreMins.addedInstantly'
+  | 'getMoreMins.useAlongside';
 
 interface LanguageContextType {
   language: Language;
@@ -295,6 +327,38 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'upgrade.annualSubscription': 'Annual Subscription',
     'upgrade.perMonthText': 'per month',
     'upgrade.perYearText': 'per year',
+    'upgradeSuccess.title': 'Upgrade Successful!',
+    'upgradeSuccess.description': 'You now have {minutes} minutes in your account.',
+    'upgradeSuccess.currentBalance': 'Current Balance',
+    'upgradeSuccess.minutes': 'minutes',
+    'upgradeSuccess.startLearning': 'Start Learning',
+    'upgrade.subscriptionToggle': 'Subscription',
+    'upgrade.onetimeToggle': 'One-time',
+    'upgrade.planColumn': 'Plan',
+    'upgrade.priceColumn': 'Price',
+    'upgrade.minutesColumn': 'Minutes',
+    'upgrade.costPerMinColumn': 'Cost/min',
+    'upgrade.actionColumn': 'Action',
+    'upgrade.annual': 'Annual',
+    'upgrade.monthly': 'Monthly',
+    'upgrade.onetime': 'One-time',
+    'upgrade.twoMonthsFree': '2 months free',
+    'upgrade.minutesRollover': 'minutes roll over¹',
+    'upgrade.noRollover': 'no rollover',
+    'upgrade.save33Percent': 'SAVE 33%',
+    'upgrade.subscribed': 'Subscribed',
+    'upgrade.footerSavings': 'Save 33% with the annual plan • Minutes never expire while subscribed',
+    'upgrade.customPlanOffer': 'Need more than 3,000 mins a year? Drop us a line for a custom plan.',
+    'upgrade.rolloverFootnote': '¹ Unused minutes from monthly subscriptions roll over to the next month',
+    'upgrade.savingsFootnote': '² Annual plan saves 33% vs monthly ($0.04/min vs $0.06/min) and 50% vs one-time ($0.04/min vs $0.08/min)',
+    'upgrade.paddlePayments': 'Payments processed securely by Paddle',
+    'getMoreMins.title': 'Get More Minutes',
+    'getMoreMins.descriptionAnnual': 'Add more minutes to your existing annual subscription.',
+    'getMoreMins.descriptionMonthly': 'Add more minutes to your existing monthly subscription.',
+    'getMoreMins.addExtraMinutes': 'Add extra minutes to your account',
+    'getMoreMins.minutesAdded': '{count} minutes added to your account',
+    'getMoreMins.addedInstantly': 'Added instantly',
+    'getMoreMins.useAlongside': 'Use alongside your subscription',
   },
   español: {
     'home.title': 'aprende hablando.',
@@ -434,6 +498,38 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'upgrade.annualSubscription': 'Suscripción Anual',
     'upgrade.perMonthText': 'por mes',
     'upgrade.perYearText': 'por año',
+    'upgradeSuccess.title': '¡Actualización Exitosa!',
+    'upgradeSuccess.description': 'Ahora tienes {minutes} minutos en tu cuenta.',
+    'upgradeSuccess.currentBalance': 'Saldo Actual',
+    'upgradeSuccess.minutes': 'minutos',
+    'upgradeSuccess.startLearning': 'Comenzar a Aprender',
+    'upgrade.subscriptionToggle': 'Suscripción',
+    'upgrade.onetimeToggle': 'Una vez',
+    'upgrade.planColumn': 'Plan',
+    'upgrade.priceColumn': 'Precio',
+    'upgrade.minutesColumn': 'Minutos',
+    'upgrade.costPerMinColumn': 'Costo/min',
+    'upgrade.actionColumn': 'Acción',
+    'upgrade.annual': 'Anual',
+    'upgrade.monthly': 'Mensual',
+    'upgrade.onetime': 'Una vez',
+    'upgrade.twoMonthsFree': '2 meses gratis',
+    'upgrade.minutesRollover': 'minutos se acumulan¹',
+    'upgrade.noRollover': 'no se acumulan',
+    'upgrade.save33Percent': 'AHORRA 33%',
+    'upgrade.subscribed': 'Suscrito',
+    'upgrade.footerSavings': 'Ahorra 33% con el plan anual • Los minutos nunca expiran mientras estés suscrito',
+    'upgrade.customPlanOffer': '¿Necesitas más de 3,000 mins al año? Contáctanos para un plan personalizado.',
+    'upgrade.rolloverFootnote': '¹ Los minutos no utilizados de las suscripciones mensuales se acumulan al mes siguiente',
+    'upgrade.savingsFootnote': '² El plan anual ahorra 33% vs mensual ($0.04/min vs $0.06/min) y 50% vs una vez ($0.04/min vs $0.08/min)',
+    'upgrade.paddlePayments': 'Pagos procesados de forma segura por Paddle',
+    'getMoreMins.title': 'Obtener Más Minutos',
+    'getMoreMins.descriptionAnnual': 'Agrega más minutos a tu suscripción anual existente.',
+    'getMoreMins.descriptionMonthly': 'Agrega más minutos a tu suscripción mensual existente.',
+    'getMoreMins.addExtraMinutes': 'Agrega minutos extra a tu cuenta',
+    'getMoreMins.minutesAdded': '{count} minutos agregados a tu cuenta',
+    'getMoreMins.addedInstantly': 'Agregados instantáneamente',
+    'getMoreMins.useAlongside': 'Usa junto a tu suscripción',
   },
 };
 

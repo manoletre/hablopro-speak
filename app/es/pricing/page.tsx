@@ -1,7 +1,5 @@
-'use client';
-
-import LandingPage from '../page';
+import { redirect } from 'next/navigation';
 
 export default function PricingEsRoute() {
-  return <LandingPage initialSection="precios" />;
+  redirect('/es?section=precios');
 } 

@@ -54,6 +54,9 @@ const FlagIcon = ({ language, className = "" }: { language: string; className?: 
   );
 };
 
+// Custom event name for opening sidebar after upgrade success
+export const OPEN_SIDEBAR_EVENT = 'hablo_open_sidebar';
+
 export default function HomeScreen({ onStartSession }: HomeScreenProps) {
   usePostHog();
 
@@ -128,6 +131,13 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
 
     fetchUserData();
   }, [user, setUiLanguage]);
+
+  // Listen for global event to open sidebar (triggered after successful upgrade)
+  useEffect(() => {
+    const handler = () => setShowSidebar(true);
+    window.addEventListener(OPEN_SIDEBAR_EVENT, handler);
+    return () => window.removeEventListener(OPEN_SIDEBAR_EVENT, handler);
+  }, []);
 
   // Toggle sidebar visibility
   const handleSidebarClick = () => {

@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import LanguageTypingAnimation from '../components/LanguageTypingAnimation';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -10,6 +10,7 @@ import TermsOfServiceDialog from '../components/TermsOfServiceDialog';
 import PrivacyPolicyDialog from '../components/PrivacyPolicyDialog';
 import RefundPolicyDialog from '../components/RefundPolicyDialog';
 import Head from 'next/head';
+import { useSearchParams } from 'next/navigation';
 
 // Add structured data for rich results
 const jsonLd = {
@@ -32,17 +33,17 @@ const jsonLd = {
   },
 };
 
-interface LandingPageProps {
-  initialDialog?: 'terms' | 'privacy' | 'refund';
-  initialSection?: string;
-}
-
-export default function LandingPage({ initialDialog, initialSection }: LandingPageProps = {}) {
+function LandingPageContent() {
   const { setLanguage } = useLanguage();
   const { user } = useAuth();
-  const [showTerms, setShowTerms] = useState(initialDialog === 'terms');
-  const [showPrivacy, setShowPrivacy] = useState(initialDialog === 'privacy');
-  const [showRefund, setShowRefund] = useState(initialDialog === 'refund');
+  const searchParams = useSearchParams();
+
+  const initialDialogParam = searchParams?.get('dialog');
+  const initialSectionParam = searchParams?.get('section');
+
+  const [showTerms, setShowTerms] = useState(initialDialogParam === 'terms');
+  const [showPrivacy, setShowPrivacy] = useState(initialDialogParam === 'privacy');
+  const [showRefund, setShowRefund] = useState(initialDialogParam === 'refund');
   const [activeSection, setActiveSection] = useState('');
 
   // Spanish language list for animation
@@ -95,17 +96,17 @@ export default function LandingPage({ initialDialog, initialSection }: LandingPa
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Auto-scroll to section if provided (e.g. 'precios')
+  // Auto-scroll to section if provided via query param (e.g. '?section=precios')
   useEffect(() => {
-    if (initialSection) {
+    if (initialSectionParam) {
       setTimeout(() => {
-        const el = document.getElementById(initialSection);
+        const el = document.getElementById(initialSectionParam);
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       }, 50);
     }
-  }, [initialSection]);
+  }, [initialSectionParam]);
 
   const smoothScrollTo = (elementId: string) => {
     const element = document.getElementById(elementId);
@@ -132,48 +133,6 @@ export default function LandingPage({ initialDialog, initialSection }: LandingPa
 
   return (
     <>
-      <Head>
-        <title>HabloPro Speak | Tutor de Idiomas de IA para Inglés, Francés, Alemán y Más</title>
-        <meta name="description" content="Practica hablando con Nacho, tu tutor personal de idiomas de IA. Aprende inglés, francés, alemán, chino, japonés y más a través de conversaciones naturales con retroalimentación instantánea." />
-        <meta name="keywords" content="tutor de idiomas con IA, tutor de inglés con IA, tutor de francés con IA, tutor de alemán con IA, tutor de chino con IA, tutor de japonés con IA, app para aprender idiomas, práctica de conversación" />
-        
-        {/* Enhanced SEO Meta Tags */}
-        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-        <meta name="googlebot" content="index, follow" />
-        <meta name="author" content="HabloPro" />
-        <meta name="language" content="Spanish" />
-        <meta name="revisit-after" content="7 days" />
-        
-        {/* Open Graph / Facebook */}
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://hablo.pro/es/" />
-        <meta property="og:title" content="HabloPro Speak | Tutor de Idiomas de IA para Inglés, Francés, Alemán y Más" />
-        <meta property="og:description" content="Practica hablando con Nacho, tu tutor personal de idiomas de IA. Aprende inglés, francés, alemán, chino, japonés y más a través de conversaciones naturales con retroalimentación instantánea." />
-        <meta property="og:image" content="https://hablo.pro/images/og-image.png" />
-        <meta property="og:site_name" content="HabloPro Speak" />
-        <meta property="og:locale" content="es_ES" />
-        
-        {/* Twitter */}
-        <meta property="twitter:card" content="summary_large_image" />
-        <meta property="twitter:url" content="https://hablo.pro/es/" />
-        <meta property="twitter:title" content="HabloPro Speak | Tutor de Idiomas de IA para Inglés, Francés, Alemán y Más" />
-        <meta property="twitter:description" content="Practica hablando con Nacho, tu tutor personal de idiomas de IA. Aprende inglés, francés, alemán, chino, japonés y más a través de conversaciones naturales con retroalimentación instantánea." />
-        <meta property="twitter:image" content="https://hablo.pro/images/og-image.png" />
-        
-        {/* Canonical URL */}
-        <link rel="canonical" href="https://hablo.pro/es/" />
-        
-        {/* Additional Links */}
-        <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
-        <link rel="alternate" type="application/rss+xml" title="HabloPro Blog" href="/rss.xml" />
-        
-        {/* Structured Data */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-      </Head>
-
       <main className="min-h-screen bg-gradient-to-b from-amber-50 to-white font-poppins text-lg">
         {/* Navigation Header */}
         <header className="w-full bg-amber-100 py-4 border-b border-amber-200 sticky top-0 z-50">
@@ -418,7 +377,7 @@ export default function LandingPage({ initialDialog, initialSection }: LandingPa
                 <ul className="space-y-3 mb-8">
                   <li className="flex items-center text-amber-800 text-lg">
                     <span className="text-green-600 mr-2">✓</span>
-                    250 minutos/mes (3000/año)
+                    200 minutos/mes (2400/año)
                   </li>
                   <li className="flex items-center text-amber-800 text-lg">
                     <span className="text-green-600 mr-2">✓</span>
@@ -443,7 +402,7 @@ export default function LandingPage({ initialDialog, initialSection }: LandingPa
                 <ul className="space-y-3 mb-8">
                   <li className="flex items-center text-amber-800 text-lg">
                     <span className="text-green-600 mr-2">✓</span>
-                    150 minutos (nunca expiran)
+                    100 minutos (nunca expiran)
                   </li>
                   <li className="flex items-center text-amber-800 text-lg">
                     <span className="text-green-600 mr-2">✓</span>
@@ -554,6 +513,51 @@ export default function LandingPage({ initialDialog, initialSection }: LandingPa
           isSpanish={true}
         />
       </main>
+    </>
+  );
+}
+
+export default function LandingPage() {
+  return (
+    <>
+      <Head>
+        <title>HabloPro Speak | Tutor de Idiomas de IA para Inglés, Francés, Alemán y Más</title>
+        <meta name="description" content="Practica hablando con Nacho, tu tutor personal de idiomas de IA. Aprende inglés, francés, alemán, chino, japonés y más a través de conversaciones naturales con retroalimentación instantánea." />
+        <meta name="keywords" content="tutor de idiomas con IA, tutor de inglés con IA, tutor de francés con IA, tutor de alemán con IA, tutor de chino con IA, tutor de japonés con IA, app para aprender idiomas, práctica de conversación" />
+        {/* Enhanced SEO Meta Tags */}
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+        <meta name="googlebot" content="index, follow" />
+        <meta name="author" content="HabloPro" />
+        <meta name="language" content="Spanish" />
+        <meta name="revisit-after" content="7 days" />
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hablo.pro/es/" />
+        <meta property="og:title" content="HabloPro Speak | Tutor de Idiomas de IA para Inglés, Francés, Alemán y Más" />
+        <meta property="og:description" content="Practica hablando con Nacho, tu tutor personal de idiomas de IA. Aprende inglés, francés, alemán, chino, japonés y más a través de conversaciones naturales con retroalimentación instantánea." />
+        <meta property="og:image" content="https://hablo.pro/images/og-image.png" />
+        <meta property="og:site_name" content="HabloPro Speak" />
+        <meta property="og:locale" content="es_ES" />
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content="https://hablo.pro/es/" />
+        <meta property="twitter:title" content="HabloPro Speak | Tutor de Idiomas de IA para Inglés, Francés, Alemán y Más" />
+        <meta property="twitter:description" content="Practica hablando con Nacho, tu tutor personal de idiomas de IA. Aprende inglés, francés, alemán, chino, japonés y más a través de conversaciones naturales con retroalimentación instantánea." />
+        <meta property="twitter:image" content="https://hablo.pro/images/og-image.png" />
+        {/* Canonical URL */}
+        <link rel="canonical" href="https://hablo.pro/es/" />
+        {/* Additional Links */}
+        <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+        <link rel="alternate" type="application/rss+xml" title="HabloPro Blog" href="/rss.xml" />
+        {/* Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </Head>
+      <Suspense fallback={null}>
+        <LandingPageContent />
+      </Suspense>
     </>
   );
 } 

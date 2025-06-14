@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import { Paddle, EventName } from '@paddle/paddle-node-sdk';
+import { Paddle, Environment } from '@paddle/paddle-node-sdk';
 import { BillingService } from '../../../lib/billing';
-import { PaddleWebhookEvent, PLANS } from '../../../types/billing';
+import { PaddleWebhookEvent, PLANS, PaddleWebhookItem } from '../../../types/billing';
 
 const PADDLE_WEBHOOK_SECRET = process.env.PADDLE_WEBHOOK_SECRET!;
 
 // Initialize Paddle instance for webhook verification
 const paddle = new Paddle(process.env.PADDLE_API_KEY!, {
-  environment: process.env.PADDLE_ENVIRONMENT as 'sandbox' | 'production' || 'sandbox',
+  environment: process.env.PADDLE_ENVIRONMENT === 'production' ? Environment.production : Environment.sandbox,
 });
 
 // Get price ID to plan mapping using the provided Paddle IDs
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
 
     // Verify webhook signature using Paddle SDK
     try {
-      const eventData = paddle.webhooks.unmarshal(rawBody, PADDLE_WEBHOOK_SECRET, signature);
+      paddle.webhooks.unmarshal(rawBody, PADDLE_WEBHOOK_SECRET, signature);
       // If verification succeeds, we'll process the event
     } catch (verificationError) {
       console.error('Invalid webhook signature:', verificationError);
@@ -67,54 +67,70 @@ export async function POST(request: NextRequest) {
 
     // Get price ID from the first item in the items array
     if (data.items && data.items.length > 0) {
-      priceId = data.items[0].price_id;
-      planInfo = priceToPlan[priceId as keyof typeof priceToPlan];
+      const firstItem: PaddleWebhookItem = data.items[0];
+      // For transaction events the field is price_id, for subscription events it's price.id
+      if (firstItem.price_id) {
+        priceId = firstItem.price_id;
+      } else if (firstItem.price && firstItem.price.id) {
+        priceId = firstItem.price.id;
+      }
+      if (priceId) {
+        planInfo = priceToPlan[priceId as keyof typeof priceToPlan];
+      }
     }
 
     // Handle different event types
     switch (event_type) {
       case 'transaction.completed': {
-        // Handle successful one-time payments (PAYG)
-        if (planInfo && planInfo.type === 'payg') {
-          await BillingService.addSeconds(userId, planInfo.seconds, planInfo.type);
-          console.log(`Added ${planInfo.seconds} seconds (${Math.floor(planInfo.seconds / 60)} minutes) to user ${userId} from PAYG purchase`);
+        // Handle successful payments (PAYG, subscription initial payments, and renewals)
+        if (planInfo) {
+          // Check if this is a subscription renewal
+          const isRenewal = data.origin === 'subscription_recurring';
+          const transactionType = isRenewal ? 'renewal' : 'purchase';
+          
+          // Add seconds for ALL successful transactions (PAYG, subscriptions, and renewals)
+          await BillingService.addSeconds(userId, planInfo.seconds, planInfo.type, data.subscription_id, isRenewal);
+          console.log(`Added ${planInfo.seconds} seconds (${Math.floor(planInfo.seconds / 60)} minutes) to user ${userId} from ${planInfo.type} ${transactionType}`);
+          
+          // Update payment status to completed for initial purchases (not renewals)
+          if (!isRenewal) {
+            const amount = planInfo.type === 'payg' ? PLANS.PAYG.price : 
+                          planInfo.type === 'monthly' ? PLANS.MONTHLY.price : PLANS.ANNUAL.price;
+            await BillingService.updatePaymentStatus(userId, 'completed', amount, planInfo.type);
+            console.log(`Payment completed for user ${userId}, plan: ${planInfo.type}, amount: $${amount}`);
+          } else {
+            console.log(`Subscription renewal completed for user ${userId}, plan: ${planInfo.type}`);
+          }
         }
         break;
       }
 
       case 'subscription.created': {
         // Handle subscription creation
-        if (planInfo && (planInfo.type === 'monthly' || planInfo.type === 'annual')) {
-          // Check if we've already processed this subscription to prevent duplicates
-          const existingBilling = await BillingService.getUserBilling(userId);
-          if (existingBilling.subscriptionId === data.id) {
-            console.log(`Subscription ${data.id} already processed for user ${userId}, skipping`);
-            return NextResponse.json({ received: true });
-          }
-          
-          await BillingService.addSeconds(userId, planInfo.seconds, planInfo.type);
-          
-          // Update subscription status
-          const subscriptionData = {
-            subscriptionStatus: 'active' as const,
-            subscriptionId: data.id,
-            customerId: data.customer_id,
-            planType: planInfo.type,
-            subscriptionRenewsAt: data.next_billed_at ? new Date(data.next_billed_at) : undefined,
-            subscriptionEndsAt: data.canceled_at ? new Date(data.canceled_at) : undefined,
-            customerPortalUrl: data.management_urls?.update_payment_method,
-          };
-          
-          await BillingService.updateUserBilling(userId, subscriptionData);
-          console.log(`Created ${planInfo.type} subscription for user ${userId}, added ${planInfo.seconds} seconds (${Math.floor(planInfo.seconds / 60)} minutes)`);
+        console.log(`Processing subscription.created for user ${userId}, subscription: ${data.id}`);
+        // Note: Seconds are added in transaction.completed handler. This handler only sets up subscription metadata.
+
+        const subscriptionData: Partial<import('../../../types/billing').UserBilling> = {
+          subscriptionStatus: 'active' as const,
+          subscriptionId: data.id,
+          customerId: data.customer_id,
+          subscriptionRenewsAt: data.next_billed_at ? new Date(data.next_billed_at) : undefined,
+          subscriptionEndsAt: data.canceled_at ? new Date(data.canceled_at) : undefined,
+        };
+
+        if (planInfo) {
+          subscriptionData.planType = planInfo.type;
         }
+
+        await BillingService.updateUserBilling(userId, subscriptionData);
+        console.log(`Subscription created for user ${userId}. Plan: ${planInfo ? planInfo.type : 'unknown'}`);
         break;
       }
 
       case 'subscription.updated': {
-        // Handle subscription updates (including renewals)
-        if (data.status === 'active' && planInfo && (planInfo.type === 'monthly' || planInfo.type === 'annual')) {
-          // For active subscriptions, update the renewal date
+        // Handle subscription updates (including renewals, cancellations, etc.)
+        if (data.status === 'active') {
+          // For active subscriptions, update the renewal date and payment info
           const updateData = {
             subscriptionStatus: 'active' as const,
             subscriptionRenewsAt: data.next_billed_at ? new Date(data.next_billed_at) : undefined,
@@ -123,7 +139,26 @@ export async function POST(request: NextRequest) {
           };
           
           await BillingService.updateUserBilling(userId, updateData);
-          console.log(`Updated subscription for user ${userId}`);
+          console.log(`Updated active subscription for user ${userId}. Next billing: ${data.next_billed_at}`);
+        } else if (data.status === 'canceled') {
+          // Handle canceled subscriptions
+          const updateData = {
+            subscriptionStatus: 'cancelled' as const,
+            subscriptionEndsAt: data.canceled_at ? new Date(data.canceled_at) : undefined,
+          };
+          
+          await BillingService.updateUserBilling(userId, updateData);
+          console.log(`Subscription canceled for user ${userId}`);
+        } else if (data.status === 'past_due') {
+          // Handle past due subscriptions
+          const updateData = {
+            subscriptionStatus: 'paused' as const, // Treat past due as paused for app access
+          };
+          
+          await BillingService.updateUserBilling(userId, updateData);
+          console.log(`Subscription past due for user ${userId}`);
+        } else {
+          console.log(`Subscription status updated to ${data.status} for user ${userId}`);
         }
         break;
       }
@@ -134,7 +169,6 @@ export async function POST(request: NextRequest) {
           subscriptionStatus: 'cancelled' as const,
           subscriptionEndsAt: data.canceled_at ? new Date(data.canceled_at) : undefined,
         };
-        
         await BillingService.updateUserBilling(userId, cancellationData);
         console.log(`Cancelled subscription for user ${userId}`);
         break;
@@ -146,7 +180,6 @@ export async function POST(request: NextRequest) {
           subscriptionStatus: 'paused' as const,
           subscriptionEndsAt: data.paused_at ? new Date(data.paused_at) : undefined,
         };
-        
         await BillingService.updateUserBilling(userId, pauseData);
         console.log(`Paused subscription for user ${userId}`);
         break;
@@ -157,20 +190,17 @@ export async function POST(request: NextRequest) {
         const resumptionData = {
           subscriptionStatus: 'active' as const,
           subscriptionRenewsAt: data.next_billed_at ? new Date(data.next_billed_at) : undefined,
-          subscriptionEndsAt: undefined, // Clear end date on resumption
+          subscriptionEndsAt: undefined,
         };
-        
         await BillingService.updateUserBilling(userId, resumptionData);
         console.log(`Resumed subscription for user ${userId}`);
         break;
       }
 
       case 'subscription.past_due': {
-        // Handle past due subscription
         const pastDueData = {
-          subscriptionStatus: 'paused' as const, // Treat past due as paused
+          subscriptionStatus: 'paused' as const,
         };
-        
         await BillingService.updateUserBilling(userId, pastDueData);
         console.log(`Subscription past due for user ${userId}`);
         break;
@@ -183,12 +213,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ received: true });
-    
   } catch (error) {
     console.error('Error processing Paddle webhook:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}

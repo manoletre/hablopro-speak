@@ -3,10 +3,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useBilling } from '../hooks/useBilling';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import HomeScreen from '../components/HomeScreen';
 import VoiceChat from '../components/VoiceChat';
+import UpgradeSuccessDialog from '../components/UpgradeSuccessDialog';
 
 // Declare global types for Sleekplan
 declare global {
@@ -20,13 +22,41 @@ export default function LearnPage() {
   const [sessionStarted, setSessionStarted] = useState(false);
   const [difficultyLevel, setDifficultyLevel] = useState(3);
   const [selectedLanguage, setSelectedLanguage] = useState('english');
+  const [showUpgradeSuccess, setShowUpgradeSuccess] = useState(false);
   
   const { user } = useAuth();
   const { language: uiLanguage, setLanguage: setUiLanguage } = useLanguage();
+  const { refreshBilling } = useBilling();
   
   // Track session state at page level to persist across VoiceChat remounts
   const sessionCounterRef = useRef(0); // Tracks how many sessions have started
   const currentSessionIdRef = useRef<string | null>(null);
+
+  // Check for checkout success in URL and refresh billing data
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('checkout') === 'success') {
+        setShowUpgradeSuccess(true);
+        
+        // Refresh billing data immediately to reflect new subscription
+        refreshBilling();
+        
+        // Also set up a delayed refresh in case webhooks are still processing
+        const timeouts = [2000, 5000, 10000]; // Retry after 2s, 5s, and 10s
+        timeouts.forEach((delay) => {
+          setTimeout(() => {
+            refreshBilling();
+          }, delay);
+        });
+        
+        // Clean up the URL parameter
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('checkout');
+        window.history.replaceState({}, '', newUrl.toString());
+      }
+    }
+  }, [refreshBilling]);
 
   // Sleekplan feature board - only show before session starts
   useEffect(() => {
@@ -51,7 +81,7 @@ export default function LearnPage() {
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
           delete window.$sleek;
-        } catch (_) {
+        } catch {
           /* noop */
         }
         delete window.SLEEK_PRODUCT_ID;
@@ -83,7 +113,7 @@ export default function LearnPage() {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore – we need to reach into the window object
         delete window.$sleek;
-      } catch (_) {
+      } catch {
         /* noop */
       }
 
@@ -117,7 +147,7 @@ export default function LearnPage() {
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
           delete window.$sleek;
-        } catch (_) {
+        } catch {
           /* noop */
         }
         delete window.SLEEK_PRODUCT_ID;
@@ -196,6 +226,12 @@ export default function LearnPage() {
           />
         )}
       </main>
+      
+      {/* Upgrade Success Dialog */}
+      <UpgradeSuccessDialog
+        isOpen={showUpgradeSuccess}
+        onClose={() => setShowUpgradeSuccess(false)}
+      />
     </div>
   );
 } 

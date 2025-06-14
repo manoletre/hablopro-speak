@@ -41,7 +41,7 @@ export default function RefundPolicyDialog({ isOpen, onClose, onOpenTermsOfServi
           content: "No hay reembolsos disponibles. Puede cancelar su suscripción en cualquier momento para evitar cargos futuros, pero no se proporcionará reembolso para el período de facturación actual."
         },
         payAsYouGo: {
-          title: "Pago por uso ($8 por 150 minutos)",
+          title: "Pago por uso ($8 por 100 minutos)",
           content: "No hay reembolsos disponibles. Una vez comprados, los minutos están disponibles para uso inmediato y no pueden ser reembolsados."
         },
         annual: {
@@ -84,7 +84,7 @@ export default function RefundPolicyDialog({ isOpen, onClose, onOpenTermsOfServi
           content: "No refunds available. You can cancel your subscription at any time to prevent future charges, but no refund will be provided for the current billing period."
         },
         payAsYouGo: {
-          title: "Pay-as-you-go ($8 for 150 minutes)",
+          title: "Pay-as-you-go ($8 for 100 minutes)",
           content: "No refunds available. Once purchased, the minutes are available for immediate use and cannot be refunded."
         },
         annual: {

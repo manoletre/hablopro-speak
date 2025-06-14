@@ -1,16 +1,24 @@
 import { db } from './firebase-admin';
-import { UserBilling, CheckoutRequest, CheckoutResponse, PLANS } from '../types/billing';
-import { Paddle } from '@paddle/paddle-node-sdk';
+import { 
+  UserBilling, 
+  CheckoutRequest, 
+  CheckoutResponse, 
+  PLANS,
+  PaddleTransactionRequest,
+  PaddleTransactionResponse,
+  FirebaseDocumentData,
+} from '../types/billing';
+import { Paddle, Environment } from '@paddle/paddle-node-sdk';
 
 // Paddle API configuration
 const paddle = new Paddle(process.env.PADDLE_API_KEY!, {
-  environment: process.env.PADDLE_ENVIRONMENT as 'sandbox' | 'production' || 'sandbox',
+  environment: process.env.PADDLE_ENVIRONMENT === 'production' ? Environment.production : Environment.sandbox,
 });
 
 // Get price IDs using the provided Paddle IDs
 function getPriceIds() {
   return {
-    payg: 'pri_01jxacd6cxdkgkt4dm69e1s8v9', // PAYG price ($8 for 150 mins)
+    payg: 'pri_01jxacd6cxdkgkt4dm69e1s8v9', // PAYG price ($8 for 100 mins)
     monthly: 'pri_01jx8b45hdcsgmd0w86hbs8t6c', // Monthly subscription price
     annual: 'pri_01jx8b5dgh1r5hned24zsz7rvm', // Annual subscription price
   };
@@ -20,7 +28,7 @@ export class BillingService {
   // Create a checkout session with Paddle
   static async createCheckout(request: CheckoutRequest): Promise<CheckoutResponse> {
     try {
-      const response = await paddle.transactions.create({
+      const transactionRequest: PaddleTransactionRequest = {
         items: [
           {
             priceId: request.priceId,
@@ -30,18 +38,12 @@ export class BillingService {
         customData: {
           user_id: request.userId,
         },
-        customer: request.email ? {
-          email: request.email,
-          name: request.name,
-        } : undefined,
-        checkoutUrl: {
-          successUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard?checkout=success`,
-          discountId: undefined,
-        },
-      });
+      };
+
+      const response = await paddle.transactions.create(transactionRequest);
 
       return {
-        checkoutUrl: response.checkoutUrl || '',
+        checkoutUrl: (response as PaddleTransactionResponse).checkout?.url || '',
         checkoutId: response.id,
       };
     } catch (error) {
@@ -77,19 +79,19 @@ export class BillingService {
     const data = billingDoc.data()!;
     
     // Handle migration from minutes to seconds for existing users
-    const legacyData = data as any;
+    const legacyData = data as FirebaseDocumentData;
     if (legacyData.minutesRemaining !== undefined && legacyData.secondsRemaining === undefined) {
       console.log(`Migrating user ${userId} from minutes to seconds`);
       const migratedBilling = {
         ...data,
         secondsRemaining: legacyData.minutesRemaining * 60,
-        totalSecondsPurchased: legacyData.totalMinutesPurchased * 60,
+        totalSecondsPurchased: (legacyData.totalMinutesPurchased || 0) * 60,
         lastUpdated: new Date(),
       };
       
-              // Remove old minute fields
-        delete (migratedBilling as any).minutesRemaining;
-        delete (migratedBilling as any).totalMinutesPurchased;
+      // Remove old minute fields
+      delete (migratedBilling as FirebaseDocumentData).minutesRemaining;
+      delete (migratedBilling as FirebaseDocumentData).totalMinutesPurchased;
       
       await billingRef.set(migratedBilling);
       
@@ -115,12 +117,12 @@ export class BillingService {
     const billingRef = userRef.collection('billing').doc('current');
     
     // Filter out undefined values to avoid Firestore errors
-    const cleanedBilling: any = {
+    const cleanedBilling: Record<string, unknown> = {
       lastUpdated: new Date(),
     };
     
     Object.keys(billing).forEach(key => {
-      const value = (billing as any)[key];
+      const value = (billing as Record<string, unknown>)[key];
       if (value !== undefined) {
         cleanedBilling[key] = value;
       }
@@ -214,7 +216,8 @@ export class BillingService {
   }
 
   // Add seconds to user account (from purchase)
-  static async addSeconds(userId: string, seconds: number, planType: 'payg' | 'monthly' | 'annual'): Promise<void> {
+  static async addSeconds(userId: string, seconds: number, planType: 'payg' | 'monthly' | 'annual', subscriptionId?: string, isRenewal?: boolean): Promise<void> {
+    console.log(`💰 BillingService.addSeconds called - userId: ${userId}, seconds: ${seconds}, planType: ${planType}`);
     const userRef = db.collection('users').doc(userId);
     const billingRef = userRef.collection('billing').doc('current');
     
@@ -233,12 +236,12 @@ export class BillingService {
         const data = billingDoc.data()!;
         
         // Handle migration from minutes to seconds for existing users
-        const legacyData = data as any;
+        const legacyData = data as FirebaseDocumentData;
         if (legacyData.minutesRemaining !== undefined && legacyData.secondsRemaining === undefined) {
           currentBilling = {
             ...data,
             secondsRemaining: legacyData.minutesRemaining * 60,
-            totalSecondsPurchased: legacyData.totalMinutesPurchased * 60,
+            totalSecondsPurchased: (legacyData.totalMinutesPurchased || 0) * 60,
             lastUpdated: data.lastUpdated.toDate(),
             subscriptionEndsAt: data.subscriptionEndsAt?.toDate(),
             subscriptionRenewsAt: data.subscriptionRenewsAt?.toDate(),
@@ -254,12 +257,20 @@ export class BillingService {
       }
       
       // Only include defined fields to avoid Firestore "undefined" error
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         secondsRemaining: currentBilling.secondsRemaining + seconds,
         totalSecondsPurchased: currentBilling.totalSecondsPurchased + seconds,
-        planType,
         lastUpdated: new Date(),
       };
+
+      // Only update planType if this transaction represents a subscription purchase/renewal.
+      // Do NOT overwrite an existing monthly/annual plan with PAYG purchases.
+      if (planType === 'monthly' || planType === 'annual') {
+        updateData.planType = planType;
+      } else if (!currentBilling.planType) {
+        // If user never had a planType before (legacy free users), store payg
+        updateData.planType = planType;
+      }
 
       // Only include subscription fields if they exist and are not undefined
       if (currentBilling.subscriptionStatus !== undefined) {
@@ -278,15 +289,26 @@ export class BillingService {
         updateData.subscriptionEndsAt = currentBilling.subscriptionEndsAt;
       }
 
+      console.log(`💰 BillingService.addSeconds - Adding ${seconds} seconds to user ${userId}. Before: ${currentBilling.secondsRemaining}, After: ${currentBilling.secondsRemaining + seconds}`);
+      
       transaction.set(billingRef, updateData, { merge: true });
       
       // Log the purchase
       const purchaseRef = userRef.collection('purchases').doc();
-      transaction.set(purchaseRef, {
+      const purchaseData: Record<string, unknown> = {
         secondsAdded: seconds,
         planType,
         timestamp: new Date(),
-      });
+        type: isRenewal ? 'renewal' : 'initial_purchase',
+      };
+      
+      if (subscriptionId) {
+        purchaseData.subscriptionId = subscriptionId;
+      }
+      
+      transaction.set(purchaseRef, purchaseData);
+      
+      console.log(`💰 BillingService.addSeconds - Transaction completed successfully for user ${userId}`);
     });
   }
 
@@ -294,4 +316,42 @@ export class BillingService {
   static getPriceIds() {
     return getPriceIds();
   }
+
+  // Track payment status
+  static async updatePaymentStatus(
+    userId: string, 
+    status: 'processing' | 'completed' | 'failed',
+    amount?: number,
+    planType?: 'payg' | 'monthly' | 'annual'
+  ): Promise<void> {
+    const updateData: Partial<UserBilling> = {
+      recentPaymentStatus: status,
+      recentPaymentTimestamp: new Date(),
+    };
+
+    if (amount !== undefined) {
+      updateData.recentPaymentAmount = amount;
+    }
+    if (planType !== undefined) {
+      updateData.recentPaymentPlanType = planType;
+    }
+
+    await this.updateUserBilling(userId, updateData);
+  }
+
+  // Clear payment status (e.g., after user has seen the result)
+  static async clearPaymentStatus(userId: string): Promise<void> {
+    const userRef = db.collection('users').doc(userId);
+    const billingRef = userRef.collection('billing').doc('current');
+    
+    await billingRef.update({
+      recentPaymentStatus: null,
+      recentPaymentTimestamp: null,
+      recentPaymentAmount: null,
+      recentPaymentPlanType: null,
+      lastUpdated: new Date(),
+    });
+  }
+
+
 } 

@@ -3,6 +3,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { UserBilling, CheckoutRequest, CheckoutResponse } from '../types/billing';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 interface BillingContextType {
   billing: UserBilling | null;
@@ -77,10 +79,39 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Initial fetch when user changes
+  // Subscribe to billing document in real-time
   useEffect(() => {
+    if (!user?.uid) {
+      setBilling(null);
+      setLoading(false);
+      return;
+    }
+
+    const billingDocRef = doc(db, 'users', user.uid, 'billing', 'current');
+    const unsubscribe = onSnapshot(billingDocRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data() as import('../types/billing').FirebaseDocumentData;
+        setBilling({
+          ...data,
+          lastUpdated: (data.lastUpdated && typeof data.lastUpdated !== 'string' && 'toDate' in data.lastUpdated) 
+            ? data.lastUpdated.toDate() 
+            : new Date(),
+          subscriptionEndsAt: (data.subscriptionEndsAt && typeof data.subscriptionEndsAt !== 'string' && 'toDate' in data.subscriptionEndsAt) 
+            ? data.subscriptionEndsAt.toDate() 
+            : undefined,
+          subscriptionRenewsAt: (data.subscriptionRenewsAt && typeof data.subscriptionRenewsAt !== 'string' && 'toDate' in data.subscriptionRenewsAt) 
+            ? data.subscriptionRenewsAt.toDate() 
+            : undefined,
+        } as UserBilling);
+      }
+      setLoading(false);
+    });
+
+    // Fallback initial fetch (in case onSnapshot delay)
     fetchBilling();
-  }, [fetchBilling]);
+
+    return () => unsubscribe();
+  }, [user?.uid, fetchBilling]);
 
   // Fetch price IDs only once when provider mounts
   useEffect(() => {

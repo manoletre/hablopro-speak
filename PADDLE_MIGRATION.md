@@ -40,7 +40,7 @@ The following Paddle IDs are already hardcoded in the application:
 ### Prices
 - **Monthly Subscription**: `pri_01jx8b45hdcsgmd0w86hbs8t6c`
 - **Annual Subscription**: `pri_01jx8b5dgh1r5hned24zsz7rvm`
-- **PAYG (150 mins for $8)**: `pri_01jxacd6cxdkgkt4dm69e1s8v9`
+- **PAYG (100 mins for $8)**: `pri_01jxacd6cxdkgkt4dm69e1s8v9`
 
 ## Key Changes Made
 
@@ -110,10 +110,30 @@ Set up the webhook endpoint in your Paddle dashboard:
 ✅ **Better Analytics** - Enhanced transaction tracking capabilities
 ✅ **Global Payment Support** - Paddle's worldwide payment methods
 
+## Latest Updates - Customer Portal Integration
+
+✅ **Added Paddle Customer Portal** - New API endpoint `/api/billing/customer-portal/route.ts`
+✅ **Updated BillingWidget** - Now uses Paddle customer portal for subscription management
+✅ **Removed LemonSqueezy billing URL** - Replaced hardcoded LemonSqueezy URL with dynamic Paddle portal
+✅ **Updated GetMoreMinsModal** - Now uses Paddle.js overlay instead of LemonSqueezy
+✅ **Cleaned up billing types** - Removed `customerPortalUrl` field, now generated dynamically
+
 ## Cleanup Completed
 
 - ❌ Removed old LemonSqueezy webhook (`app/api/webhooks/lemonsqueezy/route.ts`)
 - ❌ Removed LemonSqueezy script from layout
 - ❌ Removed all LemonSqueezy-specific code
+- ❌ Removed hardcoded LemonSqueezy billing portal URL
+- ❌ Removed LemonSqueezy checkout overlay references
+
+## Customer Portal Features
+
+Customers can now:
+
+* **Manage Subscriptions** - View, modify, pause, or cancel subscriptions
+* **Update Payment Methods** - Change credit cards and payment details
+* **View Transaction History** - See all past payments and invoices
+* **Download Invoices** - Access billing documents
+* **Update Account Information** - Modify billing address and details
 
 The migration is now complete and ready for testing! 

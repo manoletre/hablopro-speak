@@ -145,7 +145,6 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
   
   // Batched billing state
   const [lastBillingUpdate, setLastBillingUpdate] = useState<number | null>(null);
-  const [pendingSecondsToDeduct, setPendingSecondsToDeduct] = useState(0);
   const batchUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // Update the conversation history initialization to avoid hardcoded messages
@@ -1105,7 +1104,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
       // Always reset the initialization flag
       initializingRef.current = false;
     }
-  }, [handleDataChannelEvent, cleanupAudioResources, difficultyLevel, language, isCJK, user?.uid, sessionKey, isConnected, isFinishing, showResults, getOptimalAudioConstraints, isMobile]);
+  }, [handleDataChannelEvent, cleanupAudioResources, difficultyLevel, language, isCJK, user?.uid, sessionKey, isConnected, isFinishing, showResults, getOptimalAudioConstraints, isMobile, billing, maxSessionTime]);
 
    // Function to stop the conversation
   const stopConversation = async () => {
@@ -1255,14 +1254,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
         const currentDuration = Math.floor((Date.now() - sessionStartTime) / 1000);
         setTotalSessionDuration(currentDuration);
         
-        // Update pending seconds to deduct - track time since last billing update
-        if (lastBillingUpdate !== null) {
-          const timeSinceLastBilling = Math.floor((Date.now() - lastBillingUpdate) / 1000);
-          setPendingSecondsToDeduct(timeSinceLastBilling);
-        } else {
-          // Fallback: if no lastBillingUpdate set, use total duration
-          setPendingSecondsToDeduct(currentDuration);
-        }
+
       }, 1000);
       
       return () => clearInterval(interval);
@@ -1455,7 +1447,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
         isFinishing: isFinishing
       });
     }
-  }, [user, billing, maxSessionTime, isConnected, showResults, isFinishing, isMobile, checkMinutesBeforeSession]); // Removed initWebRTC from dependencies to prevent re-creation loops
+  }, [user, billing, maxSessionTime, isConnected, showResults, isFinishing, isMobile, checkMinutesBeforeSession, billingHandled, hasEnoughMinutes, initWebRTC]); // Removed initWebRTC from dependencies to prevent re-creation loops
 
   // Effect to track session start
   useEffect(() => {
@@ -1628,7 +1620,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     setShowResults(true);
     
     console.log('Session finished and results shown immediately');
-  }, [conversationHistory, aiTranscript, cleanupAudioResources, user, language, difficultyLevel, timeRemaining, sessionId, sessionStartTime, totalSessionDuration, refreshBilling, maxSessionTime, pendingSecondsToDeduct]);
+  }, [conversationHistory, aiTranscript, cleanupAudioResources, user, language, difficultyLevel, sessionId, sessionStartTime, totalSessionDuration, refreshBilling, isWrappingUp, wrapUpMessageSent]);
 
   // Update the reference after definition
   useEffect(() => {
@@ -1681,7 +1673,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     } else if (wrapUpMessageSent) {
       console.log('Wrap-up message already sent, skipping duplicate');
     }
-  }, [language, wrapUpMessageSent, dataChannelRef]);
+  }, [language, wrapUpMessageSent]);
 
   // Simplify the timing logic for detecting when AI stops speaking
   useEffect(() => {

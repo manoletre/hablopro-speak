@@ -1,7 +1,5 @@
-'use client';
-
-import LandingPage from '../page';
+import { redirect } from 'next/navigation';
 
 export default function TermsOfServiceRoute() {
-  return <LandingPage initialDialog="terms" />;
+  redirect('/?dialog=terms');
 } 

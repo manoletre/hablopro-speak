@@ -18,7 +18,8 @@ export default function BillingWidget({ className = '' }: BillingWidgetProps) {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showGetMoreMinsModal, setShowGetMoreMinsModal] = useState(false);
 
-  if (loading) {
+  // Show loading skeleton only if we're still loading *and* have no billing data yet.
+  if (loading && !billing) {
     return (
       <div className={`animate-pulse ${className}`}>
         <div className="h-4 bg-amber-200 rounded mb-2"></div>
@@ -41,16 +42,7 @@ export default function BillingWidget({ className = '' }: BillingWidgetProps) {
     if (progressPercentage > 50) return 'bg-green-500';
     if (progressPercentage > 20) return 'bg-yellow-500';
     return 'bg-red-500';
-  };
-
-  const formatMinutes = (minutes: number) => {
-    if (minutes >= 60) {
-      const hours = Math.floor(minutes / 60);
-      const remainingMinutes = minutes % 60;
-      return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
-    }
-    return `${minutes}m`;
-  };
+  }; 
 
   return (
     <>
@@ -113,12 +105,35 @@ export default function BillingWidget({ className = '' }: BillingWidgetProps) {
             {billing.secondsRemaining <= 0 ? t('billing.getMoreTime') : t('billing.getMoreMins')}
             </button>
             <button
-              onClick={() => {
-                if (billing.customerPortalUrl) {
-                  window.open(billing.customerPortalUrl, '_blank');
-                } else {
-                  // Fallback to general customer portal
-                  window.open(`https://hablopro.lemonsqueezy.com/billing`, '_blank');
+              onClick={async () => {
+                try {
+                  // Create a fresh customer portal session with Paddle
+                  if (billing.customerId) {
+                    const response = await fetch('/api/billing/customer-portal', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        customerId: billing.customerId,
+                        subscriptionIds: billing.subscriptionId ? [billing.subscriptionId] : undefined,
+                      }),
+                    });
+
+                    if (response.ok) {
+                      const data = await response.json();
+                      window.open(data.overviewUrl, '_blank');
+                    } else {
+                      console.error('Failed to create customer portal session');
+                      alert('Unable to open billing portal. Please try again.');
+                    }
+                  } else {
+                    console.error('No customer ID available');
+                    alert('Unable to open billing portal. Please contact support.');
+                  }
+                } catch (error) {
+                  console.error('Error opening customer portal:', error);
+                  alert('Unable to open billing portal. Try again.');
                 }
               }}
               className="w-full py-1.5 px-3 rounded-lg text-xs font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-300"

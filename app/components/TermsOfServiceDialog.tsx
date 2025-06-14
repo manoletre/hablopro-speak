@@ -42,9 +42,9 @@ export default function TermsOfServiceDialog({ isOpen, onClose, onOpenPrivacyPol
         content: "hablo.pro permite a los usuarios conversar con un tutor impulsado por IA diseñado para ayudarte a aprender un nuevo idioma a través de sesiones interactivas habladas. Ofrecemos:",
         features: [
           "Prueba gratuita: 10 minutos de práctica de conversación con un máximo de 5 minutos por conversación, acceso a más de 10 idiomas y retroalimentación personalizada.",
-          "Suscripción mensual: $12 USD/mes por 250 minutos de conversación (los minutos no utilizados se acumulan al mes siguiente), con conversaciones de hasta 15 minutos.",
-          "Suscripción anual: $120 USD/año (ahorra $24) por 3,000 minutos por año, con conversaciones de hasta 15 minutos.",
-          "Pago por uso: compra única de 150 minutos (nunca expiran) por $8 USD, perfecto para uso ocasional sin compromiso mensual."
+          "Suscripción mensual: $12 USD/mes por 200 minutos de conversación (los minutos no utilizados se acumulan al mes siguiente), con conversaciones de hasta 15 minutos.",
+                      "Suscripción anual: $120 USD/año (ahorra $24) por 2,400 minutos por año, con conversaciones de hasta 15 minutos.",
+          "Pago por uso: compra única de 100 minutos (nunca expiran) por $8 USD, perfecto para uso ocasional sin compromiso mensual."
         ],
         refundNote: "Para más detalles sobre reembolsos, consulte nuestra {refundPolicy}."
       },
@@ -113,9 +113,9 @@ export default function TermsOfServiceDialog({ isOpen, onClose, onOpenPrivacyPol
         content: "hablo.pro enables users to converse with an AI-powered tutor designed to help you learn a new language through interactive spoken sessions. We offer:",
         features: [
           "Free trial: 10 minutes of speaking practice with a maximum of 5 minutes per conversation, access to all 10+ languages, and personalized feedback.",
-          "Monthly subscription: $12 USD/month for 250 minutes of conversation (unused minutes roll over to the following month), with up to 15-minute conversations.",
-          "Annual subscription: $120 USD/year (save $24) for 3,000 minutes per year, with up to 15-minute conversations.",
-          "Pay-as-you-go: one‑time purchase of 150 minutes (never expire) for $8 USD, perfect for occasional use with no monthly commitment."
+          "Monthly subscription: $12 USD/month for 200 minutes of conversation (unused minutes roll over to the following month), with up to 15-minute conversations.",
+                      "Annual subscription: $120 USD/year (save $24) for 2,400 minutes per year, with up to 15-minute conversations.",
+          "Pay-as-you-go: one‑time purchase of 100 minutes (never expire) for $8 USD, perfect for occasional use with no monthly commitment."
         ],
         refundNote: "For more details on refunds, please see our {refundPolicy}."
       },
