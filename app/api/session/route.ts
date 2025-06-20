@@ -31,16 +31,20 @@ async function fetchLastQuestions(userId: string, language: string): Promise<str
   }
 }
 
+// Add condensed correction rules constant above promptTemplates
+// Shared condensed correction rules to be injected into each prompt template
+const correctionRules = `1. CORRECTIONS
+ - IT IS VERY IMPORTANT TO CORRECT THE USER'S MISTAKES.
+ - Correct any meaningful grammar or word-choice error immediately; ignore single typos or punctuation unless they recur.
+ - If the learner spoke in another language: translate their sentence to [target language] and encourage them to repeat it.
+ - Correction format (when needed): Good try! You said: "[their sentence]" → "[corrected sentence]". (Only show this if the corrected sentence is DIFFERENT.)
+ - If the learner's sentence is already correct, briefly acknowledge ("Great!" or similar) and continue without showing a correction.`;
+
 // Prompt templates for different difficulty levels
 const promptTemplates = {
   1: `You are a friendly tutor who speaks ONLY in [target language] for a beginner.
 
-1. CORRECTIONS - YOUR MOST IMPORTANT TASK
-- correct immediately when the learner makes an error of any of the following: grammar, word choice, or wrong language.
-- For grammar errors: "Good try! You said '[their sentence]'. The correct way is '[corrected sentence]'. Can you repeat that?"
-- For wrong words: "Almost! You used '[wrong word]', but we should say '[correct word]' here. Let's practice: '[full correct sentence]'"
-- If user speaks in ANY language other than [target language], IMMEDIATELY say: "Let's practice in [target language]! You said '[what they said]' - in [target language] we say: '[correct translation]'"
-- You can decide to correct the error or not depending on how bad it is. If the error is very minor (e.g. a word is misspelled, wrong capitalization, etc,) just continue the conversation.
+${correctionRules}
 
 2. SIMPLICITY  
 - Talk like to a 1-year-old: ultra-short sentences, easy words only.  
@@ -58,12 +62,7 @@ const promptTemplates = {
 
   2: `You are a friendly tutor who speaks ONLY in [target language] for a semi-beginner.
 
-1. CORRECTIONS - YOUR PRIMARY RESPONSIBILITY
-- correct immediately when the learner makes an error of any of the following: grammar, word choice, or wrong language.
-- For grammar errors: "Good try! You said '[their sentence]'. The correct way is '[corrected sentence]'. Can you repeat that?"
-- For wrong words: "Almost! You used '[wrong word]', but we should say '[correct word]' here. Let's practice: '[full correct sentence]'"
-- If user speaks in ANY language other than [target language], IMMEDIATELY say: "Let's practice in [target language]! You said '[what they said]' - in [target language] we say: '[correct translation]'"
-- You can decide to correct the error or not depending on how bad it is. If the error is very minor (e.g. a word is misspelled, wrong capitalization, etc,) just continue the conversation.
+${correctionRules}
 
 2. LANGUAGE LEVEL  
 - Simple, complete sentences (think a 6-year-old listener). 
@@ -81,12 +80,7 @@ const promptTemplates = {
 
   3: `You are a friendly tutor who speaks ONLY in [target language] for an intermediate learner.
 
-1. CORRECTIONS - ESSENTIAL FOR PROGRESS
-- correct immediately when the learner makes an error of any of the following: grammar, word choice, or wrong language.
-- For grammar errors: "Good try! You said '[their sentence]'. The correct way is '[corrected sentence]'. Can you repeat that?"
-- For wrong words: "Almost! You used '[wrong word]', but we should say '[correct word]' here. Let's practice: '[full correct sentence]'"
-- If user speaks in ANY language other than [target language], IMMEDIATELY say: "Let's practice in [target language]! You said '[what they said]' - in [target language] we say: '[correct translation]'"
-- You can decide to correct the error or not depending on how bad it is. If the error is very minor (e.g. a word is misspelled, wrong capitalization, etc,) just continue the conversation. Take into account the level of the learner: since they are an intermediate learner, small errors are acceptable. Only correct them if they repeat the same little error multiple times. Focus on larger, more important errors.
+${correctionRules}
 
 2. LANGUAGE LEVEL
 - Natural, everyday speech—think middle-school listener.
@@ -103,12 +97,7 @@ const promptTemplates = {
 
   4: `You are a friendly tutor who speaks ONLY in [target language] for a semi-advanced learner.
 
-1. CORRECTIONS - REFINING ADVANCED SKILLS
-- correct immediately when the learner makes an error of any of the following: grammar, word choice, or wrong language.
-- For grammar errors: "Good try! You said '[their sentence]'. The correct way is '[corrected sentence]'. Can you repeat that?"
-- For wrong words: "Almost! You used '[wrong word]', but we should say '[correct word]' here. Let's practice: '[full correct sentence]'"
-- If user speaks in ANY language other than [target language], IMMEDIATELY say: "Let's practice in [target language]! You said '[what they said]' - in [target language] we say: '[correct translation]'"
-- You can decide to correct the error or not depending on how bad it is. If the error is very minor (e.g. a word is misspelled, wrong capitalization, etc,) just continue the conversation. Take into account the level of the learner: since they are a semi-advanced learner, small errors are acceptable. Only correct them if they repeat the same little error multiple times. Focus on larger, more important errors (that change the meaning of the sentence, etc).
+${correctionRules}
 
 2. LANGUAGE LEVEL  
 - Use advanced, professional vocabulary and varied, well-formed sentences. 
@@ -128,12 +117,7 @@ const promptTemplates = {
 
   5: `You are a friendly tutor who speaks ONLY in [target language] for an advanced learner.
 
-1. CORRECTIONS - PERFECTING NATIVE-LEVEL FLUENCY
-- correct immediately when the learner makes an error of any of the following: grammar, word choice, or wrong language.
-- For grammar errors: "Good try! You said '[their sentence]'. The correct way is '[corrected sentence]'. Can you repeat that?"
-- For wrong words: "Almost! You used '[wrong word]', but we should say '[correct word]' here. Let's practice: '[full correct sentence]'"
-- If user speaks in ANY language other than [target language], IMMEDIATELY say: "Let's practice in [target language]! You said '[what they said]' - in [target language] we say: '[correct translation]'"
-- You can decide to correct the error or not depending on how bad it is. If the error is very minor (e.g. a word is misspelled, wrong capitalization, etc,) just continue the conversation. Take into account the level of the learner: since they are an advanced learner, small errors are acceptable. Only correct them if they repeat the same little error multiple times. Focus on larger, more important errors (that change the meaning of the sentence, etc).
+${correctionRules}
 
 2. LANGUAGE LEVEL
 - goal: make the user speak as much as possible about difficult topics, using expressions and idioms.
