@@ -40,6 +40,13 @@ export class BillingService {
   // Create a checkout session with Paddle
   static async createCheckout(request: CheckoutRequest): Promise<CheckoutResponse> {
     try {
+      console.log('🔍 Creating Paddle checkout with:', {
+        environment: process.env.PADDLE_ENVIRONMENT,
+        priceId: request.priceId,
+        userId: request.userId,
+        apiKeyPrefix: process.env.PADDLE_API_KEY?.substring(0, 8) + '...'
+      });
+
       const transactionRequest: PaddleTransactionRequest = {
         items: [
           {
@@ -52,15 +59,33 @@ export class BillingService {
         },
       };
 
+      console.log('🔍 Paddle transaction request:', JSON.stringify(transactionRequest, null, 2));
+
       const response = await paddle.transactions.create(transactionRequest);
+
+      console.log('✅ Paddle checkout created successfully:', {
+        transactionId: response.id,
+        checkoutUrl: (response as PaddleTransactionResponse).checkout?.url
+      });
 
       return {
         checkoutUrl: (response as PaddleTransactionResponse).checkout?.url || '',
         checkoutId: response.id,
       };
-    } catch (error) {
-      console.error('Error creating Paddle checkout:', error);
-      throw new Error('Failed to create checkout session');
+    } catch (error: any) {
+      console.error('❌ Paddle checkout error details:', {
+        message: error.message,
+        status: error.status,
+        statusCode: error.statusCode,
+        code: error.code,
+        type: error.type,
+        errors: error.errors,
+        response: error.response,
+        stack: error.stack
+      });
+      
+      // Re-throw with more context
+      throw new Error(`Paddle checkout failed: ${error.message} (${error.status || error.statusCode || 'unknown'})`);
     }
   }
 

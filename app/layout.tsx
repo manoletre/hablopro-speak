@@ -120,16 +120,24 @@ export default function RootLayout({
                 const token = ${JSON.stringify(process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || '')};
 
                 if (window.Paddle) {
+                  // Explicitly set environment
                   if (env === 'sandbox') {
                     window.Paddle.Environment.set('sandbox');
+                  } else {
+                    window.Paddle.Environment.set('production');
                   }
+
+                  console.log('🔍 Initializing Paddle.js:', {
+                    environment: env,
+                    tokenPrefix: token ? token.substring(0, 8) + '...' : 'MISSING'
+                  });
 
                   window.Paddle.Initialize({
                     token,
                     checkout: {
                       settings: {
                         allowedPaymentMethods: ['card', 'paypal', 'apple_pay', 'google_pay'],
-                        successUrl: window.location.origin + '/dashboard?checkout=success',
+                        successUrl: window.location.origin + '/learn?checkout=success',
                         locale: 'en',
                       },
                     },
