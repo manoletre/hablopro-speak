@@ -72,20 +72,31 @@ export class BillingService {
         checkoutUrl: (response as PaddleTransactionResponse).checkout?.url || '',
         checkoutId: response.id,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const paddleError = error as {
+        message?: string;
+        status?: number;
+        statusCode?: number;
+        code?: string;
+        type?: string;
+        errors?: unknown;
+        response?: unknown;
+        stack?: string;
+      };
+      
       console.error('❌ Paddle checkout error details:', {
-        message: error.message,
-        status: error.status,
-        statusCode: error.statusCode,
-        code: error.code,
-        type: error.type,
-        errors: error.errors,
-        response: error.response,
-        stack: error.stack
+        message: paddleError.message || 'Unknown error',
+        status: paddleError.status,
+        statusCode: paddleError.statusCode,
+        code: paddleError.code,
+        type: paddleError.type,
+        errors: paddleError.errors,
+        response: paddleError.response,
+        stack: paddleError.stack
       });
       
       // Re-throw with more context
-      throw new Error(`Paddle checkout failed: ${error.message} (${error.status || error.statusCode || 'unknown'})`);
+      throw new Error(`Paddle checkout failed: ${paddleError.message || 'Unknown error'} (${paddleError.status || paddleError.statusCode || 'unknown'})`);
     }
   }
 
