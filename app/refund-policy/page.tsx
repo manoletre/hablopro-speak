@@ -1,5 +1,14 @@
-import { redirect } from 'next/navigation';
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function RefundPolicyRoute() {
-  redirect('/?dialog=refund');
+  const router = useRouter();
+  
+  useEffect(() => {
+    router.replace('/?dialog=refund');
+  }, [router]);
+  
+  return null; // This page will redirect immediately
 } 

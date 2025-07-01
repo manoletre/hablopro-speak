@@ -32,6 +32,7 @@ export default function RefundPolicyDialog({ isOpen, onClose, onOpenTermsOfServi
     close: "Cerrar",
     termsOfService: "Términos de Servicio",
     privacyPolicy: "Política de Privacidad",
+    intro: "Esta política de reembolso describe los términos y condiciones para reembolsos de los servicios de hablo.pro (Manuel Cardenas Prieto).",
     sections: {
       eligibility: {
         title: "1. Elegibilidad para Reembolso",
@@ -75,6 +76,7 @@ export default function RefundPolicyDialog({ isOpen, onClose, onOpenTermsOfServi
     close: "Close",
     termsOfService: "Terms of Service",
     privacyPolicy: "Privacy Policy",
+    intro: "This refund policy outlines the terms and conditions for refunds of hablo.pro (Manuel Cardenas Prieto) services.",
     sections: {
       eligibility: {
         title: "1. Refund Eligibility",
@@ -169,6 +171,10 @@ export default function RefundPolicyDialog({ isOpen, onClose, onOpenTermsOfServi
           <div className="prose prose-xs sm:prose-sm dark:prose-invert max-w-none break-words">
             <p className="text-gray-600 dark:text-gray-300 mb-6">
               <strong>{content.effectiveDate}</strong> {isSpanish ? "1 de julio de 2025" : "July 1, 2025"}
+            </p>
+            
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              {content.intro}
             </p>
             
             <h3 className="text-lg font-semibold text-[#422006] dark:text-amber-200 mb-3">

@@ -1,5 +1,14 @@
-import { redirect } from 'next/navigation';
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function PrivacyPolicyRoute() {
-  redirect('/?dialog=privacy');
+  const router = useRouter();
+  
+  useEffect(() => {
+    router.replace('/?dialog=privacy');
+  }, [router]);
+  
+  return null; // This page will redirect immediately
 } 

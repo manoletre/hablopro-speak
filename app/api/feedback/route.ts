@@ -15,12 +15,7 @@ IMPORTANT: Be generous with learning opportunities! Aim for 2-3 vocabulary and g
 
 The feedback should include:
 
-1. A key takeaway - identify the MOST IMPORTANT concrete improvement the user can make based on their conversation. This should be:
-   - A specific repeated mistake they made (provide examples in {targetLanguage})
-   - A concrete pattern they should adopt (with {targetLanguage} examples)
-   - A specific word choice improvement (with {targetLanguage} alternatives)
-   - Something actionable they can immediately apply in their next conversation
-   - If no major patterns emerge, focus on the single most impactful improvement from the conversation
+1. A key takeaway - identify the MOST IMPORTANT concrete improvement the user can make based on their conversation. Use the other corrections and make a concrete takeaway from the conversation to make it better. Make sure the key takeaway is useful and actionble. Adress it to the user ("You can improve by..."). Make sure the key takeaway is not too general, but specific to the conversation, and avoid repeating something here that is already mentioned in the other corrections.
 
 2. Speaking improvements - BE GENEROUS! Look for ANY opportunity to teach better expressions, including:
    - Actual mistakes that need correction (just no spelling errors or typos)
@@ -69,12 +64,7 @@ IMPORTANTE: ¡Sé generoso con las oportunidades de aprendizaje! Apunta a 2-3 re
 
 La retroalimentación debe incluir:
 
-1. Una conclusión clave - identifica la mejora concreta MÁS IMPORTANTE que el usuario puede hacer basada en su conversación. Esto debe ser:
-   - Un error específico repetido que cometieron (proporciona ejemplos en {targetLanguage})
-   - Un patrón concreto que deberían adoptar (con ejemplos en {targetLanguage})
-   - Una mejora específica en elección de palabras (con alternativas en {targetLanguage})
-   - Algo accionable que puedan aplicar inmediatamente en su próxima conversación
-   - Si no emergen patrones importantes, enfócate en la mejora más impactante de la conversación
+1. Una conclusión clave - identifica la mejora concreta MÁS IMPORTANTE que el usuario puede hacer basada en su conversación. Usa las otras correcciones y haz una conclusión concreta de la conversación para mejorar. Asegúrate de que la conclusión es útil y accionable. Dirígete al usuario ("Puedes mejorar..."). Asegúrate de que la conclusión no es demasiado general, pero específica para la conversación, y evita repetir algo aquí que ya está mencionado en las otras correcciones.
 
 2. Mejoras del habla - ¡SÉ GENEROSO! Busca CUALQUIER oportunidad para enseñar mejores expresiones, incluyendo:
    - Errores reales que necesitan corrección

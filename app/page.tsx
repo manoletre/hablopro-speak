@@ -26,23 +26,14 @@ const jsonLd = {
     price: '0',
     priceCurrency: 'USD',
   },
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '4.8',
-    ratingCount: '1000',
-  },
 };
 
-function LandingPageContent() {
+export default function LandingPage() {
   const { setLanguage } = useLanguage();
   const { user } = useAuth();
-  const searchParams = useSearchParams();
-  const initialDialogParam = searchParams?.get('dialog');
-  const initialSectionParam = searchParams?.get('section');
-
-  const [showTerms, setShowTerms] = useState(initialDialogParam === 'terms');
-  const [showPrivacy, setShowPrivacy] = useState(initialDialogParam === 'privacy');
-  const [showRefund, setShowRefund] = useState(initialDialogParam === 'refund');
+  const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showRefund, setShowRefund] = useState(false);
   const [activeSection, setActiveSection] = useState('');
 
   const languages = [
@@ -82,17 +73,31 @@ function LandingPageContent() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Auto-scroll to a section passed via query param (?section=pricing)
+  // Handle URL parameters for dialogs and sections
   useEffect(() => {
-    if (initialSectionParam) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const dialog = urlParams.get('dialog');
+    const section = urlParams.get('section');
+    
+    // Handle dialog parameter
+    if (dialog === 'terms') {
+      setShowTerms(true);
+    } else if (dialog === 'privacy') {
+      setShowPrivacy(true);
+    } else if (dialog === 'refund') {
+      setShowRefund(true);
+    }
+    
+    // Handle section parameter - auto-scroll to section
+    if (section) {
       setTimeout(() => {
-        const el = document.getElementById(initialSectionParam);
+        const el = document.getElementById(section);
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       }, 50);
     }
-  }, [initialSectionParam]);
+  }, []);
 
   const smoothScrollTo = (elementId: string) => {
     const element = document.getElementById(elementId);

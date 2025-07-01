@@ -32,7 +32,7 @@ export default function PrivacyPolicyDialog({ isOpen, onClose, onOpenTermsOfServ
     close: "Cerrar",
     termsOfService: "Términos de Servicio",
     refundPolicy: "Política de Reembolso",
-    intro: "hablo.pro (\"nosotros\", \"nos\", \"nuestro\") respeta su privacidad y se compromete a proteger sus datos personales. Esta Política de Privacidad explica cómo recopilamos, usamos, compartimos y protegemos su información en cumplimiento con las leyes aplicables, incluyendo el Reglamento General de Protección de Datos de la UE (GDPR), la Ley de Privacidad del Consumidor de California (CCPA), la Ley de Protección de la Privacidad Infantil en Línea (COPPA), y la Ley de Protección de la Privacidad en Línea de California (CalOPPA).",
+    intro: "hablo.pro (Manuel Cardenas Prieto) (\"nosotros\", \"nos\", \"nuestro\") respeta su privacidad y se compromete a proteger sus datos personales. Esta Política de Privacidad explica cómo recopilamos, usamos, compartimos y protegemos su información en cumplimiento con las leyes aplicables, incluyendo el Reglamento General de Protección de Datos de la UE (GDPR), la Ley de Privacidad del Consumidor de California (CCPA), la Ley de Protección de la Privacidad Infantil en Línea (COPPA), y la Ley de Protección de la Privacidad en Línea de California (CalOPPA).",
     sections: {
       information: {
         title: "1. Información que Recopilamos",
@@ -127,7 +127,7 @@ export default function PrivacyPolicyDialog({ isOpen, onClose, onOpenTermsOfServ
     close: "Close",
     termsOfService: "Terms of Service",
     refundPolicy: "Refund Policy",
-    intro: "hablo.pro (\"we\", \"us\", \"our\") respects your privacy and is committed to protecting your personal data. This Privacy Policy explains how we collect, use, share, and safeguard your information in compliance with applicable laws, including the EU General Data Protection Regulation (GDPR), the California Consumer Privacy Act (CCPA), the Children's Online Privacy Protection Act (COPPA), and the California Online Privacy Protection Act (CalOPPA).",
+    intro: "hablo.pro (Manuel Cardenas Prieto) (\"we\", \"us\", \"our\") respects your privacy and is committed to protecting your personal data. This Privacy Policy explains how we collect, use, share, and safeguard your information in compliance with applicable laws, including the EU General Data Protection Regulation (GDPR), the California Consumer Privacy Act (CCPA), the Children's Online Privacy Protection Act (COPPA), and the California Online Privacy Protection Act (CalOPPA).",
     sections: {
       information: {
         title: "1. Information We Collect",
