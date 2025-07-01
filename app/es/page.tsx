@@ -406,6 +406,10 @@ function LandingPageContent() {
                   </li>
                   <li className="flex items-center text-amber-800 text-lg">
                     <span className="text-green-600 mr-2">✓</span>
+                    Máximo 5 mins por conversación
+                  </li>
+                  <li className="flex items-center text-amber-800 text-lg">
+                    <span className="text-green-600 mr-2">✓</span>
                     Todos los idiomas y características
                   </li>
                   <li className="flex items-center text-amber-800 text-lg">

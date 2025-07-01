@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { Paddle, Environment } from '@paddle/paddle-node-sdk';
 import { BillingService } from '../../../lib/billing';
 import { PaddleWebhookEvent, PLANS, PaddleWebhookItem } from '../../../types/billing';
+import { db } from '../../../lib/firebase-admin';
 
 const PADDLE_WEBHOOK_SECRET = process.env.PADDLE_WEBHOOK_SECRET!;
 
@@ -11,13 +12,52 @@ const paddle = new Paddle(process.env.PADDLE_API_KEY!, {
   environment: process.env.PADDLE_ENVIRONMENT === 'production' ? Environment.production : Environment.sandbox,
 });
 
-// Get price ID to plan mapping using the provided Paddle IDs
+// Get price ID to plan mapping based on environment
 function getPriceToPlanMapping() {
-  return {
-    'pri_01jxacd6cxdkgkt4dm69e1s8v9': { type: 'payg' as const, seconds: PLANS.PAYG.seconds }, // PAYG price
-    'pri_01jx8b45hdcsgmd0w86hbs8t6c': { type: 'monthly' as const, seconds: PLANS.MONTHLY.seconds }, // Monthly price
-    'pri_01jx8b5dgh1r5hned24zsz7rvm': { type: 'annual' as const, seconds: PLANS.ANNUAL.seconds }, // Annual price
-  };
+  const isProduction = process.env.PADDLE_ENVIRONMENT === 'production';
+  
+  if (isProduction) {
+    // Production price IDs
+    return {
+      'pri_01jz1wg1wvfya09wcfk28afp5t': { type: 'payg' as const, seconds: PLANS.PAYG.seconds }, // PAYG price
+      'pri_01jz1wpg1h5rwk1ajbqmsyv469': { type: 'monthly' as const, seconds: PLANS.MONTHLY.seconds }, // Monthly price
+      'pri_01jz1wnvbay7g66knksv1z7m07': { type: 'annual' as const, seconds: PLANS.ANNUAL.seconds }, // Annual price
+    };
+  } else {
+    // Sandbox price IDs
+    return {
+      'pri_01jxacd6cxdkgkt4dm69e1s8v9': { type: 'payg' as const, seconds: PLANS.PAYG.seconds }, // PAYG price
+      'pri_01jx8b45hdcsgmd0w86hbs8t6c': { type: 'monthly' as const, seconds: PLANS.MONTHLY.seconds }, // Monthly price
+      'pri_01jx8b5dgh1r5hned24zsz7rvm': { type: 'annual' as const, seconds: PLANS.ANNUAL.seconds }, // Annual price
+    };
+  }
+}
+
+// Add webhook event deduplication to prevent duplicate processing
+async function isEventProcessed(eventId: string): Promise<boolean> {
+  try {
+    const eventRef = db.collection('webhook_events').doc(eventId);
+    const eventDoc = await eventRef.get();
+    return eventDoc.exists;
+  } catch (error) {
+    console.error('Error checking event deduplication:', error);
+    // If we can't check, proceed with processing to avoid blocking legitimate events
+    return false;
+  }
+}
+
+async function markEventAsProcessed(eventId: string, eventType: string): Promise<void> {
+  try {
+    await db.collection('webhook_events').doc(eventId).set({
+      eventType,
+      processedAt: new Date(),
+      // Auto-delete after 30 days to keep collection clean
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    });
+  } catch (error) {
+    console.error('Error marking event as processed:', error);
+    // Non-blocking error - log but continue
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -44,6 +84,13 @@ export async function POST(request: NextRequest) {
     // Parse webhook payload
     const webhookEvent: PaddleWebhookEvent = JSON.parse(rawBody);
     const { event_type, data } = webhookEvent;
+    
+    // Check for event deduplication
+    const eventId = data.id;
+    if (await isEventProcessed(eventId)) {
+      console.log(`Webhook event ${eventId} already processed, skipping`);
+      return NextResponse.json({ received: true, message: 'Event already processed' });
+    }
     
     console.log(`Processing Paddle webhook: ${event_type}`, {
       eventType: event_type,
@@ -211,6 +258,9 @@ export async function POST(request: NextRequest) {
         break;
       }
     }
+
+    // Mark event as processed to prevent duplicate handling
+    await markEventAsProcessed(eventId, event_type);
 
     return NextResponse.json({ received: true });
   } catch (error) {

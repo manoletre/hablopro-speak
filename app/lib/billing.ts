@@ -15,13 +15,25 @@ const paddle = new Paddle(process.env.PADDLE_API_KEY!, {
   environment: process.env.PADDLE_ENVIRONMENT === 'production' ? Environment.production : Environment.sandbox,
 });
 
-// Get price IDs using the provided Paddle IDs
+// Get price IDs based on environment
 function getPriceIds() {
-  return {
-    payg: 'pri_01jxacd6cxdkgkt4dm69e1s8v9', // PAYG price ($8 for 100 mins)
-    monthly: 'pri_01jx8b45hdcsgmd0w86hbs8t6c', // Monthly subscription price
-    annual: 'pri_01jx8b5dgh1r5hned24zsz7rvm', // Annual subscription price
-  };
+  const isProduction = process.env.PADDLE_ENVIRONMENT === 'production';
+  
+  if (isProduction) {
+    // Production price IDs
+    return {
+      payg: 'pri_01jz1wg1wvfya09wcfk28afp5t', // PAYG price ($8 for 100 mins)
+      monthly: 'pri_01jz1wpg1h5rwk1ajbqmsyv469', // Monthly subscription price
+      annual: 'pri_01jz1wnvbay7g66knksv1z7m07', // Annual subscription price
+    };
+  } else {
+    // Sandbox price IDs
+    return {
+      payg: 'pri_01jxacd6cxdkgkt4dm69e1s8v9', // PAYG price ($8 for 100 mins)
+      monthly: 'pri_01jx8b45hdcsgmd0w86hbs8t6c', // Monthly subscription price
+      annual: 'pri_01jx8b5dgh1r5hned24zsz7rvm', // Annual subscription price
+    };
+  }
 }
 
 export class BillingService {

@@ -87,6 +87,18 @@ service cloud.firestore {
       }
     }
     
+    // Webhook events collection - server-side only for deduplication
+    match /webhook_events/{eventId} {
+      // Only allow server-side operations (webhook processing)
+      allow read, write: if false; // Block all client access
+    }
+    
+    // Health check collection - server-side only
+    match /health_check/{checkId} {
+      // Only allow server-side operations
+      allow read, write: if false; // Block all client access
+    }
+    
     // Deny access to all other collections by default
     match /{document=**} {
       allow read, write: if false;

@@ -1231,14 +1231,24 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
   // Set session time limit based on available seconds
   useEffect(() => {
     if (billing) {
-      // Calculate max session time based on available time
-      // If user has less than 5 minutes (300 seconds), limit session to their available time
+      // Calculate max session time based on available time and subscription status
       const availableSeconds = billing.secondsRemaining;
-      const maxSessionSeconds = Math.min(300, availableSeconds); // Cap at 5 minutes or user's available time
+      
+      // Check if user is premium (has active subscription)
+      const isPremium = billing.subscriptionStatus === 'active' && 
+                       (billing.planType === 'monthly' || billing.planType === 'annual');
+      
+      // Premium users get 15 minutes (900 seconds), free/payg users get 5 minutes (300 seconds)
+      const baseLimit = isPremium ? 900 : 300; // 15 minutes for premium, 5 minutes for free/payg
+      
+      // If user has less than the base limit, limit session to their available time
+      const maxSessionSeconds = Math.min(baseLimit, availableSeconds);
       const maxTimeInSeconds = Math.max(60, maxSessionSeconds); // Minimum 1 minute
       
       console.log(`Setting session limit: ${maxTimeInSeconds} seconds (${Math.floor(maxTimeInSeconds / 60)}m ${maxTimeInSeconds % 60}s) based on ${availableSeconds} available seconds`);
       console.log('Billing data:', billing);
+      console.log(`User premium status: ${isPremium} (subscriptionStatus: ${billing.subscriptionStatus}, planType: ${billing.planType})`);
+      console.log(`Base limit: ${baseLimit} seconds (${Math.floor(baseLimit / 60)} minutes) for ${isPremium ? 'premium' : 'free/payg'} user`);
       
       setMaxSessionTime(maxTimeInSeconds);
       setTimeRemaining(maxTimeInSeconds);
