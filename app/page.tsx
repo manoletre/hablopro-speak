@@ -10,7 +10,6 @@ import TermsOfServiceDialog from './components/TermsOfServiceDialog';
 import PrivacyPolicyDialog from './components/PrivacyPolicyDialog';
 import RefundPolicyDialog from './components/RefundPolicyDialog';
 import Head from 'next/head';
-import { useSearchParams } from 'next/navigation';
 
 // Add structured data for rich results
 const jsonLd = {
@@ -28,7 +27,7 @@ const jsonLd = {
   },
 };
 
-export default function LandingPage() {
+function LandingPageContent() {
   const { setLanguage } = useLanguage();
   const { user } = useAuth();
   const [showTerms, setShowTerms] = useState(false);
