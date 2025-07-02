@@ -119,29 +119,55 @@ export default function RootLayout({
                 const env = ${JSON.stringify(process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT || 'sandbox')};
                 const token = ${JSON.stringify(process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || '')};
 
+                if (!token) {
+                  console.error('❌ CRITICAL: Missing NEXT_PUBLIC_PADDLE_CLIENT_TOKEN');
+                  return;
+                }
+
+                // Validate environment value
+                if (env !== 'production' && env !== 'sandbox') {
+                  console.error('❌ CRITICAL: Invalid NEXT_PUBLIC_PADDLE_ENVIRONMENT. Must be "production" or "sandbox", got:', env);
+                  return;
+                }
+
+                // Validate token format
+                const expectedPrefix = env === 'production' ? 'live_' : 'test_';
+                if (!token.startsWith(expectedPrefix)) {
+                  console.error(\`❌ CRITICAL: Client token mismatch! Environment is "\${env}" but token starts with "\${token.substring(0, 5)}". Expected "\${expectedPrefix}" prefix.\`);
+                  return;
+                }
+
                 if (window.Paddle) {
                   // Explicitly set environment
                   if (env === 'sandbox') {
                     window.Paddle.Environment.set('sandbox');
-                  } else {
+                  } else if (env === 'production') {
                     window.Paddle.Environment.set('production');
                   }
 
                   console.log('🔍 Initializing Paddle.js:', {
                     environment: env,
-                    tokenPrefix: token ? token.substring(0, 8) + '...' : 'MISSING'
+                    tokenPrefix: token ? token.substring(0, 8) + '...' : 'MISSING',
+                    paddleEnvironment: window.Paddle.Environment
                   });
 
-                  window.Paddle.Initialize({
-                    token,
-                    checkout: {
-                      settings: {
-                        allowedPaymentMethods: ['card', 'paypal', 'apple_pay', 'google_pay'],
-                        successUrl: window.location.origin + '/learn?checkout=success',
-                        locale: 'en',
+                  try {
+                    window.Paddle.Initialize({
+                      token,
+                      checkout: {
+                        settings: {
+                          allowedPaymentMethods: ['card', 'paypal', 'apple_pay', 'google_pay'],
+                          successUrl: window.location.origin + '/learn?checkout=success',
+                          locale: 'en',
+                        },
                       },
-                    },
-                  });
+                    });
+                    console.log('✅ Paddle.js initialized successfully');
+                  } catch (error) {
+                    console.error('❌ Failed to initialize Paddle.js:', error);
+                  }
+                } else {
+                  console.error('❌ Paddle.js not loaded');
                 }
               });
             })();`,

@@ -54,8 +54,22 @@ export default function UpgradeModal({ currentBilling, onClose }: UpgradeModalPr
           throw new Error('Invalid plan type');
       }
 
-      console.log('Opening Paddle checkout with priceId:', priceId);
+      console.log('🔍 Starting checkout process:', {
+        planType,
+        priceId,
+        userId: user.uid,
+        environment: process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT,
+        userEmail: user.email,
+        hasValidPriceId: !!priceId && priceId.length > 0
+      });
       
+      // Validate price ID format
+      if (!priceId || !priceId.startsWith('pri_')) {
+        console.error('❌ Invalid price ID format:', priceId);
+        alert('Invalid pricing configuration. Please contact support.');
+        return;
+      }
+
       // Set payment status to processing
       try {
         await fetch('/api/billing/payment-status', {
@@ -73,61 +87,76 @@ export default function UpgradeModal({ currentBilling, onClose }: UpgradeModalPr
         console.error('Error setting payment status:', error);
       }
       
+      // Validate Paddle.js is ready
+      if (typeof window === 'undefined') {
+        console.error('❌ Window is undefined');
+        alert('Checkout unavailable. Please refresh the page.');
+        return;
+      }
+
+      if (!window.Paddle) {
+        console.error('❌ Paddle.js not loaded');
+        alert('Payment system not ready. Please refresh the page and try again.');
+        return;
+      }
+
+      // Validate Paddle environment
+      try {
+        console.log('🔍 Paddle.js environment check:', {
+          checkoutFunction: typeof window.Paddle.Checkout?.open
+        });
+      } catch (envError) {
+        console.error('❌ Error checking Paddle environment:', envError);
+      }
+
+      // Prepare checkout configuration
+      const checkoutConfig = {
+        settings: {
+          displayMode: 'overlay' as const,
+          theme: 'light' as const,
+          locale: getLanguageCode(),
+          allowLogout: false,
+          successUrl: window.location.origin + '/learn?checkout=success'
+        },
+        items: [{
+          priceId: priceId,
+          quantity: 1
+        }],
+        customData: {
+          user_id: user.uid
+        },
+        customer: user.email ? {
+          email: user.email,
+          name: user.displayName || undefined
+        } : undefined
+      };
+
+      console.log('🔍 Paddle checkout config:', {
+        ...checkoutConfig,
+        customer: checkoutConfig.customer ? { 
+          email: checkoutConfig.customer.email, 
+          hasName: !!checkoutConfig.customer.name 
+        } : undefined
+      });
+
       // Use Paddle.js to open checkout as overlay
-      if (typeof window !== 'undefined' && window.Paddle) {
-        try {
-          window.Paddle.Checkout.open({
-            settings: {
-              displayMode: 'overlay',
-              theme: 'light',
-              locale: getLanguageCode(), // Use current UI language
-              allowLogout: false,
-              successUrl: window.location.origin + '/learn?checkout=success'
-            },
-            items: [{
-              priceId: priceId,
-              quantity: 1
-            }],
-            customData: {
-              user_id: user.uid
-            },
-            customer: user.email ? {
-              email: user.email,
-              name: user.displayName || undefined
-            } : undefined
-          });
-          
-          // Don't close modal immediately - wait for checkout completion
-        } catch (error) {
-          console.error('Paddle checkout error:', error);
-          // Create fallback checkout URL - use the API to get a proper checkout URL
-          try {
-            const fallbackResponse = await fetch('/api/billing/checkout', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                priceId: priceId,
-                userId: user.uid,
-                email: user.email || undefined,
-                name: user.displayName || undefined,
-              }),
-            });
-            
-            if (fallbackResponse.ok) {
-              const fallbackData = await fallbackResponse.json();
-              window.open(fallbackData.checkoutUrl, '_blank');
-            }
-          } catch (fallbackError) {
-            console.error('Fallback checkout error:', fallbackError);
-            alert('Failed to open checkout. Please try again.');
-          }
-          onClose();
-        }
-      } else {
-        // Fallback to new window if Paddle.js is not loaded - create a checkout URL
-        console.log('Paddle.js not available, creating checkout URL');
+      try {
+        console.log('🚀 Opening Paddle checkout...');
+        window.Paddle.Checkout.open(checkoutConfig);
+        console.log('✅ Paddle checkout opened successfully');
+        
+        // Don't close modal immediately - wait for checkout completion
+      } catch (paddleError) {
+        const errorDetails = paddleError as Error;
+        console.error('❌ Paddle checkout error:', paddleError);
+        console.error('❌ Paddle error details:', {
+          message: errorDetails.message,
+          stack: errorDetails.stack,
+          name: errorDetails.name
+        });
+        
+        // Create fallback checkout URL - use the API to get a proper checkout URL
+        console.log('🔄 Attempting fallback checkout...');
         try {
           const fallbackResponse = await fetch('/api/billing/checkout', {
             method: 'POST',
@@ -144,20 +173,29 @@ export default function UpgradeModal({ currentBilling, onClose }: UpgradeModalPr
           
           if (fallbackResponse.ok) {
             const fallbackData = await fallbackResponse.json();
+            console.log('✅ Fallback checkout URL created, opening in new tab');
             window.open(fallbackData.checkoutUrl, '_blank');
           } else {
-            throw new Error('Failed to create checkout URL');
+            const errorText = await fallbackResponse.text();
+            console.error('❌ Fallback checkout failed:', fallbackResponse.status, errorText);
+            alert('Failed to open checkout. Please try again or contact support.');
           }
         } catch (fallbackError) {
-          console.error('Fallback checkout error:', fallbackError);
-          alert('Failed to create checkout. Please try again.');
+          console.error('❌ Fallback checkout error:', fallbackError);
+          alert('Failed to open checkout. Please try again or contact support.');
         }
         onClose();
       }
       
     } catch (error) {
-      console.error('Error opening checkout:', error);
-      alert('Failed to open checkout. Please try again.');
+      const errorDetails = error as Error;
+      console.error('❌ Error in checkout process:', error);
+      console.error('❌ Full error details:', {
+        message: errorDetails.message,
+        stack: errorDetails.stack,
+        name: errorDetails.name
+      });
+      alert('Failed to start checkout process. Please try again or contact support.');
     } finally {
       setLoading(null);
     }
