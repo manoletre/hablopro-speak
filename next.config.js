@@ -11,7 +11,7 @@ const nextConfig = {
               // Default source
               "default-src 'self'",
               // Frame sources - for Paddle and other iframes
-              "frame-src 'self' https://*.paddle.com https://buy.paddle.com https://sandbox-buy.paddle.com https://checkout.paddle.com https://sandbox-checkout.paddle.com http://localhost:9099 https://localhost:9099",
+              "frame-src 'self' https://*.paddle.com https://buy.paddle.com https://sandbox-buy.paddle.com https://checkout.paddle.com https://sandbox-checkout.paddle.com https://checkout-service.paddle.com https://sandbox-checkout-service.paddle.com http://localhost:9099 https://localhost:9099",
               // Frame ancestors - allow embedding by Paddle
               "frame-ancestors 'self' http://localhost:3000 https://localhost:3000 http://localhost https://localhost *.paddle.com",
               // Script sources - for all external JavaScript libraries
@@ -19,7 +19,7 @@ const nextConfig = {
               // Style sources - for external stylesheets
               "style-src 'self' 'unsafe-inline' https://cdn.paddle.com https://sandbox-cdn.paddle.com https://*.posthog.com https://client.sleekplan.com https://api-client.sleekplan.com https://*.sleekplan.com https://fonts.googleapis.com",
               // Connect sources - for API calls and analytics
-              "connect-src 'self' https://*.paddle.com https://sandbox-buy.paddle.com https://checkout.paddle.com https://sandbox-checkout.paddle.com https://*.posthog.com https://us.i.posthog.com https://eu.i.posthog.com https://us-assets.i.posthog.com https://eu-assets.i.posthog.com https://app.posthog.com https://eu.posthog.com https://us.posthog.com https://www.google-analytics.com https://analytics.google.com https://client.sleekplan.com https://api.sleekplan.com https://api-client.sleekplan.com https://*.sleekplan.com https://unpkg.com https://cdn.jsdelivr.net https://api.openai.com wss://*.openai.com wss://api.openai.com http://localhost:9099 https://localhost:9099 http://localhost:8080 http://localhost:4000 http://localhost:5001 wss://* ws://* stun: turn:",
+              "connect-src 'self' https://*.paddle.com https://sandbox-buy.paddle.com https://checkout.paddle.com https://sandbox-checkout.paddle.com https://checkout-service.paddle.com https://sandbox-checkout-service.paddle.com https://*.posthog.com https://us.i.posthog.com https://eu.i.posthog.com https://us-assets.i.posthog.com https://eu-assets.i.posthog.com https://app.posthog.com https://eu.posthog.com https://us.posthog.com https://www.google-analytics.com https://analytics.google.com https://client.sleekplan.com https://api.sleekplan.com https://api-client.sleekplan.com https://*.sleekplan.com https://unpkg.com https://cdn.jsdelivr.net https://api.openai.com wss://*.openai.com wss://api.openai.com http://localhost:9099 https://localhost:9099 http://localhost:8080 http://localhost:4000 http://localhost:5001 wss://* ws://* stun: turn:",
               // Image sources
               "img-src 'self' data: blob: https://*.posthog.com https://*.paddle.com https://www.google.com https://*.gstatic.com https://*.googleusercontent.com https://storage.sleekplan.com https://*.sleekplan.com",
               // Font sources
@@ -31,7 +31,7 @@ const nextConfig = {
               // Base URI
               "base-uri 'self'",
               // Form action
-              "form-action 'self' https://*.paddle.com",
+              "form-action 'self' https://*.paddle.com https://checkout-service.paddle.com https://sandbox-checkout-service.paddle.com",
               // Allow dedicated worker sources explicitly (optional but safer)
               "worker-src 'self' blob:"
             ].join('; ')
