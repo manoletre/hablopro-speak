@@ -119,7 +119,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
 
   const { user, loading } = useAuth();
   const { t, language: uiLanguage } = useLanguage();
-  const { billing, hasEnoughMinutes, refreshBilling } = useBilling();
+  const { billing, hasEnoughMinutes } = useBilling();
   const [isListening, setIsListening] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   
@@ -1149,7 +1149,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
                 if (response.ok) {
                   const result = await response.json();
                   console.log(`Successfully deducted ${result.secondsUsed} seconds for short session`);
-                  await refreshBilling();
+                  // Firebase real-time listener will automatically update billing data
                 }
               } else {
                 console.log(`Short session too brief (${actualSessionDuration}s), not billing`);
@@ -1544,8 +1544,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
             const result = await response.json();
             console.log(`💰 ✅ Successfully deducted ${result.secondsUsed} seconds (${result.minutesUsed} minutes). Remaining: ${result.remainingSeconds} seconds`);
             setBillingHandled(true); // Mark billing as successful
-            // Refresh billing data to reflect the changes
-            await refreshBilling();
+            // Firebase real-time listener will automatically update billing data
           } else {
             const errorText = await response.text();
             console.error(`💰 ❌ Failed to deduct time (${response.status}):`, errorText);
@@ -1630,7 +1629,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     setShowResults(true);
     
     console.log('Session finished and results shown immediately');
-  }, [conversationHistory, aiTranscript, cleanupAudioResources, user, language, difficultyLevel, sessionId, sessionStartTime, totalSessionDuration, refreshBilling, isWrappingUp, wrapUpMessageSent]);
+  }, [conversationHistory, aiTranscript, cleanupAudioResources, user, language, difficultyLevel, sessionId, sessionStartTime, totalSessionDuration, isWrappingUp, wrapUpMessageSent]);
 
   // Update the reference after definition
   useEffect(() => {

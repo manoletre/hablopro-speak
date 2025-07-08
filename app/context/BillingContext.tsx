@@ -10,7 +10,6 @@ interface BillingContextType {
   billing: UserBilling | null;
   loading: boolean;
   error: string | null;
-  refreshBilling: () => Promise<void>;
   hasEnoughMinutes: (minutes: number) => boolean;
   createCheckout: (planType: 'payg' | 'monthly' | 'annual') => Promise<CheckoutResponse>;
   priceIds: Record<string, string> | null;
@@ -24,46 +23,6 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [priceIds, setPriceIds] = useState<Record<string, string> | null>(null);
-
-  // Fetch user billing information
-  const fetchBilling = useCallback(async () => {
-    if (!user?.uid) {
-      setBilling(null);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await fetch(`/api/billing/user?userId=${user.uid}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch billing information');
-      }
-      
-      const billingData: UserBilling = await response.json();
-      
-      // Convert date strings back to Date objects
-      setBilling({
-        ...billingData,
-        lastUpdated: new Date(billingData.lastUpdated),
-        subscriptionEndsAt: billingData.subscriptionEndsAt 
-          ? new Date(billingData.subscriptionEndsAt) 
-          : undefined,
-        subscriptionRenewsAt: billingData.subscriptionRenewsAt 
-          ? new Date(billingData.subscriptionRenewsAt) 
-          : undefined,
-      });
-      
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error occurred');
-      console.error('Error fetching billing:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.uid]);
 
   // Fetch price IDs
   const fetchPriceIds = useCallback(async () => {
@@ -79,7 +38,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Subscribe to billing document in real-time
+  // Subscribe to billing document in real-time using Firebase only
   useEffect(() => {
     if (!user?.uid) {
       setBilling(null);
@@ -87,31 +46,73 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    console.log(`🔥 Setting up Firebase real-time listener for user: ${user.uid}`);
+    setLoading(true);
+    setError(null);
+
     const billingDocRef = doc(db, 'users', user.uid, 'billing', 'current');
-    const unsubscribe = onSnapshot(billingDocRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.data() as import('../types/billing').FirebaseDocumentData;
-        setBilling({
-          ...data,
-          lastUpdated: (data.lastUpdated && typeof data.lastUpdated !== 'string' && 'toDate' in data.lastUpdated) 
-            ? data.lastUpdated.toDate() 
-            : new Date(),
-          subscriptionEndsAt: (data.subscriptionEndsAt && typeof data.subscriptionEndsAt !== 'string' && 'toDate' in data.subscriptionEndsAt) 
-            ? data.subscriptionEndsAt.toDate() 
-            : undefined,
-          subscriptionRenewsAt: (data.subscriptionRenewsAt && typeof data.subscriptionRenewsAt !== 'string' && 'toDate' in data.subscriptionRenewsAt) 
-            ? data.subscriptionRenewsAt.toDate() 
-            : undefined,
-        } as UserBilling);
+    const unsubscribe = onSnapshot(
+      billingDocRef, 
+      (snapshot) => {
+        console.log(`🔥 Firebase billing update received for user: ${user.uid}`);
+        
+        if (snapshot.exists()) {
+          const data = snapshot.data() as import('../types/billing').FirebaseDocumentData;
+          
+          // Handle legacy migration from minutes to seconds
+          let secondsRemaining = data.secondsRemaining || 0;
+          let totalSecondsPurchased = data.totalSecondsPurchased || 0;
+          
+          if (data.minutesRemaining !== undefined && data.secondsRemaining === undefined) {
+            console.log(`🔄 Migrating user ${user.uid} from minutes to seconds in real-time`);
+            secondsRemaining = data.minutesRemaining * 60;
+            totalSecondsPurchased = (data.totalMinutesPurchased || 0) * 60;
+          }
+          
+          const billingData: UserBilling = {
+            ...data,
+            secondsRemaining,
+            totalSecondsPurchased,
+            lastUpdated: (data.lastUpdated && typeof data.lastUpdated !== 'string' && 'toDate' in data.lastUpdated) 
+              ? data.lastUpdated.toDate() 
+              : new Date(),
+            subscriptionEndsAt: (data.subscriptionEndsAt && typeof data.subscriptionEndsAt !== 'string' && 'toDate' in data.subscriptionEndsAt) 
+              ? data.subscriptionEndsAt.toDate() 
+              : undefined,
+            subscriptionRenewsAt: (data.subscriptionRenewsAt && typeof data.subscriptionRenewsAt !== 'string' && 'toDate' in data.subscriptionRenewsAt) 
+              ? data.subscriptionRenewsAt.toDate() 
+              : undefined,
+          } as UserBilling;
+          
+          setBilling(billingData);
+          console.log(`🔥 Billing updated: ${Math.floor(billingData.secondsRemaining / 60)} minutes remaining`);
+        } else {
+          // Initialize with free trial if document doesn't exist
+          console.log(`🔥 No billing document found for user ${user.uid}, initializing with free trial`);
+          const initialBilling: UserBilling = {
+            secondsRemaining: 10 * 60, // 10 minutes
+            totalSecondsPurchased: 10 * 60,
+            subscriptionStatus: 'none',
+            lastUpdated: new Date(),
+          };
+          setBilling(initialBilling);
+        }
+        
+        setLoading(false);
+        setError(null);
+      },
+      (err) => {
+        console.error('🔥 Firebase billing listener error:', err);
+        setError(err.message);
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    );
 
-    // Fallback initial fetch (in case onSnapshot delay)
-    fetchBilling();
-
-    return () => unsubscribe();
-  }, [user?.uid, fetchBilling]);
+    return () => {
+      console.log(`🔥 Cleaning up Firebase listener for user: ${user.uid}`);
+      unsubscribe();
+    };
+  }, [user?.uid]);
 
   // Fetch price IDs only once when provider mounts
   useEffect(() => {
@@ -177,7 +178,6 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       billing,
       loading,
       error,
-      refreshBilling: fetchBilling,
       hasEnoughMinutes,
       createCheckout,
       priceIds,

@@ -27,7 +27,7 @@
       "dataDir": "./emulator/auth"
     },
     "firestore": {
-      "port": 8081,
+      "port": 8080,
       "host": "localhost",
       "dataDir": "./emulator/firestore"
     },

@@ -70,23 +70,6 @@ export default function UpgradeModal({ currentBilling, onClose }: UpgradeModalPr
         return;
       }
 
-      // Set payment status to processing
-      try {
-        await fetch('/api/billing/payment-status', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: user.uid,
-            status: 'processing',
-            planType,
-            amount: planType === 'payg' ? PLANS.PAYG.price : 
-                   planType === 'monthly' ? PLANS.MONTHLY.price : PLANS.ANNUAL.price
-          })
-        });
-      } catch (error) {
-        console.error('Error setting payment status:', error);
-      }
-      
       // Validate Paddle.js is ready
       if (typeof window === 'undefined') {
         console.error('❌ Window is undefined');
@@ -145,7 +128,7 @@ export default function UpgradeModal({ currentBilling, onClose }: UpgradeModalPr
         window.Paddle.Checkout.open(checkoutConfig);
         console.log('✅ Paddle checkout opened successfully');
         
-        // Don't close modal immediately - wait for checkout completion
+        // Don't close modal immediately - let Firebase real-time updates handle UI changes
       } catch (paddleError) {
         const errorDetails = paddleError as Error;
         console.error('❌ Paddle checkout error:', paddleError);
@@ -271,7 +254,7 @@ export default function UpgradeModal({ currentBilling, onClose }: UpgradeModalPr
       seconds: PLANS.PAYG.seconds,
       period: ' once',
       minutes: Math.floor(PLANS.PAYG.seconds / 60),
-      extras: 'no rollover',
+      extras: 'minutes roll over¹',
       isBest: false,
       disabled: false
     }

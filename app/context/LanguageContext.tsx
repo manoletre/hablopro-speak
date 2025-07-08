@@ -165,7 +165,6 @@ export type TranslationKey =
   | 'upgrade.onetime'
   | 'upgrade.twoMonthsFree'
   | 'upgrade.minutesRollover'
-  | 'upgrade.noRollover'
   | 'upgrade.save33Percent'
   | 'upgrade.subscribed'
   | 'upgrade.footerSavings'
@@ -344,7 +343,6 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'upgrade.onetime': 'One-time',
     'upgrade.twoMonthsFree': '2 months free',
     'upgrade.minutesRollover': 'minutes roll over¹',
-    'upgrade.noRollover': 'no rollover',
     'upgrade.save33Percent': 'SAVE 33%',
     'upgrade.subscribed': 'Subscribed',
     'upgrade.footerSavings': 'Save 33% with the annual plan • Minutes never expire while subscribed',
@@ -515,7 +513,6 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'upgrade.onetime': 'Una vez',
     'upgrade.twoMonthsFree': '2 meses gratis',
     'upgrade.minutesRollover': 'minutos se acumulan¹',
-    'upgrade.noRollover': 'no se acumulan',
     'upgrade.save33Percent': 'AHORRA 33%',
     'upgrade.subscribed': 'Suscrito',
     'upgrade.footerSavings': 'Ahorra 33% con el plan anual • Los minutos nunca expiran mientras estés suscrito',

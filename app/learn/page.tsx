@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { useBilling } from '../hooks/useBilling';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import HomeScreen from '../components/HomeScreen';
@@ -26,7 +25,6 @@ export default function LearnPage() {
   
   const { user } = useAuth();
   const { language: uiLanguage, setLanguage: setUiLanguage } = useLanguage();
-  const { refreshBilling } = useBilling();
   
   // Track session state at page level to persist across VoiceChat remounts
   const sessionCounterRef = useRef(0); // Tracks how many sessions have started
@@ -39,24 +37,13 @@ export default function LearnPage() {
       if (urlParams.get('checkout') === 'success') {
         setShowUpgradeSuccess(true);
         
-        // Refresh billing data immediately to reflect new subscription
-        refreshBilling();
-        
-        // Also set up a delayed refresh in case webhooks are still processing
-        const timeouts = [2000, 5000, 10000]; // Retry after 2s, 5s, and 10s
-        timeouts.forEach((delay) => {
-          setTimeout(() => {
-            refreshBilling();
-          }, delay);
-        });
-        
         // Clean up the URL parameter
         const newUrl = new URL(window.location.href);
         newUrl.searchParams.delete('checkout');
         window.history.replaceState({}, '', newUrl.toString());
       }
     }
-  }, [refreshBilling]);
+  }, []);
 
   // Sleekplan feature board - only show before session starts
   useEffect(() => {

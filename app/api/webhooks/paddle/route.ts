@@ -152,6 +152,34 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case 'transaction.updated': {
+        // Handle transaction updates when status becomes "completed"
+        if (data.status === 'completed' && planInfo) {
+          console.log(`Processing transaction.updated with completed status for user ${userId}, transaction: ${data.id}`);
+          
+          // Check if this is a subscription renewal
+          const isRenewal = data.origin === 'subscription_recurring';
+          const transactionType = isRenewal ? 'renewal' : 'purchase';
+          
+          // Add seconds for completed transactions (PAYG, subscriptions, and renewals)
+          await BillingService.addSeconds(userId, planInfo.seconds, planInfo.type, data.subscription_id, isRenewal);
+          console.log(`Added ${planInfo.seconds} seconds (${Math.floor(planInfo.seconds / 60)} minutes) to user ${userId} from ${planInfo.type} ${transactionType} via transaction.updated`);
+          
+          // Update payment status to completed for initial purchases (not renewals)
+          if (!isRenewal) {
+            const amount = planInfo.type === 'payg' ? PLANS.PAYG.price : 
+                          planInfo.type === 'monthly' ? PLANS.MONTHLY.price : PLANS.ANNUAL.price;
+            await BillingService.updatePaymentStatus(userId, 'completed', amount, planInfo.type);
+            console.log(`Payment completed for user ${userId}, plan: ${planInfo.type}, amount: $${amount} via transaction.updated`);
+          } else {
+            console.log(`Subscription renewal completed for user ${userId}, plan: ${planInfo.type} via transaction.updated`);
+          }
+        } else if (data.status && data.status !== 'completed') {
+          console.log(`Transaction updated to status ${data.status} for user ${userId}, transaction: ${data.id} - no action needed`);
+        }
+        break;
+      }
+
       case 'subscription.created': {
         // Handle subscription creation
         console.log(`Processing subscription.created for user ${userId}, subscription: ${data.id}`);

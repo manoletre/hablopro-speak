@@ -45,7 +45,7 @@ const ConfettiParticle = ({ delay, duration, color }: { delay: number; duration:
 
 export default function UpgradeSuccessDialog({ isOpen, onClose }: UpgradeSuccessDialogProps) {
   const { t } = useLanguage();
-  const { billing, refreshBilling, loading } = useBilling();
+  const { billing, loading } = useBilling();
   const { user } = useAuth();
   const [minutes, setMinutes] = useState(0);
   const [paymentStatus, setPaymentStatus] = useState<'processing' | 'completed' | 'failed' | null>(null);
@@ -53,7 +53,7 @@ export default function UpgradeSuccessDialog({ isOpen, onClose }: UpgradeSuccess
   const [showConfetti, setShowConfetti] = useState(false);
 
   const checkPaymentStatus = useCallback(async () => {
-    await refreshBilling();
+    // Firebase real-time listener will automatically update billing data
     
     // Check if subscription became active (this indicates successful payment for subscriptions)
     if (billing?.subscriptionStatus === 'active') {
@@ -73,7 +73,7 @@ export default function UpgradeSuccessDialog({ isOpen, onClose }: UpgradeSuccess
         setShowConfetti(true);
       }
     }
-  }, [refreshBilling, billing?.subscriptionStatus, billing?.recentPaymentStatus, showConfetti]);
+  }, [billing?.subscriptionStatus, billing?.recentPaymentStatus, showConfetti]);
 
   // Check payment status periodically when dialog is open
   useEffect(() => {
@@ -277,12 +277,9 @@ export default function UpgradeSuccessDialog({ isOpen, onClose }: UpgradeSuccess
             <div className="space-y-3">
               <button
                 onClick={() => {
-                  // Ensure latest billing is fetched
-                  refreshBilling().finally(() => {
-                    // Dispatch event to open sidebar
-                    window.dispatchEvent(new Event(OPEN_SIDEBAR_EVENT));
-                    handleClose();
-                  });
+                  // Dispatch event to open sidebar
+                  window.dispatchEvent(new Event(OPEN_SIDEBAR_EVENT));
+                  handleClose();
                 }}
                 className="w-full py-3 bg-[#422006] text-white rounded-lg hover:bg-[#5a3108] transition-colors font-medium"
               >
