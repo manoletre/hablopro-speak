@@ -202,6 +202,24 @@ function LandingPageContent() {
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
                 <CTAButton />
               </div>
+              {/* ProductHunt Badge */}
+              <div className="mt-6">
+                <a 
+                  href="https://www.producthunt.com/products/hablo-pro?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-hablo&#0045;pro" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block"
+                >
+                  <Image 
+                    src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=987743&theme=light&t=1752040779639" 
+                    alt="Hablo.pro - Learn a language by speaking | Product Hunt" 
+                    width={200} 
+                    height={43}
+                    priority={false}
+                    loading="lazy"
+                  />
+                </a>
+              </div>
             </div>
             <div className="md:w-1/2 w-full md:pl-8 relative">
               <div className="w-full h-[280px] md:h-[500px] relative">
