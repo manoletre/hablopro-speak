@@ -1480,7 +1480,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
         isFinishing: isFinishing
       });
     }
-  }, [user, billing, maxSessionTime, isConnected, showResults, isFinishing, isMobile, checkMinutesBeforeSession, billingHandled, hasEnoughMinutes, initWebRTC]); // Removed initWebRTC from dependencies to prevent re-creation loops
+  }, [user, billing, maxSessionTime, isConnected, showResults, isFinishing, isMobile, checkMinutesBeforeSession, billingHandled, hasEnoughMinutes, initWebRTC, sessionId]); // Removed initWebRTC from dependencies to prevent re-creation loops
 
   // Effect to track session start
   useEffect(() => {
@@ -1659,7 +1659,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     setShowResults(true);
     
     console.log('Session finished and results shown immediately');
-  }, [conversationHistory, aiTranscript, cleanupAudioResources, user, language, difficultyLevel, sessionId, sessionStartTime, totalSessionDuration, isWrappingUp, wrapUpMessageSent]);
+  }, [conversationHistory, aiTranscript, cleanupAudioResources, user, language, difficultyLevel, sessionId, sessionStartTime, totalSessionDuration, isWrappingUp, wrapUpMessageSent, billingHandled]);
 
   // Update the reference after definition
   useEffect(() => {

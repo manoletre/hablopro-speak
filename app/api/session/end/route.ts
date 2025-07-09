@@ -17,9 +17,6 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Generate a session ID if not provided (for backward compatibility)
-    const effectiveSessionId = sessionId || `${userId}-${Date.now()}-${Math.random()}`;
-    
     // Check if this session has already been billed to prevent duplicate charges
     if (sessionId) {
       try {
