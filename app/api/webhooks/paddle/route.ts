@@ -60,6 +60,35 @@ async function markEventAsProcessed(eventId: string, eventType: string): Promise
   }
 }
 
+// Add transaction-specific deduplication to prevent double-crediting minutes
+async function isTransactionBilled(userId: string, transactionId: string): Promise<boolean> {
+  try {
+    const billedTxRef = db.collection('users').doc(userId).collection('billed_transactions').doc(transactionId);
+    const billedTxDoc = await billedTxRef.get();
+    return billedTxDoc.exists;
+  } catch (error) {
+    console.error('Error checking transaction billing status:', error);
+    // If we can't check, proceed with processing to avoid blocking legitimate events
+    return false;
+  }
+}
+
+async function markTransactionAsBilled(userId: string, transactionId: string, eventType: string, planType: string, seconds: number): Promise<void> {
+  try {
+    await db.collection('users').doc(userId).collection('billed_transactions').doc(transactionId).set({
+      eventType,
+      planType,
+      seconds,
+      billedAt: new Date(),
+      // Auto-delete after 90 days to keep collection clean
+      expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+    });
+  } catch (error) {
+    console.error('Error marking transaction as billed:', error);
+    // Non-blocking error - log but continue
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Get raw body for signature verification
@@ -83,18 +112,28 @@ export async function POST(request: NextRequest) {
 
     // Parse webhook payload
     const webhookEvent: PaddleWebhookEvent = JSON.parse(rawBody);
-    const { event_type, data } = webhookEvent;
+    const { event_id, event_type, data } = webhookEvent;
     
-    // Check for event deduplication
-    const eventId = data.id;
-    if (await isEventProcessed(eventId)) {
-      console.log(`Webhook event ${eventId} already processed, skipping`);
+    console.log(`🎣 Received Paddle webhook:`, {
+      eventId: event_id,
+      eventType: event_type,
+      transactionId: data.id,
+      status: data.status,
+      userId: data.custom_data?.user_id,
+      subscriptionId: data.subscription_id,
+      origin: data.origin
+    });
+    
+    // Check for event deduplication using EVENT ID, not transaction ID
+    if (await isEventProcessed(event_id)) {
+      console.log(`🔄 Webhook event ${event_id} (${event_type}) already processed, skipping`);
       return NextResponse.json({ received: true, message: 'Event already processed' });
     }
     
-    console.log(`Processing Paddle webhook: ${event_type}`, {
+    console.log(`✅ Processing new Paddle webhook: ${event_type}`, {
+      eventId: event_id,
       eventType: event_type,
-      dataId: data.id,
+      transactionId: data.id,
       customData: data.custom_data,
       status: data.status,
     });
@@ -102,7 +141,7 @@ export async function POST(request: NextRequest) {
     // Extract user ID from custom data
     const userId = data.custom_data?.user_id;
     if (!userId) {
-      console.error('No user_id in webhook custom_data');
+      console.error('❌ No user_id in webhook custom_data');
       return NextResponse.json({ error: 'No user_id provided' }, { status: 400 });
     }
 
@@ -126,6 +165,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    console.log(`💰 Price info:`, {
+      priceId,
+      planInfo: planInfo ? { type: planInfo.type, seconds: planInfo.seconds } : null
+    });
+
     // Handle different event types
     switch (event_type) {
       case 'transaction.completed': {
@@ -135,19 +179,50 @@ export async function POST(request: NextRequest) {
           const isRenewal = data.origin === 'subscription_recurring';
           const transactionType = isRenewal ? 'renewal' : 'purchase';
           
-          // Add seconds for ALL successful transactions (PAYG, subscriptions, and renewals)
-          await BillingService.addSeconds(userId, planInfo.seconds, planInfo.type, data.subscription_id, isRenewal);
-          console.log(`Added ${planInfo.seconds} seconds (${Math.floor(planInfo.seconds / 60)} minutes) to user ${userId} from ${planInfo.type} ${transactionType}`);
+          console.log(`💳 Processing transaction.completed: ${transactionType} for user ${userId}`);
           
-          // Update payment status to completed for initial purchases (not renewals)
+          // Check if this transaction has already been billed to prevent double-crediting
+          const alreadyBilled = await isTransactionBilled(userId, data.id);
+          if (alreadyBilled) {
+            console.log(`⚠️ Transaction ${data.id} already billed for user ${userId}, skipping minute addition`);
+          } else {
+            // Add seconds for ALL successful transactions (PAYG, subscriptions, and renewals)
+            await BillingService.addSeconds(userId, planInfo.seconds, planInfo.type, data.subscription_id, isRenewal);
+            console.log(`✅ Added ${planInfo.seconds} seconds (${Math.floor(planInfo.seconds / 60)} minutes) to user ${userId} from ${planInfo.type} ${transactionType}`);
+            
+            // Mark this transaction as billed
+            await markTransactionAsBilled(userId, data.id, event_type, planInfo.type, planInfo.seconds);
+          }
+          
+          // Always update payment status for initial purchases (not renewals)
           if (!isRenewal) {
             const amount = planInfo.type === 'payg' ? PLANS.PAYG.price : 
                           planInfo.type === 'monthly' ? PLANS.MONTHLY.price : PLANS.ANNUAL.price;
             await BillingService.updatePaymentStatus(userId, 'completed', amount, planInfo.type);
-            console.log(`Payment completed for user ${userId}, plan: ${planInfo.type}, amount: $${amount}`);
+            console.log(`✅ Payment completed for user ${userId}, plan: ${planInfo.type}, amount: $${amount}`);
           } else {
-            console.log(`Subscription renewal completed for user ${userId}, plan: ${planInfo.type}`);
+            console.log(`✅ Subscription renewal completed for user ${userId}, plan: ${planInfo.type}`);
           }
+          
+          // For subscription plans (monthly/annual), ensure subscription metadata is updated
+          if ((planInfo.type === 'monthly' || planInfo.type === 'annual') && data.subscription_id) {
+            const subscriptionData: Partial<import('../../../types/billing').UserBilling> = {
+              subscriptionStatus: 'active' as const,
+              subscriptionId: data.subscription_id,
+              customerId: data.customer_id,
+              planType: planInfo.type,
+            };
+            
+            // Add billing period information if available
+            if (data.billing_period) {
+              subscriptionData.subscriptionRenewsAt = new Date(data.billing_period.ends_at);
+            }
+            
+            await BillingService.updateUserBilling(userId, subscriptionData);
+            console.log(`🔄 Updated subscription metadata for user ${userId}, subscription: ${data.subscription_id}`);
+          }
+        } else {
+          console.error(`❌ No plan info found for price ID: ${priceId}`);
         }
         break;
       }
@@ -155,27 +230,56 @@ export async function POST(request: NextRequest) {
       case 'transaction.updated': {
         // Handle transaction updates when status becomes "completed"
         if (data.status === 'completed' && planInfo) {
-          console.log(`Processing transaction.updated with completed status for user ${userId}, transaction: ${data.id}`);
+          console.log(`💳 Processing transaction.updated with completed status for user ${userId}, transaction: ${data.id}`);
           
           // Check if this is a subscription renewal
           const isRenewal = data.origin === 'subscription_recurring';
           const transactionType = isRenewal ? 'renewal' : 'purchase';
           
-          // Add seconds for completed transactions (PAYG, subscriptions, and renewals)
-          await BillingService.addSeconds(userId, planInfo.seconds, planInfo.type, data.subscription_id, isRenewal);
-          console.log(`Added ${planInfo.seconds} seconds (${Math.floor(planInfo.seconds / 60)} minutes) to user ${userId} from ${planInfo.type} ${transactionType} via transaction.updated`);
+          // Check if this transaction has already been billed to prevent double-crediting
+          const alreadyBilled = await isTransactionBilled(userId, data.id);
+          if (alreadyBilled) {
+            console.log(`⚠️ Transaction ${data.id} already billed for user ${userId}, skipping minute addition`);
+          } else {
+            // Add seconds for completed transactions (PAYG, subscriptions, and renewals)
+            await BillingService.addSeconds(userId, planInfo.seconds, planInfo.type, data.subscription_id, isRenewal);
+            console.log(`✅ Added ${planInfo.seconds} seconds (${Math.floor(planInfo.seconds / 60)} minutes) to user ${userId} from ${planInfo.type} ${transactionType} via transaction.updated`);
+            
+            // Mark this transaction as billed
+            await markTransactionAsBilled(userId, data.id, event_type, planInfo.type, planInfo.seconds);
+          }
           
-          // Update payment status to completed for initial purchases (not renewals)
+          // Always update payment status for initial purchases (not renewals)
           if (!isRenewal) {
             const amount = planInfo.type === 'payg' ? PLANS.PAYG.price : 
                           planInfo.type === 'monthly' ? PLANS.MONTHLY.price : PLANS.ANNUAL.price;
             await BillingService.updatePaymentStatus(userId, 'completed', amount, planInfo.type);
-            console.log(`Payment completed for user ${userId}, plan: ${planInfo.type}, amount: $${amount} via transaction.updated`);
+            console.log(`✅ Payment completed for user ${userId}, plan: ${planInfo.type}, amount: $${amount} via transaction.updated`);
           } else {
-            console.log(`Subscription renewal completed for user ${userId}, plan: ${planInfo.type} via transaction.updated`);
+            console.log(`✅ Subscription renewal completed for user ${userId}, plan: ${planInfo.type} via transaction.updated`);
+          }
+          
+          // For subscription plans (monthly/annual), ensure subscription metadata is updated
+          if ((planInfo.type === 'monthly' || planInfo.type === 'annual') && data.subscription_id) {
+            const subscriptionData: Partial<import('../../../types/billing').UserBilling> = {
+              subscriptionStatus: 'active' as const,
+              subscriptionId: data.subscription_id,
+              customerId: data.customer_id,
+              planType: planInfo.type,
+            };
+            
+            // Add billing period information if available
+            if (data.billing_period) {
+              subscriptionData.subscriptionRenewsAt = new Date(data.billing_period.ends_at);
+            }
+            
+            await BillingService.updateUserBilling(userId, subscriptionData);
+            console.log(`🔄 Updated subscription metadata for user ${userId}, subscription: ${data.subscription_id} via transaction.updated`);
           }
         } else if (data.status && data.status !== 'completed') {
-          console.log(`Transaction updated to status ${data.status} for user ${userId}, transaction: ${data.id} - no action needed`);
+          console.log(`ℹ️ Transaction updated to status ${data.status} for user ${userId}, transaction: ${data.id} - no action needed`);
+        } else if (!planInfo) {
+          console.error(`❌ No plan info found for price ID: ${priceId} in transaction.updated`);
         }
         break;
       }
@@ -288,7 +392,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Mark event as processed to prevent duplicate handling
-    await markEventAsProcessed(eventId, event_type);
+    await markEventAsProcessed(event_id, event_type);
 
     return NextResponse.json({ received: true });
   } catch (error) {

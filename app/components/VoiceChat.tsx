@@ -151,6 +151,16 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
   const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   
+  // Generate unique session ID for billing deduplication
+  useEffect(() => {
+    if (!sessionId && user) {
+      const newSessionId = `${user.uid}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      setSessionId(newSessionId);
+      setBillingHandled(false); // Reset billing status for new session
+      console.log(`💰 Generated session ID for billing deduplication: ${newSessionId}`);
+    }
+  }, [user, sessionId]);
+  
   // Use sessionKey-based tracking to persist across component remounts
 
   // CJK language support - store deltas as individual translatable units
@@ -1134,7 +1144,8 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
               
               console.log(`Final billing for short session: ${actualSessionDuration} seconds (closure: ${totalSessionDuration}s)`);
               
-              if (actualSessionDuration >= 5) {
+              if (actualSessionDuration >= 5 && !billingHandled) {
+                console.log(`💰 Billing short session for user ${user.uid} with session ID ${sessionId}`);
                 const response = await fetch('/api/session/end', {
                   method: 'POST',
                   headers: {
@@ -1142,15 +1153,23 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
                   },
                   body: JSON.stringify({
                     userId: user.uid,
-                    sessionDuration: actualSessionDuration
+                    sessionDuration: actualSessionDuration,
+                    sessionId: sessionId
                   })
                 });
                 
                 if (response.ok) {
                   const result = await response.json();
-                  console.log(`Successfully deducted ${result.secondsUsed} seconds for short session`);
+                  if (result.alreadyBilled) {
+                    console.log(`💰 ⚠️ Short session ${sessionId} was already billed, skipping duplicate charge`);
+                  } else {
+                    console.log(`💰 ✅ Successfully deducted ${result.secondsUsed} seconds for short session`);
+                  }
+                  setBillingHandled(true);
                   // Firebase real-time listener will automatically update billing data
                 }
+              } else if (billingHandled) {
+                console.log(`💰 ⚠️ Short session billing already handled, skipping duplicate attempt`);
               } else {
                 console.log(`Short session too brief (${actualSessionDuration}s), not billing`);
               }
@@ -1324,24 +1343,27 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
   // Handle page unload/refresh/close to save session duration
   useEffect(() => {
     const handleBeforeUnload = async () => {
-      if (user && sessionStartTime && totalSessionDuration >= 5) {
+      if (user && sessionStartTime && totalSessionDuration >= 5 && !billingHandled && sessionId) {
         // Calculate current session duration in case totalSessionDuration isn't up to date
         const currentDuration = Math.floor((Date.now() - sessionStartTime) / 1000);
         
         // Use sendBeacon for reliable delivery during page unload
         const data = JSON.stringify({
           userId: user.uid,
-          sessionDuration: currentDuration
+          sessionDuration: currentDuration,
+          sessionId: sessionId
         });
         
         navigator.sendBeacon('/api/session/end', data);
-        console.log(`Emergency billing update: ${currentDuration} seconds via sendBeacon`);
+        console.log(`💰 Emergency billing update: ${currentDuration} seconds via sendBeacon for session ${sessionId}`);
+      } else if (billingHandled) {
+        console.log(`💰 ⚠️ Skipping emergency billing - session already billed`);
       }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [user, sessionStartTime, totalSessionDuration]);
+  }, [user, sessionStartTime, totalSessionDuration, billingHandled, sessionId]);
 
   // Check minutes before starting session
   const checkMinutesBeforeSession = useCallback(async () => {
@@ -1432,6 +1454,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
           
           // Reset billing status for new session
           setBillingHandled(false);
+          console.log(`💰 Reset billing status for new session ${sessionId}`);
           
           setIsListening(true);
           initWebRTC();
@@ -1523,9 +1546,9 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
         
         console.log(`💰 Final billing for session - Calculated duration: ${actualSessionDuration}s, Closure duration: ${totalSessionDuration}s`);
         
-        // Only bill if session was at least 5 seconds
-        if (actualSessionDuration >= 5) {
-          console.log(`💰 Attempting to bill ${actualSessionDuration} seconds for user ${user.uid}`);
+        // Only bill if session was at least 5 seconds and not already billed
+        if (actualSessionDuration >= 5 && !billingHandled) {
+          console.log(`💰 Attempting to bill ${actualSessionDuration} seconds for user ${user.uid} with session ID ${sessionId}`);
           
           // Update totalSessionDuration to match what we're billing
           setTotalSessionDuration(actualSessionDuration);
@@ -1536,13 +1559,18 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
             },
             body: JSON.stringify({
               userId: user.uid,
-              sessionDuration: actualSessionDuration
+              sessionDuration: actualSessionDuration,
+              sessionId: sessionId
             })
           });
           
           if (response.ok) {
             const result = await response.json();
-            console.log(`💰 ✅ Successfully deducted ${result.secondsUsed} seconds (${result.minutesUsed} minutes). Remaining: ${result.remainingSeconds} seconds`);
+            if (result.alreadyBilled) {
+              console.log(`💰 ⚠️ Session ${sessionId} was already billed, skipping duplicate charge`);
+            } else {
+              console.log(`💰 ✅ Successfully deducted ${result.secondsUsed} seconds (${result.minutesUsed} minutes). Remaining: ${result.remainingSeconds} seconds`);
+            }
             setBillingHandled(true); // Mark billing as successful
             // Firebase real-time listener will automatically update billing data
           } else {
@@ -1550,6 +1578,8 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
             console.error(`💰 ❌ Failed to deduct time (${response.status}):`, errorText);
             setBillingHandled(false); // Mark billing as failed
           }
+        } else if (billingHandled) {
+          console.log(`💰 ⚠️ Session billing already handled, skipping duplicate attempt`);
         } else {
           console.log(`💰 ⏭️ Session too short (${actualSessionDuration}s), not billing`);
         }
