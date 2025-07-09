@@ -153,7 +153,7 @@ const languageCodes: Record<string, string> = {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { difficultyLevel = 3, language = 'english', userId, maxSessionMinutes } = body;
+    const { difficultyLevel = 3, language = 'english', userId, maxSessionSeconds } = body;
     
     // Check billing - require userId for billing checks
     if (!userId) {
@@ -163,33 +163,29 @@ export async function POST(request: Request) {
       );
     }
     
-    // Check if user has enough minutes for the requested session length
-    // Use the provided maxSessionMinutes or default to 1 minute minimum
-    const requiredMinutes = maxSessionMinutes || 1;
-    console.log(`Checking if user has ${requiredMinutes} minutes for session`);
+    // Simple billing check: user needs some time remaining
+    console.log(`Checking user billing for session with maxSessionSeconds: ${maxSessionSeconds}`);
     console.log('Request body:', body);
     
     try {
-      const hasMinutes = await BillingService.hasEnoughMinutes(userId, requiredMinutes);
-      console.log(`User billing check result: ${hasMinutes}`);
+      const billing = await BillingService.getUserBilling(userId);
+      console.log(`User has ${billing.secondsRemaining} seconds remaining`);
       
-      if (!hasMinutes) {
-        const billing = await BillingService.getUserBilling(userId);
-        const remainingMinutes = Math.floor(billing.secondsRemaining / 60);
-        console.log(`User has ${billing.secondsRemaining} seconds (${remainingMinutes} minutes), needs ${requiredMinutes} minutes`);
+      // Simple check: user needs more than 0 seconds
+      if (billing.secondsRemaining <= 0) {
+        console.log(`User has no time remaining: ${billing.secondsRemaining} seconds`);
         return NextResponse.json(
           { 
             error: 'Insufficient speaking time',
-            remainingMinutes: remainingMinutes,
-            remainingSeconds: billing.secondsRemaining,
-            requiredMinutes: requiredMinutes,
+            remainingMinutes: 0,
+            remainingSeconds: 0,
             requiresUpgrade: true
           },
           { status: 402 } // Payment Required
         );
       }
       
-      console.log(`User has sufficient minutes (${requiredMinutes} required), proceeding with session creation`);
+      console.log(`User has ${billing.secondsRemaining} seconds, proceeding with session creation`);
     } catch (billingError) {
       console.error('Error checking user billing:', billingError);
       return NextResponse.json(

@@ -16,8 +16,8 @@ interface InsufficientMinutesDialogProps {
 export default function InsufficientMinutesDialog({ 
   isOpen, 
   onClose, 
-  title = "Insufficient Minutes",
-  message = "You need at least 1 minute of speaking time to start a conversation.",
+  title = "No Minutes Remaining",
+  message = "You have used all your speaking time. Upgrade your plan to continue practicing!",
   showUpgradeOption = true
 }: InsufficientMinutesDialogProps) {
   const { billing } = useBilling();

@@ -119,7 +119,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
 
   const { user, loading } = useAuth();
   const { t, language: uiLanguage } = useLanguage();
-  const { billing, hasEnoughMinutes, loading: billingLoading } = useBilling();
+  const { billing, hasEnoughMinutes } = useBilling();
   const [isListening, setIsListening] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   
@@ -913,33 +913,19 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     };
     
     try {
-      // Get ephemeral token
-      const calculatedMaxSessionMinutes = Math.ceil(maxSessionTime / 60);
-      
+      // Get ephemeral token - pass seconds instead of minutes to avoid confusion
       const sessionParams = {
         difficultyLevel,
         language,
         userId: user?.uid, // Include userId to fetch previous questions
-        maxSessionMinutes: calculatedMaxSessionMinutes // Send the session limit
+        maxSessionSeconds: maxSessionTime // Send the session limit in seconds
       };
       
       console.log('Fetching session token with params:', sessionParams);
       console.log('User billing info:', { 
         secondsRemaining: billing?.secondsRemaining,
-        minutesRemaining: billing ? Math.floor(billing.secondsRemaining / 60) : 0,
-        maxSessionTime: maxSessionTime,
-        maxSessionMinutes: calculatedMaxSessionMinutes,
-        calculationBreakdown: `Math.ceil(${maxSessionTime} / 60) = ${calculatedMaxSessionMinutes}`
+        maxSessionTime: maxSessionTime
       });
-      
-      // Extra validation to catch any issues
-      if (calculatedMaxSessionMinutes > 5) {
-        console.error('WARNING: Calculated session minutes exceeds 5!', {
-          maxSessionTime,
-          calculatedMaxSessionMinutes,
-          billing: billing?.secondsRemaining
-        });
-      }
       
       const tokenResponse = await fetch('/api/session', { 
         method: 'POST',
@@ -1250,22 +1236,14 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
   // Set session time limit based on available seconds
   useEffect(() => {
     if (billing) {
-      // Calculate max session time based on available time
+      // Simple approach: users can use their available time, capped at 15 minutes per session
       const availableSeconds = billing.secondsRemaining;
+      const maxSessionSeconds = Math.min(900, availableSeconds); // Max 15 minutes per session
       
-      // Anyone can speak up to 15 minutes (900 seconds), but limited by available time
-      const baseLimit = 900; // 15 minutes for everyone
+      console.log(`Setting session limit: ${maxSessionSeconds} seconds based on ${availableSeconds} available`);
       
-      // If user has less than 15 minutes, limit session to their available time
-      const maxSessionSeconds = Math.min(baseLimit, availableSeconds);
-      const maxTimeInSeconds = Math.max(60, maxSessionSeconds); // Minimum 1 minute
-      
-      console.log(`Setting session limit: ${maxTimeInSeconds} seconds (${Math.floor(maxTimeInSeconds / 60)}m ${maxTimeInSeconds % 60}s) based on ${availableSeconds} available seconds`);
-      console.log('Billing data:', billing);
-      console.log(`Base limit: ${baseLimit} seconds (${Math.floor(baseLimit / 60)} minutes) for all users`);
-      
-      setMaxSessionTime(maxTimeInSeconds);
-      setTimeRemaining(maxTimeInSeconds);
+      setMaxSessionTime(maxSessionSeconds);
+      setTimeRemaining(maxSessionSeconds);
     } else {
       console.log('No billing data available yet');
     }
@@ -1365,42 +1343,27 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     console.log('checkMinutesBeforeSession called with:', {
       user: !!user,
       billing: billing,
-      billingLoading: billingLoading,
-      hasEnoughMinutes: typeof hasEnoughMinutes,
-      hasEnoughMinutes1: user && billing ? hasEnoughMinutes(1) : 'no user/billing'
+      secondsRemaining: billing?.secondsRemaining
     });
     
-    if (!user) {
-      console.log('No user available');
+    if (!user || !billing) {
+      console.log('No user or billing data available');
       return false;
     }
     
-    // If billing data is still loading, allow the session to proceed
-    // The server-side validation will catch any actual insufficient minutes
-    if (billingLoading) {
-      console.log('Billing data still loading, allowing session to proceed with server-side validation');
-      return true;
-    }
-    
-    if (!billing) {
-      console.log('No billing data available after loading completed');
-      return false;
-    }
-    
-    // Check if user has at least 1 minute available (only after billing data has loaded)
-    if (!hasEnoughMinutes(1)) {
-      console.log('User has insufficient minutes for conversation', {
-        secondsRemaining: billing.secondsRemaining,
-        minutesRemaining: Math.floor(billing.secondsRemaining / 60),
-        hasEnoughMinutes1: hasEnoughMinutes(1)
+    // Simple check: user needs more than 0 seconds to start a session
+    // Let the server handle detailed validation
+    if (billing.secondsRemaining <= 0) {
+      console.log('User has no time remaining for conversation', {
+        secondsRemaining: billing.secondsRemaining
       });
       setShowInsufficientMinutesDialog(true);
       return false;
     }
     
-    console.log('User has enough minutes, proceeding with session');
+    console.log('User has time remaining, proceeding with session');
     return true;
-  }, [user, billing, billingLoading, hasEnoughMinutes]);
+  }, [user, billing]);
 
   // Modified conversation start with minute checking
   useEffect(() => {
@@ -1430,16 +1393,16 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
         if (mountedRef.current && !peerConnectionRef.current && !isConnected && !initializingRef.current && !showResults && !isFinishing) {
           console.log('Starting conversation from delayed useEffect - checking minutes');
           
-          // Check if user has enough minutes before starting
-          console.log('About to check minutes before session, current state:', {
+          // Check if user has any time remaining before starting
+          console.log('About to check time before session, current state:', {
             billing: billing,
             maxSessionTime: maxSessionTime,
-            hasEnoughMinutes: typeof hasEnoughMinutes
+            secondsRemaining: billing?.secondsRemaining
           });
           
           const canStart = await checkMinutesBeforeSession();
           if (!canStart) {
-            console.log('Cannot start session - insufficient minutes from checkMinutesBeforeSession');
+            console.log('Cannot start session - no time remaining');
             return;
           }
           
