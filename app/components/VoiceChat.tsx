@@ -119,7 +119,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
 
   const { user, loading } = useAuth();
   const { t, language: uiLanguage } = useLanguage();
-  const { billing, hasEnoughMinutes } = useBilling();
+  const { billing, hasEnoughMinutes, loading: billingLoading } = useBilling();
   const [isListening, setIsListening] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   
@@ -1365,16 +1365,29 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     console.log('checkMinutesBeforeSession called with:', {
       user: !!user,
       billing: billing,
+      billingLoading: billingLoading,
       hasEnoughMinutes: typeof hasEnoughMinutes,
       hasEnoughMinutes1: user && billing ? hasEnoughMinutes(1) : 'no user/billing'
     });
     
-    if (!user || !billing) {
-      console.log('No user or billing data available');
+    if (!user) {
+      console.log('No user available');
       return false;
     }
     
-    // Check if user has at least 1 minute available
+    // If billing data is still loading, allow the session to proceed
+    // The server-side validation will catch any actual insufficient minutes
+    if (billingLoading) {
+      console.log('Billing data still loading, allowing session to proceed with server-side validation');
+      return true;
+    }
+    
+    if (!billing) {
+      console.log('No billing data available after loading completed');
+      return false;
+    }
+    
+    // Check if user has at least 1 minute available (only after billing data has loaded)
     if (!hasEnoughMinutes(1)) {
       console.log('User has insufficient minutes for conversation', {
         secondsRemaining: billing.secondsRemaining,
@@ -1387,7 +1400,7 @@ export default function VoiceChat({ onClose, difficultyLevel, language, sessionK
     
     console.log('User has enough minutes, proceeding with session');
     return true;
-  }, [user, billing, hasEnoughMinutes]);
+  }, [user, billing, billingLoading, hasEnoughMinutes]);
 
   // Modified conversation start with minute checking
   useEffect(() => {

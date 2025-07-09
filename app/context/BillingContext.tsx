@@ -121,9 +121,19 @@ export function BillingProvider({ children }: { children: ReactNode }) {
 
   // Check if user has enough minutes (converts to seconds internally)
   const hasEnoughMinutes = useCallback((requiredMinutes: number): boolean => {
+    // If billing data is still loading, assume the user has enough minutes to prevent blocking
+    // This prevents race condition issues during initial load
+    if (loading || !billing) {
+      console.log('Billing data still loading, allowing session to proceed');
+      return true;
+    }
+    
     const requiredSeconds = requiredMinutes * 60;
-    return billing ? billing.secondsRemaining >= requiredSeconds : false;
-  }, [billing]);
+    const hasEnough = billing.secondsRemaining >= requiredSeconds;
+    
+    console.log(`hasEnoughMinutes check: ${billing.secondsRemaining} seconds >= ${requiredSeconds} seconds (${requiredMinutes} min) = ${hasEnough}`);
+    return hasEnough;
+  }, [billing, loading]);
 
   // Create checkout session
   const createCheckout = useCallback(async (planType: 'payg' | 'monthly' | 'annual'): Promise<CheckoutResponse> => {
