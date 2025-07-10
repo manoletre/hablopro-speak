@@ -5,7 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import type { TranslationKey } from '../context/LanguageContext';
 import VocabularyCard from './VocabularyCard';
 import { getAuth } from 'firebase/auth';
-import { doc, getFirestore, onSnapshot, collection, addDoc, updateDoc, serverTimestamp, getDoc, setDoc, getDocs } from 'firebase/firestore';
+import { doc, getFirestore, onSnapshot, collection, addDoc, updateDoc, serverTimestamp, getDoc, setDoc, getDocs, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import Image from 'next/image';
 import { pinyin } from 'pinyin-pro';
 import { useBilling } from '../hooks/useBilling';
@@ -703,7 +703,17 @@ export default function SessionResults({ conversationHistory, onClose, language,
         })) : [];
 
         // Update existing session document with transcript and other data
-        const updateData: any = {
+        const updateData: {
+          transcript: string;
+          language: string;
+          difficultyLevel: number;
+          conversationTurns: number;
+          clickedWords: Array<{word: string; translation: string; context: string; timestamp: number}>;
+          sessionStartTime?: Date;
+          sessionDuration?: number;
+          feedbackGenerated?: boolean;
+          keyTakeaway?: string;
+        } = {
           transcript: transcriptToSave,
           language: language,
           difficultyLevel: difficultyLevel || 1,
@@ -864,7 +874,7 @@ export default function SessionResults({ conversationHistory, onClose, language,
       const vocabularySnapshot = await getDocs(vocabularyRef);
       
       const loadedVocabulary: VocabularyItem[] = [];
-      vocabularySnapshot.forEach((doc: any) => {
+      vocabularySnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
         const data = doc.data();
         if (data.source === 'ai_generated') {
           loadedVocabulary.push({
@@ -883,7 +893,7 @@ export default function SessionResults({ conversationHistory, onClose, language,
       const grammarSnapshot = await getDocs(grammarRef);
       
       const loadedGrammar: GrammarCorrection[] = [];
-      grammarSnapshot.forEach((doc: any) => {
+      grammarSnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
         const data = doc.data();
         loadedGrammar.push({
           category: data.category || '',

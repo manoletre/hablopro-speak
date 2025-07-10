@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { collection, query, orderBy, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import SessionResults from './SessionResults';
 
@@ -44,7 +44,7 @@ const FlagIcon = ({ language, className = "" }: { language: string; className?: 
 
 interface SessionData {
   id: string;
-  startedAt: any; // Firestore timestamp (matches what's saved in SessionResults)
+  startedAt: Timestamp | Date | null; // Firestore timestamp (matches what's saved in SessionResults)
   language: string;
   difficultyLevel: number;
   transcript?: string;
@@ -98,9 +98,10 @@ export default function SessionHistoryDialog({ isOpen, onClose, onSessionSelecte
   }, [user, isOpen]);
 
   // Format date for display
-  const formatDate = (timestamp: any) => {
+  const formatDate = (timestamp: Timestamp | Date | null) => {
     if (!timestamp) return 'Unknown date';
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const date = timestamp instanceof Timestamp ? timestamp.toDate() : 
+                 timestamp instanceof Date ? timestamp : new Date(timestamp);
     return date.toLocaleDateString(undefined, {
       year: 'numeric',
       month: 'short',
@@ -151,7 +152,11 @@ export default function SessionHistoryDialog({ isOpen, onClose, onSessionSelecte
     const conversationHistory = selectedSession.transcript ? 
       (() => {
         const messages: Array<{role: 'user' | 'assistant', text: string, timestamp: number}> = [];
-        const baseTimestamp = selectedSession.startedAt?.toDate()?.getTime() || Date.now();
+        const baseTimestamp = selectedSession.startedAt instanceof Timestamp 
+          ? selectedSession.startedAt.toDate().getTime() 
+          : selectedSession.startedAt instanceof Date 
+            ? selectedSession.startedAt.getTime()
+            : Date.now();
         
         // Parse transcript format (assuming it's stored as "role: text\nrole: text\n...")
         const lines = selectedSession.transcript.split('\n').filter(line => line.trim());
