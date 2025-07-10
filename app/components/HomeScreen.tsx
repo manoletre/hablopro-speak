@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { useBilling } from '../hooks/useBilling';
 import InsufficientMinutesDialog from './InsufficientMinutesDialog';
 import UpgradeModal from './UpgradeModal';
+import SessionHistoryDialog from './SessionHistoryDialog';
 
 interface HomeScreenProps {
   onStartSession: (level: number, language: string) => void;
@@ -75,6 +76,7 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
   const [lostStreakDays, setLostStreakDays] = useState(0);
   const [showInsufficientMinutesDialog, setShowInsufficientMinutesDialog] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showSessionHistoryDialog, setShowSessionHistoryDialog] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -271,6 +273,20 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
             {/* Billing Widget */}
             <div className="p-4">
               <BillingWidget />
+            </div>
+            
+            {/* Session History Button */}
+            <div className="px-4 pb-4">
+              <button
+                onClick={() => setShowSessionHistoryDialog(true)}
+                className="w-full py-3 border border-amber-200 text-[#422006] rounded-lg flex items-center justify-center hover:bg-amber-50 transition-colors"
+              >
+                <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                {t('home.sessionHistory')}
+              </button>
             </div>
             
             {/* Empty top area */}
@@ -675,6 +691,13 @@ export default function HomeScreen({ onStartSession }: HomeScreenProps) {
           onClose={() => setShowUpgradeModal(false)}
         />
       )}
+
+      {/* Session History Dialog */}
+      <SessionHistoryDialog
+        isOpen={showSessionHistoryDialog}
+        onClose={() => setShowSessionHistoryDialog(false)}
+        onSessionSelected={() => setShowSidebar(false)} // Close sidebar when session is selected
+      />
     </div>
   );
 } 

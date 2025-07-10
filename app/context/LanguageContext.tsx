@@ -178,7 +178,13 @@ export type TranslationKey =
   | 'getMoreMins.addExtraMinutes'
   | 'getMoreMins.minutesAdded'
   | 'getMoreMins.addedInstantly'
-  | 'getMoreMins.useAlongside';
+  | 'getMoreMins.useAlongside'
+  | 'home.sessionHistory'
+  | 'sessionHistory.title'
+  | 'sessionHistory.noSessions'
+  | 'sessionHistory.loadingSessions'
+  | 'sessionHistory.sessionDate'
+  | 'sessionHistory.viewReview';
 
 interface LanguageContextType {
   language: Language;
@@ -357,6 +363,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'getMoreMins.minutesAdded': '{count} minutes added to your account',
     'getMoreMins.addedInstantly': 'Added instantly',
     'getMoreMins.useAlongside': 'Use alongside your subscription',
+    'home.sessionHistory': 'Session History',
+    'sessionHistory.title': 'Session History',
+    'sessionHistory.noSessions': 'No sessions found. Start practicing to see your history!',
+    'sessionHistory.loadingSessions': 'Loading sessions...',
+    'sessionHistory.sessionDate': 'Session on {date}',
+    'sessionHistory.viewReview': 'View Review',
   },
   español: {
     'home.title': 'aprende hablando.',
@@ -527,6 +539,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     'getMoreMins.minutesAdded': '{count} minutos agregados a tu cuenta',
     'getMoreMins.addedInstantly': 'Agregados instantáneamente',
     'getMoreMins.useAlongside': 'Usa junto a tu suscripción',
+    'home.sessionHistory': 'Historial de Sesiones',
+    'sessionHistory.title': 'Historial de Sesiones',
+    'sessionHistory.noSessions': '¡No se encontraron sesiones. Comienza a practicar para ver tu historial!',
+    'sessionHistory.loadingSessions': 'Cargando sesiones...',
+    'sessionHistory.sessionDate': 'Sesión del {date}',
+    'sessionHistory.viewReview': 'Ver Revisión',
   },
 };
 

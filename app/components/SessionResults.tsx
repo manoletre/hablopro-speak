@@ -5,7 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import type { TranslationKey } from '../context/LanguageContext';
 import VocabularyCard from './VocabularyCard';
 import { getAuth } from 'firebase/auth';
-import { doc, getFirestore, onSnapshot, collection, addDoc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { doc, getFirestore, onSnapshot, collection, addDoc, updateDoc, serverTimestamp, getDoc, setDoc, getDocs } from 'firebase/firestore';
 import Image from 'next/image';
 import { pinyin } from 'pinyin-pro';
 import { useBilling } from '../hooks/useBilling';
@@ -104,6 +104,8 @@ interface SessionResultsProps {
   sessionStartTime?: number;
   // Add flag to indicate if billing was already handled
   billingHandled?: boolean;
+  // Add flag to indicate if this is a historical session (don't regenerate feedback)
+  isHistoricalSession?: boolean;
 }
 
 // Define the feedback data interface
@@ -378,7 +380,7 @@ const getRelevantContext = (word: string, fullContext: string, maxLength: number
   return relevantContext;
 };
 
-export default function SessionResults({ conversationHistory, onClose, language, transcript, sessionId, clickedWords, sessionDuration, sessionStartTime, billingHandled }: SessionResultsProps) {
+export default function SessionResults({ conversationHistory, onClose, language, transcript, sessionId, difficultyLevel, clickedWords, sessionDuration, sessionStartTime, billingHandled, isHistoricalSession }: SessionResultsProps) {
   const { t, language: languageContext } = useLanguage();
   const { billing } = useBilling();
   const [keyTakeaway, setKeyTakeaway] = useState<string>('');
@@ -394,6 +396,9 @@ export default function SessionResults({ conversationHistory, onClose, language,
   
   // State for pinyin visibility toggle
   const [showPinyin, setShowPinyin] = useState(false);
+  
+  // State for loaded clicked words (for historical sessions)
+  const [loadedClickedWords, setLoadedClickedWords] = useState<Array<{word: string, translation: string, context: string, timestamp: number}>>([]);
   
   // Use useRef to track if API has been called to prevent duplicate calls in React Strict Mode
   const apiCalledRef = useRef<boolean>(false);
@@ -629,6 +634,100 @@ export default function SessionResults({ conversationHistory, onClose, language,
     return languageCodes[lang] || 'en';
   };
 
+    // Function to save the main session document to Firebase
+  const saveSessionToFirebase = useCallback(async () => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      
+      if (!user || !sessionId) {
+        console.log('User not authenticated or sessionId not available, skipping session save');
+        return;
+      }
+
+      const db = getFirestore();
+      const sessionRef = doc(db, `users/${user.uid}/sessions`, sessionId);
+      
+      // Check if session document already exists
+      const sessionDoc = await getDoc(sessionRef);
+      
+      // Prepare the transcript to save
+      let transcriptToSave: string;
+      
+      if (transcript) {
+        // Use the provided transcript as-is
+        transcriptToSave = transcript;
+      } else {
+        // Create transcript from conversation history using the same format as in the feedback API call
+        const sortedHistory = [...processedConversationHistory].sort((a, b) => a.timestamp - b.timestamp);
+        transcriptToSave = sortedHistory
+          .map(msg => `${msg.role}: ${msg.text}`)
+          .join('\n');
+      }
+      
+      if (!sessionDoc.exists()) {
+        // Prepare clicked words data for storage in main session document
+        const clickedWordsForStorage = clickedWords ? clickedWords.map(word => ({
+          word: word.word,
+          translation: word.translation,
+          context: word.context,
+          timestamp: word.timestamp
+        })) : [];
+
+        // Create new session document with required startedAt field (Firestore rules requirement)
+        const sessionData = {
+          startedAt: serverTimestamp(), // Required by Firestore rules for creation
+          language: language,
+          difficultyLevel: difficultyLevel || 1,
+          transcript: transcriptToSave,
+          // Add session timing data if available
+          ...(sessionStartTime && { sessionStartTime: new Date(sessionStartTime) }),
+          ...(sessionDuration && { sessionDuration }),
+          // Will be updated when feedback is generated
+          keyTakeaway: '',
+          clickedWords: clickedWordsForStorage,
+          feedbackGenerated: false,
+          // Store the number of conversation turns for quick reference
+          conversationTurns: processedConversationHistory.length
+        };
+        
+        await setDoc(sessionRef, sessionData);
+        console.log('Session document created in Firebase');
+      } else {
+        // Prepare clicked words data for storage in main session document
+        const clickedWordsForStorage = clickedWords ? clickedWords.map(word => ({
+          word: word.word,
+          translation: word.translation,
+          context: word.context,
+          timestamp: word.timestamp
+        })) : [];
+
+        // Update existing session document with transcript and other data
+        const updateData: any = {
+          transcript: transcriptToSave,
+          language: language,
+          difficultyLevel: difficultyLevel || 1,
+          conversationTurns: processedConversationHistory.length,
+          clickedWords: clickedWordsForStorage
+        };
+        
+        // Add optional fields if available
+        if (sessionStartTime) updateData.sessionStartTime = new Date(sessionStartTime);
+        if (sessionDuration) updateData.sessionDuration = sessionDuration;
+        if (!sessionDoc.data()?.feedbackGenerated) {
+          updateData.feedbackGenerated = false;
+          updateData.keyTakeaway = '';
+        }
+        
+        await updateDoc(sessionRef, updateData);
+        console.log('Session document updated in Firebase');
+      }
+      
+    } catch (error) {
+      console.error('Error saving session to Firebase:', error);
+    }
+  }, [sessionId, transcript, processedConversationHistory, language, difficultyLevel, sessionStartTime, sessionDuration, clickedWords]);
+
   // Function to save feedback data to Firebase
   const saveFeedbackToFirebase = useCallback(async (feedbackData: FeedbackData) => {
     try {
@@ -643,12 +742,30 @@ export default function SessionResults({ conversationHistory, onClose, language,
       const db = getFirestore();
       const sessionRef = doc(db, `users/${user.uid}/sessions`, sessionId);
       
-      // Update session with key takeaway
+      // Check if feedback has already been generated for this session to prevent duplicates
+      const sessionDoc = await getDoc(sessionRef);
+      if (sessionDoc.exists() && sessionDoc.data()?.feedbackGenerated) {
+        console.log('Feedback already generated for this session, skipping save to prevent duplicates');
+        return;
+      }
+      
+      // Prepare clicked words data for storage in main session document
+      const clickedWordsForStorage = clickedWords ? clickedWords.map(word => ({
+        word: word.word,
+        translation: word.translation,
+        context: word.context,
+        timestamp: word.timestamp
+      })) : [];
+
+      // Update session with key takeaway, clicked words, and mark feedback as generated
       await updateDoc(sessionRef, {
-        keyTakeaway: feedbackData.keyTakeaway || ''
+        keyTakeaway: feedbackData.keyTakeaway || '',
+        clickedWords: clickedWordsForStorage,
+        feedbackGenerated: true,
+        feedbackGeneratedAt: serverTimestamp()
       });
       
-      console.log('Updated session with key takeaway');
+      console.log('Updated session with key takeaway and feedback data');
 
       // Save vocabulary items as subcollection
       if (feedbackData.vocabulary && feedbackData.vocabulary.length > 0) {
@@ -712,6 +829,79 @@ export default function SessionResults({ conversationHistory, onClose, language,
       // Don't throw the error - we don't want to break the UI if Firebase save fails
     }
   }, [sessionId, t, clickedWords]);
+
+  // Function to load existing feedback data from Firebase for historical sessions
+  const loadExistingFeedbackFromFirebase = useCallback(async () => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      
+      if (!user || !sessionId) {
+        console.log('User not authenticated or sessionId not available, skipping feedback load');
+        return;
+      }
+
+      const db = getFirestore();
+      
+      // Load key takeaway and clicked words from main session document
+      const sessionRef = doc(db, `users/${user.uid}/sessions`, sessionId);
+      const sessionDoc = await getDoc(sessionRef);
+      let sessionClickedWords: Array<{word: string, translation: string, context: string, timestamp: number}> = [];
+      
+      if (sessionDoc.exists()) {
+        const sessionData = sessionDoc.data();
+        setKeyTakeaway(sessionData.keyTakeaway || '');
+        
+        // Load clicked words from session document
+        if (sessionData.clickedWords && Array.isArray(sessionData.clickedWords)) {
+          sessionClickedWords = sessionData.clickedWords;
+          setLoadedClickedWords(sessionClickedWords);
+        }
+      }
+
+      // Load vocabulary items from subcollection
+      const vocabularyRef = collection(db, `users/${user.uid}/sessions/${sessionId}/vocabulary`);
+      const vocabularySnapshot = await getDocs(vocabularyRef);
+      
+      const loadedVocabulary: VocabularyItem[] = [];
+      vocabularySnapshot.forEach((doc: any) => {
+        const data = doc.data();
+        if (data.source === 'ai_generated') {
+          loadedVocabulary.push({
+            word: data.phrase || '',
+            type: data.type || '',
+            meaning: data.definition || '',
+            usage: '', // Not stored separately
+            example: data.example || ''
+          });
+        }
+      });
+      setVocabulary(loadedVocabulary);
+
+      // Load grammar corrections from subcollection
+      const grammarRef = collection(db, `users/${user.uid}/sessions/${sessionId}/grammar`);
+      const grammarSnapshot = await getDocs(grammarRef);
+      
+      const loadedGrammar: GrammarCorrection[] = [];
+      grammarSnapshot.forEach((doc: any) => {
+        const data = doc.data();
+        loadedGrammar.push({
+          category: data.category || '',
+          youSaid: data.original || '',
+          problemHighlight: '', // Not stored separately
+          better: data.corrected || '',
+          improvementHighlight: '', // Not stored separately
+          explanation: data.why || ''
+        });
+      });
+      setGrammarCorrections(loadedGrammar);
+
+      console.log(`Loaded existing feedback: ${loadedVocabulary.length} vocabulary, ${loadedGrammar.length} grammar, ${sessionClickedWords.length} clicked words`);
+      
+    } catch (error) {
+      console.error('Error loading existing feedback from Firebase:', error);
+    }
+  }, [sessionId]);
 
   // Add backup billing logic to ensure session time is deducted (only if primary billing failed)
   useEffect(() => {
@@ -783,6 +973,17 @@ export default function SessionResults({ conversationHistory, onClose, language,
       
       try {
         setLoading(true);
+        
+        // If this is a historical session, load existing feedback from Firebase instead of generating new
+        if (isHistoricalSession) {
+          console.log('Loading existing feedback for historical session');
+          await loadExistingFeedbackFromFirebase();
+          setLoading(false);
+          return;
+        }
+        
+        // Save the session to Firebase first (even if feedback generation fails)
+        await saveSessionToFirebase();
         
         // Check if there's any conversation history to analyze
         if (processedConversationHistory.length === 0) {
@@ -859,7 +1060,12 @@ export default function SessionResults({ conversationHistory, onClose, language,
     
     if (processedConversationHistory.length > 0 && !apiCalledRef.current) {
       fetchFeedback();
-    } else if (processedConversationHistory.length === 0) {
+    } else if (processedConversationHistory.length === 0 && !isHistoricalSession) {
+      // Still save the session even if no conversation history (only for new sessions)
+      saveSessionToFirebase();
+      setLoading(false);
+    } else if (processedConversationHistory.length === 0 && isHistoricalSession) {
+      // For historical sessions with no conversation, just set loading to false
       setLoading(false);
     }
     
@@ -871,7 +1077,7 @@ export default function SessionResults({ conversationHistory, onClose, language,
     return () => {
       console.log('SessionResults unmounting');
     };
-  }, [processedConversationHistory, language, languageContext, saveFeedbackToFirebase, transcript]);
+  }, [processedConversationHistory, language, languageContext, saveFeedbackToFirebase, saveSessionToFirebase, loadExistingFeedbackFromFirebase, transcript, isHistoricalSession]);
 
   return (
     <div className="absolute inset-0 bg-[#fffaed] font-poppins overflow-y-auto">
@@ -1004,7 +1210,7 @@ export default function SessionResults({ conversationHistory, onClose, language,
                 <p className="text-red-500 text-center p-4 bg-white/70 rounded-lg border border-amber-100">
                   {t('sessionResults.failedToAnalyze')}
                 </p>
-              ) : (vocabulary.length > 0 || (clickedWords && clickedWords.length > 0)) ? (
+              ) : (vocabulary.length > 0 || (isHistoricalSession ? loadedClickedWords.length > 0 : (clickedWords && clickedWords.length > 0))) ? (
                 <div className="space-y-4">
                   {/* AI-generated vocabulary */}
                   {vocabulary.map((word, index) => (
@@ -1022,7 +1228,7 @@ export default function SessionResults({ conversationHistory, onClose, language,
                   ))}
                   
                   {/* User-clicked words */}
-                  {clickedWords && clickedWords.map((clickedWord, index) => (
+                  {(isHistoricalSession ? loadedClickedWords : (clickedWords || [])).map((clickedWord, index) => (
                     <div key={`clicked-vocab-${index}-${uniqueSessionId}`} className="relative">
                       <div className="absolute top-2 right-2 z-10">
                         <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full border border-blue-200">
