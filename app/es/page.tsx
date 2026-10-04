@@ -187,6 +187,32 @@ function LandingPageContent() {
           </div>
         </header>
 
+        {/* Archive Notice */}
+        <aside aria-label="Aviso de proyecto archivado" className="w-full border-b border-amber-300 bg-amber-100 px-4 py-6">
+          <div className="max-w-6xl mx-auto text-amber-900">
+            <p className="font-semibold">Este proyecto está archivado</p>
+            <p className="mt-1 text-base">Hablo.pro ya no se mantiene ni recibe soporte.</p>
+            <div className="mt-3 flex flex-col items-start gap-2 text-base sm:flex-row sm:flex-wrap sm:gap-x-6">
+              <a
+                href="https://manoletre.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium underline underline-offset-4 hover:text-amber-700"
+              >
+                Descubre en qué estoy trabajando ahora
+              </a>
+              <a
+                href="https://www.loom.com/share/116a7c44c94b4ea2b818db653fead522"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium underline underline-offset-4 hover:text-amber-700"
+              >
+                Mira cómo funcionaba Hablo.pro
+              </a>
+            </div>
+          </div>
+        </aside>
+
         {/* Hero Section */}
         <section className="w-full pt-8 pb-12 md:pt-12 md:pb-16 px-4">
           <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center">
@@ -205,16 +231,16 @@ function LandingPageContent() {
               {/* ProductHunt Badge */}
               <div className="mt-6">
                 <a 
-                  href="https://www.producthunt.com/products/hablo-pro?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-hablo&#0045;pro" 
+                  href="https://www.producthunt.com/products/hablo-pro/launches/hablo-pro?embed=true&utm_source=badge-top-post-topic-badge&utm_medium=badge&utm_campaign=badge-hablo-pro"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-block"
                 >
                   <Image 
-                    src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=987743&theme=light&t=1752040779639" 
-                    alt="Hablo.pro - Learn a language by speaking | Product Hunt" 
-                    width={200} 
-                    height={43}
+                    src="https://api.producthunt.com/widgets/embed-image/v1/top-post-topic-badge.svg?post_id=987743&theme=light&period=weekly&topic_id=204&t=1791138820512"
+                    alt="Hablo.pro — #1 Product of the Week in Education on Product Hunt"
+                    width={250}
+                    height={54}
                     priority={false}
                     loading="lazy"
                   />
